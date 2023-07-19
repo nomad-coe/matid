@@ -1,9 +1,9 @@
-class Classification():
+class Classification:
     def __init__(self, atoms):
         self.atoms = atoms
 
 
-#===============================================================================
+# ===============================================================================
 # 0D Structures
 class Class0D(Classification):
     """Structures that have a structure that is isolated in all directions by a
@@ -12,11 +12,10 @@ class Class0D(Classification):
 
 
 class Atom(Class0D):
-    """
-    """
+    """ """
 
 
-#===============================================================================
+# ===============================================================================
 # 1D Structures
 class Class1D(Classification):
     """All structures that are roughly 1-dimensional, meaning that one
@@ -24,7 +23,7 @@ class Class1D(Classification):
     """
 
 
-#===============================================================================
+# ===============================================================================
 # 2D Structures
 class Class2D(Classification):
     """Base class for all structures that are roughly 2-dimensional, meaning that two of the
@@ -36,11 +35,12 @@ class Class2DWithCell(Class2D):
     """Two dimensional structures from which a periodic unit cell has been
     identified.
     """
+
     def __init__(
-            self,
-            atoms,
-            region,
-            ):
+        self,
+        atoms,
+        region,
+    ):
         super().__init__(atoms)
         self.region = region
 
@@ -78,24 +78,20 @@ class Class2DWithCell(Class2D):
 
 
 class Surface(Class2DWithCell):
-    """
-    """
+    """ """
 
 
 class Material2D(Class2DWithCell):
-    """
-    """
+    """ """
 
 
-#===============================================================================
+# ===============================================================================
 # 3D Structures
 class Class3D(Classification):
-    """All structures that periodically extend infinitely without vacuum gaps.
-    """
+    """All structures that periodically extend infinitely without vacuum gaps."""
 
 
-#===============================================================================
+# ===============================================================================
 # Unknown structures
 class Unknown(Classification):
-    """
-    """
+    """ """

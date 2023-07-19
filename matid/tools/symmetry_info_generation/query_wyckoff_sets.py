@@ -48,11 +48,13 @@ def matrixfy(expression, variables):
         match = reg.match(expression[i])
         groups = match.groupdict()
         if expression[i] != "0" and len(match.groups()) == 0:
-            raise ValueError("Could not find the variable information in nonzero Wyckoff position expression.")
+            raise ValueError(
+                "Could not find the variable information in nonzero Wyckoff position expression."
+            )
         for j, var in enumerate(["x", "y", "z"]):
             multiplier = convert(groups[var])
             if multiplier is not None:
-                A[i,j] = multiplier
+                A[i, j] = multiplier
             constant = convert(groups["c"])
             if constant is not None:
                 T[i] = constant
@@ -76,7 +78,9 @@ def extract_url(url, values=None):
 
     # Create the soup :)
     html_raw = r.text
-    soup = BeautifulSoup(html_raw, 'lxml')  # Here we use lxml, because the default html.parser is not working properly...
+    soup = BeautifulSoup(
+        html_raw, "lxml"
+    )  # Here we use lxml, because the default html.parser is not working properly...
 
     return soup
 
@@ -122,7 +126,11 @@ def extract_wyckoff_sets(soup, settings):
         n_trans = translation_text.count("+")
         if n_trans >= 1:
             if not translation_text.startswith("(0,0,0)"):
-                raise ValueError("The first translation is not 0,0,0, but {}".format(translation_text))
+                raise ValueError(
+                    "The first translation is not 0,0,0, but {}".format(
+                        translation_text
+                    )
+                )
     n_trans = max(translation_text.count("+"), 1)
 
     # Get the fixed translations
@@ -182,13 +190,19 @@ def extract_wyckoff_sets(soup, settings):
                     break
         if n_solved != len(variables):
             print(n_solved)
-            raise ValueError("The representative position for letter {} cannot be used to determine variables.".format(letter))
+            raise ValueError(
+                "The representative position for letter {} cannot be used to determine variables.".format(
+                    letter
+                )
+            )
 
-        if multiplicity != n_trans*n_results:
+        if multiplicity != n_trans * n_results:
             print(multiplicity)
             print(n_trans)
             print(n_results)
-            raise ValueError("The number of found site does not match the multiplicity.")
+            raise ValueError(
+                "The number of found site does not match the multiplicity."
+            )
 
         data[letter] = {
             "variables": variables,
@@ -200,20 +214,27 @@ def extract_wyckoff_sets(soup, settings):
 
     return data
 
+
 if __name__ == "__main__":
     # Regexes
     regex_multiplication = re.compile("(\d)([xyz])")
-    regex_expression = re.compile("\(([xyz\d\/\+\- ]+).?,([xyz\d\/\+\- ]+).?,([xyz\d\/\+\- ]+).?\)")
+    regex_expression = re.compile(
+        "\(([xyz\d\/\+\- ]+).?,([xyz\d\/\+\- ]+).?,([xyz\d\/\+\- ]+).?\)"
+    )
     regex_translation = re.compile("\(([\d\/]+),([\d\/]+),([\d\/]+)\)")
-    regex_bilbao = re.compile("(?P<hm>[^\^\:[\s](?:\s[^\^\:[\s]+)*)(?:\s+\[origin (?P<origin>\d+)\])?(?:\s+\:(?P<centring>\S))?")
-    reg = re.compile("(?:(?P<x>[+-]?(?:\d(?:\/\d+)?)?)x)?(?:(?P<y>[+-]?(?:\d(?:\/\d+)?)?)y)?(?:(?P<z>[+-]?(?:\d(?:\/\d+)?)?)z)?(?P<c>[+-]?\d\/?\d*)?")
+    regex_bilbao = re.compile(
+        "(?P<hm>[^\^\:[\s](?:\s[^\^\:[\s]+)*)(?:\s+\[origin (?P<origin>\d+)\])?(?:\s+\:(?P<centring>\S))?"
+    )
+    reg = re.compile(
+        "(?:(?P<x>[+-]?(?:\d(?:\/\d+)?)?)x)?(?:(?P<y>[+-]?(?:\d(?:\/\d+)?)?)y)?(?:(?P<z>[+-]?(?:\d(?:\/\d+)?)?)z)?(?P<c>[+-]?\d\/?\d*)?"
+    )
 
     # Fetch the setting used by spglib (for each space group the first Hall
     # number setting is used)
     url = "http://pmsl.planet.sci.kobe-u.ac.jp/~seto/?page_id=37&lang=en"
     seto_soup = extract_url(url)
 
-    table = seto_soup.find('tbody')
+    table = seto_soup.find("tbody")
     all_rows = table.find_all("tr", recursive=False)
     spglib_defaults = {}
     i_spg = 1
@@ -256,11 +277,11 @@ if __name__ == "__main__":
         print(space_group)
         # Do a HTTP POST request for the data
         values = {
-            'gnum': space_group,
-            'settings': "ITA Settings",
+            "gnum": space_group,
+            "settings": "ITA Settings",
         }
         soup = extract_url(primary_url, values)
-        table = soup.find('form').table
+        table = soup.find("form").table
         all_rows = table.find_all("tr", recursive=False)
 
         # Get the correct row
@@ -291,13 +312,19 @@ if __name__ == "__main__":
                     origin_bilbao = int(origin_bilbao)
                     origin_spglib = int(settings_spglib[0])
                     if origin_bilbao == origin_spglib:
-                        print("Origin matched: {}={}".format(origin_spglib, origin_bilbao))
+                        print(
+                            "Origin matched: {}={}".format(origin_spglib, origin_bilbao)
+                        )
                         match = True
                 if centring_bilbao is not None:
                     match = False
                     centring_spglib = (settings_spglib[0]).lower()
                     if centring_bilbao == centring_spglib:
-                        print("Centring matched: {}={}".format(centring_spglib, centring_bilbao))
+                        print(
+                            "Centring matched: {}={}".format(
+                                centring_spglib, centring_bilbao
+                            )
+                        )
                         match = True
 
             # If match found, follow the link to extract the Wyckoff positions
@@ -313,8 +340,8 @@ if __name__ == "__main__":
                 else:
                     link = "/cgi-bin/cryst/programs/nph-wp-list"
                     values = {
-                        'gnum': space_group,
-                        'standard': "Standard/Default Setting",
+                        "gnum": space_group,
+                        "standard": "Standard/Default Setting",
                     }
                     settings = "default"
                 url = "https://www.cryst.ehu.es" + link
@@ -324,7 +351,11 @@ if __name__ == "__main__":
                 break
 
         if not match:
-            raise ValueError("Match not found between spglib and default settings for space group {}.".format(space_group))
+            raise ValueError(
+                "Match not found between spglib and default settings for space group {}.".format(
+                    space_group
+                )
+            )
 
     # Save the found Wyckoff sets as a pickle file
     with open("wyckoff_sets.pickle", "wb") as fout:

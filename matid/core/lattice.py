@@ -7,6 +7,7 @@ class Lattice(object):
     general, it is assumed that length units are in Angstroms and angles are in
     degrees unless otherwise stated.
     """
+
     def __init__(self, matrix):
         """
         Create a lattice from any sequence of 9 numbers. Note that the sequence
@@ -25,7 +26,7 @@ class Lattice(object):
                 with lattice vectors [10, 0, 0], [20, 10, 0] and [0, 0, 30].
         """
         m = np.array(matrix, dtype=np.float64).reshape((3, 3))
-        lengths = np.sqrt(np.sum(m ** 2, axis=1))
+        lengths = np.sqrt(np.sum(m**2, axis=1))
         self._lengths = lengths
         self._matrix = m
         self._angles = None
@@ -87,11 +88,11 @@ class Lattice(object):
             for i in range(3):
                 j = (i + 1) % 3
                 k = (i + 2) % 3
-                angles[i] = np.dot(
-                    self._matrix[j],
-                    self._matrix[k]) / (self.lengths[j] * self.lengths[k])
+                angles[i] = np.dot(self._matrix[j], self._matrix[k]) / (
+                    self.lengths[j] * self.lengths[k]
+                )
             angles = np.clip(angles, -1.0, 1.0)
-            self._angles = np.arccos(angles) * 180. / np.pi
+            self._angles = np.arccos(angles) * 180.0 / np.pi
         return self._angles
 
     @property

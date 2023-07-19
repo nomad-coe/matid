@@ -15,6 +15,7 @@ import ase.geometry
 
 from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
+from matid.core.distances import Distances
 import matid.geometry
 
 from sklearn.cluster import DBSCAN
@@ -46,12 +47,12 @@ def get_nearest_atom(system, position, mic=True):
 
 
 def get_dimensionality(
-        system,
-        cluster_threshold,
-        dist_matrix_radii_mic_1x=None,
-        return_clusters=False,
-        radii="covalent",
-    ):
+    system,
+    cluster_threshold,
+    dist_matrix_radii_mic_1x=None,
+    return_clusters=False,
+    radii="covalent",
+):
     """Used to calculate the dimensionality of a system with a modified
     Topology Scaling Algorithm (TSA) (Michael Ashton, Joshua Paul, Susan B.
     Sinnott, and Richard G. Hennig Phys. Rev. Lett. 118, 106101).
@@ -95,29 +96,36 @@ def get_dimensionality(
         elif radii == "vdw":
             radii = vdw_radii
         elif radii == "vdw_covalent":
-            radii = np.array([vdw_radii[i] if vdw_radii[i] != np.nan else covalent_radii[i] for i in range(len(vdw_radii))])
+            radii = np.array(
+                [
+                    vdw_radii[i] if vdw_radii[i] != np.nan else covalent_radii[i]
+                    for i in range(len(vdw_radii))
+                ]
+            )
     system_radii = radii[num_1x]
     max_radii = system_radii.max()
-    max_distance = cluster_threshold + 2*max_radii
+    max_distance = cluster_threshold + 2 * max_radii
 
     # 1x1x1 system
     if dist_matrix_radii_mic_1x is None:
         pos_1x = system.get_positions()
-        displacements_mic_1x, dist_matrix_mic_1x = get_displacement_tensor(
+        _, dist_matrix_mic_1x = get_displacement_tensor(
             pos_1x,
             pos_1x,
             cell_1x,
             pbc,
             mic=True,
             max_distance=max_distance,
-            return_distances=True
+            return_distances=True,
         )
         radii_1x = radii[num_1x]
         radii_matrix_1x = radii_1x[:, None] + radii_1x[None, :]
         dist_matrix_radii_mic_1x = dist_matrix_mic_1x - radii_matrix_1x
 
     # Check the number of clusters.
-    clusters_1x = get_clusters(dist_matrix_radii_mic_1x, cluster_threshold, min_samples=1)
+    clusters_1x = get_clusters(
+        dist_matrix_radii_mic_1x, cluster_threshold, min_samples=1
+    )
     n_clusters_1x = len(clusters_1x)
 
     # If the system consists of multiple components that are not connected
@@ -129,28 +137,29 @@ def get_dimensionality(
         # 2x2x2 system
         n_pbc = np.sum(pbc)
         if n_pbc > 0:
-
             repeats = np.array([1, 1, 1])
             repeats[pbc] = 2
             system_2x = system.repeat(repeats)
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
             num_2x = system_2x.get_atomic_numbers()
-            displacements_mic_2x, dist_matrix_mic_2x = get_displacement_tensor(
+            _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
                 pos_2x,
                 cell_2x,
                 pbc,
                 mic=True,
                 max_distance=max_distance,
-                return_distances=True
+                return_distances=True,
             )
             radii_2x = radii[num_2x]
             radii_matrix_2x = radii_2x[:, None] + radii_2x[None, :]
             dist_matrix_radii_mic_2x = dist_matrix_mic_2x - radii_matrix_2x
 
             # Check the number of clusters.
-            clusters_2x = get_clusters(dist_matrix_radii_mic_2x, cluster_threshold, min_samples=1)
+            clusters_2x = get_clusters(
+                dist_matrix_radii_mic_2x, cluster_threshold, min_samples=1
+            )
             n_clusters_2x = len(clusters_2x)
 
             # This is the analytic formula for the dimensionality based on cluster
@@ -178,9 +187,9 @@ def get_tetrahedra_decomposition(system, max_distance):
     # construction of the padded system. This should be doable by simply using
     # the internal displacements and the cell periodicity.
 
-    class TetrahedraDecomposition():
-        """A class that represents a collection of tetrahedron.
-        """
+    class TetrahedraDecomposition:
+        """A class that represents a collection of tetrahedron."""
+
         def __init__(self, delaunay, invalid_simplex_indices):
             self.delaunay = delaunay
             self.invalid_simplex_indices = invalid_simplex_indices
@@ -226,7 +235,7 @@ def get_tetrahedra_decomposition(system, max_distance):
 
             # If system is periodic in this direction, calculate the distance
             # between atoms in the periodically repeated images and choose
-            # atoms from the copies that are within a certain range when tha
+            # atoms from the copies that are within a certain range when the
             # radii are taken into account
             disp = np.array(displacements_finite)
             disp += disloc
@@ -234,7 +243,10 @@ def get_tetrahedra_decomposition(system, max_distance):
             dist_radii = dist - radii_matrix
             connectivity_mask = np.where(dist_radii < max_distance)
 
-            pad_pos = pos[connectivity_mask[1]] + disp[connectivity_mask[0], connectivity_mask[1]]
+            pad_pos = (
+                pos[connectivity_mask[1]]
+                + disp[connectivity_mask[0], connectivity_mask[1]]
+            )
             pad_num = num[connectivity_mask[1]]
             pad_atoms = Atoms(positions=pad_pos, symbols=pad_num)
             tesselation_atoms += pad_atoms
@@ -258,7 +270,6 @@ def get_tetrahedra_decomposition(system, max_distance):
     surface_simplex_indices = set(original_indices[surface_simplices])
 
     while not end:
-
         # Remove the surface simplices that are too big. Also update the
         # neighbour list.
         too_big_simplex_indices = []
@@ -311,17 +322,14 @@ def get_moments_of_inertia(system, weight=True):
     x = pos_shifted[:, 0]
     y = pos_shifted[:, 1]
     z = pos_shifted[:, 2]
-    I11 = np.sum(weights*(y**2 + z**2))
-    I22 = np.sum(weights*(x**2 + z**2))
-    I33 = np.sum(weights*(x**2 + y**2))
+    I11 = np.sum(weights * (y**2 + z**2))
+    I22 = np.sum(weights * (x**2 + z**2))
+    I33 = np.sum(weights * (x**2 + y**2))
     I12 = np.sum(-weights * x * y)
     I13 = np.sum(-weights * x * z)
     I23 = np.sum(-weights * y * z)
 
-    I = np.array([
-        [I11, I12, I13],
-        [I12, I22, I23],
-        [I13, I23, I33]])
+    I = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
 
     evals, evecs = np.linalg.eigh(I)
 
@@ -386,9 +394,9 @@ def get_space_filling(system):
     atomic_numbers = system.get_atomic_numbers()
     occupied_volume = 0
     radii = get_covalent_radii(atomic_numbers)
-    volumes = 4.0/3.0*np.pi*radii**3
+    volumes = 4.0 / 3.0 * np.pi * radii**3
     occupied_volume = np.sum(volumes)
-    ratio = occupied_volume/cell_volume
+    ratio = occupied_volume / cell_volume
 
     return ratio
 
@@ -435,7 +443,7 @@ def get_extended_system(system, target_size):
         basis = cell[i, :]
         if pbc:
             size = np.linalg.norm(basis)
-            i_repetition = np.maximum(np.round(target_size/size), 1).astype(int)
+            i_repetition = np.maximum(np.round(target_size / size), 1).astype(int)
             repetitions[i] = i_repetition
 
     extended_system = system.repeat(repetitions)
@@ -466,7 +474,7 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
     np.clip(dist_matrix, a_min=0, a_max=None, out=dist_matrix)
 
     # Detect clusters
-    db = DBSCAN(eps=threshold, min_samples=min_samples, metric='precomputed', n_jobs=1)
+    db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
     db.fit(dist_matrix)
     clusters = db.labels_
 
@@ -525,7 +533,7 @@ def get_biggest_gap_indices(coordinates):
 
     # Find maximum gap
     bottom_index = sorted_indices[np.argmax(distances)]
-    top_index = sorted_indices[np.argmax(distances)-1]
+    top_index = sorted_indices[np.argmax(distances) - 1]
 
     return bottom_index, top_index
 
@@ -547,7 +555,7 @@ def get_dimensions(system, vacuum_gaps):
     positions = sys.get_scaled_positions()
     radii = covalent_radii[numbers]
     cell_lengths = np.linalg.norm(sys.get_cell(), axis=1)
-    radii_in_cell_basis = radii[:, None]/cell_lengths[None, :]
+    radii_in_cell_basis = radii[:, None] / cell_lengths[None, :]
 
     for i_dim, vacuum_gap in enumerate(vacuum_gaps):
         if vacuum_gap:
@@ -564,13 +572,13 @@ def get_dimensions(system, vacuum_gaps):
             # Calculate the maximum distance between atoms, when taking radius
             # into account
             gap = intervals.get_max_distance_between_intervals()
-            gap = gap*cell_lengths[i_dim]
+            gap = gap * cell_lengths[i_dim]
             dimensions[i_dim] = orig_cell_lengths[i_dim] - gap
 
     return dimensions
 
 
-def get_wrapped_positions(scaled_pos, precision=1E-5):
+def get_wrapped_positions(scaled_pos, precision=1e-5):
     """Wrap the given relative positions so that each element in the array
     is within the half-closed interval [0, 1)
 
@@ -580,7 +588,7 @@ def get_wrapped_positions(scaled_pos, precision=1E-5):
     scaled_pos %= 1
 
     abs_zero = np.absolute(scaled_pos)
-    abs_unity = np.absolute(abs_zero-1)
+    abs_unity = np.absolute(abs_zero - 1)
 
     near_zero = np.where(abs_zero < precision)
     near_unity = np.where(abs_unity < precision)
@@ -591,7 +599,7 @@ def get_wrapped_positions(scaled_pos, precision=1E-5):
     return scaled_pos
 
 
-def get_distance_matrix(pos1, pos2, cell=None, pbc=None, mic=False, use_self_distance=True):
+def get_distance_matrix(pos1, pos2, cell=None, pbc=None, mic=False):
     """Calculates the distance matrix. If wrap_distances=True, calculates
     the matrix using periodic distances
 
@@ -604,30 +612,26 @@ def get_distance_matrix(pos1, pos2, cell=None, pbc=None, mic=False, use_self_dis
             minimum image convention enabled.
         mic (bool): Whether to apply minimum image convention fo the distances,
             i.e. the distance to the closest periodic image is returned.
-        use_self_distance(boolean): Determines how the distance from atom to
-            itself is determined. If True, zero is returned, if false, the
-            distance to the closest copy is returned.
 
     Returns:
         np.ndarray: A :math:`N_{atoms} \times N_{atoms}` matrix of distances.
     """
-    disp_tensor = get_displacement_tensor(pos1, pos2, cell, pbc, mic, use_self_distance=use_self_distance)
+    disp_tensor = get_displacement_tensor(pos1, pos2, cell, pbc, mic)
     distance_matrix = np.linalg.norm(disp_tensor, axis=2)
 
     return distance_matrix
 
 
 def get_displacement_tensor(
-        pos1,
-        pos2,
-        cell=None,
-        pbc=None,
-        mic=False,
-        max_distance=None,
-        return_factors=False,
-        return_distances=False,
-        use_self_distance=True
-    ):
+    pos1,
+    pos2,
+    cell=None,
+    pbc=None,
+    mic=False,
+    max_distance=None,
+    return_factors=False,
+    return_distances=False,
+):
     """Given an array of positions, calculates the 3D displacement tensor
     between the positions.
 
@@ -644,9 +648,6 @@ def get_displacement_tensor(
         mic_copies(np.ndarray): The maximum number of periodic copies to
             consider in each direction. If not specified, the maximum possible
             number of copies is determined and used.
-        use_self_distance(boolean): Determines how the distance from atom to
-            itself is determined. If True, zero is returned, if false, the
-            distance to the closest copy is returned.
 
     Returns:
         np.ndarray: 3D displacement tensor
@@ -714,11 +715,20 @@ def find_mic(D, cell, pbc, max_distance=None):
     n_vectors = len(D)
 
     # Calculate the 4 unique unit cell diagonal lengths
-    diags = np.sqrt((np.dot([[1, 1, 1],
-                             [-1, 1, 1],
-                             [1, -1, 1],
-                             [-1, -1, 1],
-                             ], cell)**2).sum(1))
+    diags = np.sqrt(
+        (
+            np.dot(
+                [
+                    [1, 1, 1],
+                    [-1, 1, 1],
+                    [1, -1, 1],
+                    [-1, -1, 1],
+                ],
+                cell,
+            )
+            ** 2
+        ).sum(1)
+    )
 
     Dr = np.dot(D, np.linalg.inv(cell))
 
@@ -726,8 +736,7 @@ def find_mic(D, cell, pbc, max_distance=None):
     # return mic vectors and lengths for only orthorhombic cells,
     # as the results may be wrong for non-orthorhombic cells
     if (max(diags) - min(diags)) / max(diags) < 1e-9:
-
-        factors = np.floor(Dr + 0.5)*pbc
+        factors = np.floor(Dr + 0.5) * pbc
         D = np.dot(Dr - factors, cell)
         D_len = np.linalg.norm(D, axis=1)
         return D, D_len, factors
@@ -739,7 +748,7 @@ def find_mic(D, cell, pbc, max_distance=None):
     # or half the longest lattice diagonal, whichever is smaller
     if max_distance is None:
         max_distance = max(D_len)
-    mic_cutoff = min(max_distance, max(diags) / 2.)
+    mic_cutoff = min(max_distance, max(diags) / 2.0)
 
     # Construct a list of translation vectors. For example, if we are
     # searching only the nearest images (27 total), tvecs will be a
@@ -787,8 +796,9 @@ def get_neighbour_cells(cell, cutoff, pbc):
     pbc = expand_pbc(pbc)
     latt_len = np.linalg.norm(cell, axis=1)
     V = abs(np.linalg.det(cell))
-    mic_copies = pbc * np.array(np.ceil(cutoff * np.prod(latt_len) /
-                            (V * latt_len)), dtype=int)
+    mic_copies = pbc * np.array(
+        np.ceil(cutoff * np.prod(latt_len) / (V * latt_len)), dtype=int
+    )
     n0 = range(-mic_copies[0], mic_copies[0] + 1)
     n1 = range(-mic_copies[1], mic_copies[1] + 1)
     n2 = range(-mic_copies[2], mic_copies[2] + 1)
@@ -811,7 +821,7 @@ def get_mic_vector(w, v, cell):
             which the copy was found.
     """
     # Get the original shift
-    dvw = w-v
+    dvw = w - v
     cart_vec = to_cartesian(cell, dvw)
 
     orig_shift = np.array([0, 0, 0])
@@ -826,9 +836,9 @@ def get_mic_vector(w, v, cell):
     init_val[dvw > 0] = -1
 
     # Figure out the minimum vector in this block of 8 cells
-    a_range = range(init_val[0], init_val[0]+2)
-    b_range = range(init_val[1], init_val[1]+2)
-    c_range = range(init_val[2], init_val[2]+2)
+    a_range = range(init_val[0], init_val[0] + 2)
+    b_range = range(init_val[1], init_val[1] + 2)
+    c_range = range(init_val[2], init_val[2] + 2)
     multipliers = cartesian((a_range, b_range, c_range))
 
     vec_copies = cart_vec + np.dot(multipliers, cell)
@@ -864,8 +874,9 @@ def expand_pbc(pbc):
         new_pbc = pbc
     else:
         raise ValueError(
-            "Could not interpret the given periodic boundary conditions: '{}'"
-            .format(pbc)
+            "Could not interpret the given periodic boundary conditions: '{}'".format(
+                pbc
+            )
         )
 
     return np.array(new_pbc)
@@ -893,14 +904,8 @@ def change_basis(positions, basis, offset=None):
 
 
 def get_positions_within_basis(
-        system,
-        basis,
-        origin,
-        tolerance_low,
-        tolerance_high,
-        mask=[True, True, True],
-        pbc=True
-    ):
+    system, basis, origin, tolerance, mask=[True, True, True], pbc=True
+):
     """Used to return the indices of positions that are inside a certain basis.
     Also takes periodic boundaries into account.
 
@@ -908,7 +913,7 @@ def get_positions_within_basis(
         system(ASE.Atoms): System from which the positions are searched.
         basis(np.ndarray): New basis vectors.
         origin(np.ndarray): New origin of the basis in cartesian coordinates.
-        tolerance(float): The tolerance for the end points of the cell.
+        tolerance(float): The matching tolerance in angstrom.
         mask(sequence of bool): Mask for selecting the basis's to consider.
         pbc(sequence of bool): The periodicity of the system.
 
@@ -944,9 +949,9 @@ def get_positions_within_basis(
     factors = np.floor(rel_vectors).astype(int)
     min_factors = np.min(factors, axis=0)
     max_factors = np.max(factors, axis=0)
-    a_range = range(min_factors[0], max_factors[0]+1)
-    b_range = range(min_factors[1], max_factors[1]+1)
-    c_range = range(min_factors[2], max_factors[2]+1)
+    a_range = range(min_factors[0], max_factors[0] + 1)
+    b_range = range(min_factors[1], max_factors[1] + 1)
+    c_range = range(min_factors[2], max_factors[2] + 1)
     factors = matid.geometry.cartesian((a_range, b_range, c_range))
 
     directions = []
@@ -967,28 +972,26 @@ def get_positions_within_basis(
     # If the new cell is overflowing beyound the boundaries of the original
     # system, we have to also check the periodic copies.
     indices = []
-    a_prec_low, b_prec_low, c_prec_low = tolerance_low/np.linalg.norm(basis, axis=1)
-    a_prec_high, b_prec_high, c_prec_high = tolerance_high/np.linalg.norm(basis, axis=1)
+    a_prec, b_prec, c_prec = tolerance / np.linalg.norm(basis, axis=1)
     orig_basis = system.get_cell()
     cell_pos = []
     factors = []
     for i_dir in directions:
-
         vec_new_cart = cart_pos + np.dot(i_dir, orig_basis)
         vec_new_rel = change_basis(vec_new_cart - origin, basis)
 
         # If no positions are defined, find the atoms within the cell
         for i_pos, pos in enumerate(vec_new_rel):
             if mask[0]:
-                x = 0 - a_prec_low <= pos[0] <= 1 - a_prec_high
+                x = 0 - a_prec <= pos[0] <= 1 + a_prec
             else:
                 x = True
             if mask[1]:
-                y = 0 - b_prec_low <= pos[1] <= 1 - b_prec_high
+                y = 0 - b_prec <= pos[1] <= 1 + b_prec
             else:
                 y = True
             if mask[2]:
-                z = 0 - c_prec_low <= pos[2] <= 1 - c_prec_high
+                z = 0 - c_prec <= pos[2] <= 1 + c_prec
             else:
                 z = True
 
@@ -1004,13 +1007,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(
-        system,
-        positions,
-        numbers,
-        tolerances,
-        mic=True
-    ):
+def get_matches(system, positions, numbers, tolerances, mic=True):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1036,7 +1033,7 @@ def get_matches(
     pbc = expand_pbc(pbc)
     scaled_pos2 = to_scaled(cell, positions, wrap=False)
 
-    disp_tensor, factors, dist_matrix = get_displacement_tensor(
+    _, factors, dist_matrix = get_displacement_tensor(
         positions,
         orig_pos,
         cell,
@@ -1044,7 +1041,7 @@ def get_matches(
         mic=mic,
         max_distance=tolerances.max(),
         return_factors=True,
-        return_distances=True
+        return_distances=True,
     )
 
     # Find the closest atom within the tolerance and with the required atomic
@@ -1078,7 +1075,6 @@ def get_matches(
     copy_indices = []
 
     for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
-
         match = None
         copy = None
         subst = None
@@ -1142,9 +1138,7 @@ def to_scaled(cell, positions, wrap=False, pbc=False):
             "as rows of a two-dimensional array."
         )
     pbc = expand_pbc(pbc)
-    fractional = np.linalg.solve(
-        cell.T,
-        positions.T).T
+    fractional = np.linalg.solve(cell.T, positions.T).T
 
     if wrap:
         for i, periodic in enumerate(pbc):
@@ -1215,7 +1209,7 @@ def get_closest_direction(vec, directions, normalized=False):
     Returns:
     """
     if not normalized:
-        directions = directions/np.linalg.norm(directions, axis=1)
+        directions = directions / np.linalg.norm(directions, axis=1)
     dots = np.abs(np.dot(vec, directions.T))
     index = np.argmax(dots)
 
@@ -1228,9 +1222,10 @@ class Intervals(object):
     This class allows sorting and adding up of intervals and taking into
     account if they overlap.
     """
+
     def __init__(self, intervals=None):
         """Args:
-            intervals: List of intervals that are added.
+        intervals: List of intervals that are added.
         """
         self._intervals = []
         self._merged_intervals = []
@@ -1249,7 +1244,7 @@ class Intervals(object):
         """
         if len(intervals) < 1:
             return None
-        result = 0.
+        result = 0.0
         for interval in intervals:
             result += abs(interval[1] - interval[0])
         return result
@@ -1297,23 +1292,19 @@ class Intervals(object):
             pass
 
     def get_intervals(self):
-        """Returns the intervals.
-        """
+        """Returns the intervals."""
         return self._intervals
 
     def get_intervals_sorted_by_start(self):
-        """Returns list with intervals ordered by their start.
-        """
+        """Returns list with intervals ordered by their start."""
         return sorted(self._intervals, key=lambda x: x[0])
 
     def get_intervals_sorted_by_end(self):
-        """Returns list with intervals ordered by their end.
-        """
+        """Returns list with intervals ordered by their end."""
         return sorted(self._intervals, key=lambda x: x[1])
 
     def get_merged_intervals(self):
-        """Returns list of merged intervals so that they do not overlap anymore.
-        """
+        """Returns list of merged intervals so that they do not overlap anymore."""
         if self._merged_intervals_need_update:
             if len(self._intervals) < 1:
                 return self._intervals
@@ -1335,8 +1326,7 @@ class Intervals(object):
         return self._merged_intervals
 
     def get_max_distance_between_intervals(self):
-        """Returns the maximum distance between the intervals while accounting for overlap.
-        """
+        """Returns the maximum distance between the intervals while accounting for overlap."""
         if len(self._intervals) < 2:
             return None
         merged_intervals = self.get_merged_intervals()
@@ -1348,13 +1338,11 @@ class Intervals(object):
         return max(distances)
 
     def add_up_intervals(self):
-        """Returns the added up lengths of intervals without accounting for overlap.
-        """
+        """Returns the added up lengths of intervals without accounting for overlap."""
         return self._add_up(self._intervals)
 
     def add_up_merged_intervals(self):
-        """Returns the added up lengths of merged intervals in order to account for overlap.
-        """
+        """Returns the added up lengths of merged intervals in order to account for overlap."""
         return self._add_up(self.get_merged_intervals())
 
 
@@ -1374,7 +1362,7 @@ def get_thickness(system, axis):
     pos_min = pos.min()
     pos_max = pos.max()
     basis = system.get_cell()[axis, :]
-    thickness = (pos_max - pos_min)*np.linalg.norm(basis)
+    thickness = (pos_max - pos_min) * np.linalg.norm(basis)
 
     return thickness
 
@@ -1399,9 +1387,8 @@ def get_minimized_cell(system, axis, min_size):
     basis = system.get_cell()
     c = basis[axis, :]
     c_length = np.linalg.norm(c)
-    c_norm = c/c_length
+    c_norm = c / c_length
     c_comp = rel_pos[:, axis]
-    # print(c_comp)
 
     min_index = np.argmin(c_comp, axis=0)
     max_index = np.argmax(c_comp, axis=0)
@@ -1413,14 +1400,14 @@ def get_minimized_cell(system, axis, min_size):
 
     pos_min_cart = matid.geometry.to_cartesian(basis, pos_min_rel)
     pos_max_cart = matid.geometry.to_cartesian(basis, pos_max_rel)
-    c_real_cart = pos_max_cart-pos_min_cart
+    c_real_cart = pos_max_cart - pos_min_cart
     c_size = np.linalg.norm(c_real_cart)
 
     # We demand a minimum size for the c-vector even if the system seems to
     # be purely 2-dimensional. This is done because the 3D-space cannot be
     # searched properly if one dimension is flat.
     if c_size < min_size:
-        c_inflated_cart = min_size*c_norm
+        c_inflated_cart = min_size * c_norm
         c_new_cart = c_inflated_cart
     else:
         c_new_cart = c_real_cart
@@ -1434,16 +1421,13 @@ def get_minimized_cell(system, axis, min_size):
     # Translate the system to be in the middle if size is smaller than the
     # given minimum size
     if c_size < min_size:
-        offset_cart = (c_real_cart-c_inflated_cart)/2
+        offset_cart = (c_real_cart - c_inflated_cart) / 2
         offset_rel = matid.geometry.to_scaled(new_basis, offset_cart)
         new_scaled_pos -= offset_rel
 
     # Create translated system
     minimized_system = Atoms(
-        cell=new_basis,
-        scaled_positions=new_scaled_pos,
-        symbols=num,
-        pbc=pbc
+        cell=new_basis, scaled_positions=new_scaled_pos, symbols=num, pbc=pbc
     )
 
     return minimized_system
@@ -1491,7 +1475,7 @@ def cartesian(arrays, out=None):
     if arrays[1:]:
         cartesian(arrays[1:], out=out[0:m, 1:])
         for j in range(1, arrays[0].size):
-            out[j*m:(j+1)*m, 1:] = out[0:m, 1:]
+            out[j * m : (j + 1) * m, 1:] = out[0:m, 1:]
     return out
 
 
@@ -1519,50 +1503,83 @@ def get_crystallinity(symmetry_analyser):
     sym_ops = spglib.get_symmetry_from_database(hall_number)
     n_symmetries = len(sym_ops["rotations"])
 
-    ratio = n_symmetries/float(n_unique_atoms_prim)
+    ratio = n_symmetries / float(n_unique_atoms_prim)
 
     return ratio
 
 
-# def get_surface_normal_direction(system):
-    # """Used to estimate a normal vector for a 2D like structure.
+def get_distances(system: Atoms) -> Distances:
+    """Returns complete distance information.
 
-    # Args:
-        # system (ase.Atoms): The system to examine.
+    Args:
+        system: The system from which distances are calculated from.
+    Returns:
+        A Distances instance.
+    """
+    pos = system.get_positions()
+    cell = system.get_cell()
+    pbc = system.get_pbc()
+    disp_tensor_finite = get_displacement_tensor(pos, pos)
+    if pbc.any():
+        disp_tensor_mic, disp_factors = get_displacement_tensor(
+            pos, pos, cell, pbc, mic=True, return_factors=True
+        )
+    else:
+        disp_tensor_mic = disp_tensor_finite
+        disp_factors = np.zeros(disp_tensor_finite.shape)
+    dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
 
-    # Returns:
-        # np.ndarray: The estimated surface normal vector
-    # """
-    # repeated = get_extended_system(system, 15)
-    # # vectors = system.get_cell()
+    # Calculate the distance matrix where the periodicity and the covalent
+    # radii have been taken into account
+    dist_matrix_radii_mic = np.array(dist_matrix_mic)
+    num = system.get_atomic_numbers()
+    radii = covalent_radii[num]
+    radii_matrix = radii[:, None] + radii[None, :]
+    dist_matrix_radii_mic -= radii_matrix
 
-    # # Get the eigenvalues and eigenvectors of the moment of inertia tensor
-    # val, vec = get_moments_of_inertia(repeated)
-    # sorted_indices = np.argsort(val)
-    # val = val[sorted_indices]
-    # vec = vec[sorted_indices]
+    return Distances(
+        disp_tensor_mic,
+        disp_factors,
+        disp_tensor_finite,
+        dist_matrix_mic,
+        dist_matrix_radii_mic,
+    )
 
-    # # If the moment of inertia is not significantly bigger in one
-    # # direction, then the system cannot be described as a surface.
-    # moment_limit = 1.5
-    # if val[-1] < moment_limit*val[0] and val[-1] < moment_limit*val[1]:
-        # raise ValueError(
-            # "The given system could not be identified as a surface. Make"
-            # " sure that you provide a surface system with a sufficient"
-            # " vacuum gap between the layers (at least ~8 angstroms of vacuum"
-            # " between layers.)"
-        # )
 
-    # # The biggest component is the orhogonal one
-    # orthogonal_dir = vec[-1]
+def swap_basis(atoms: Atoms, a: int, b: int):
+    """Used to swap two bases in a system. The geometry remains identical.
 
-    # return orthogonal_dir
+    Args:
+        a: First index to swap
+        b: Second index to swap
+    """
+    cell_old = atoms.get_cell()
+    pbc_old = atoms.get_pbc()
+    cell_new = np.array(cell_old)
+    cell_new[a] = cell_old[b]
+    cell_new[b] = cell_old[a]
+    pbc_new = np.array(pbc_old)
+    pbc_new[a] = pbc_old[b]
+    pbc_new[b] = pbc_old[a]
+    atoms.set_cell(cell_new)
+    atoms.set_pbc(pbc_new)
 
-    # # Find out the cell direction that corresponds to the orthogonal one
-    # # cell = repeated.get_cell()
-    # # dots = np.abs(np.dot(orthogonal_dir, vectors.T))
-    # # orthogonal_vector_index = np.argmax(dots)
-    # # orthogonal_vector = vectors[orthogonal_vector_index]
-    # # orthogonal_dir = orthogonal_vector/np.linalg.norm(orthogonal_vector)
 
-    # return orthogonal_dir
+def complete_cell(a, b, length):
+    """Given two basis vectors a and b, creates a third one that is
+    orthogonal and has the length of 2 * maximum 2D cell height.
+
+    Args:
+        a(np.ndarray): First basis vector
+        b(np.ndarray): Second basis vector
+        length(float): Length of the basis
+
+    Returns:
+        np.ndarray: The third basis vector
+    """
+    c = np.cross(a, b)
+    c_norm = c / np.linalg.norm(c)
+    c_norm = c_norm[None, :]
+    c = c_norm * length
+
+    return c

@@ -4,27 +4,26 @@ import numpy as np
 
 
 class System(Atoms):
-
     def __init__(
-            self,
-            symbols=None,
-            positions=None,
-            numbers=None,
-            tags=None,
-            momenta=None,
-            masses=None,
-            magmoms=None,
-            charges=None,
-            scaled_positions=None,
-            cell=None,
-            pbc=None,
-            celldisp=None,
-            constraint=None,
-            calculator=None,
-            info=None,
-            wyckoff_letters=None,
-            equivalent_atoms=None):
-
+        self,
+        symbols=None,
+        positions=None,
+        numbers=None,
+        tags=None,
+        momenta=None,
+        masses=None,
+        magmoms=None,
+        charges=None,
+        scaled_positions=None,
+        cell=None,
+        pbc=None,
+        celldisp=None,
+        constraint=None,
+        calculator=None,
+        info=None,
+        wyckoff_letters=None,
+        equivalent_atoms=None,
+    ):
         super(System, self).__init__(
             symbols,
             positions,
@@ -40,15 +39,15 @@ class System(Atoms):
             celldisp,
             constraint,
             calculator,
-            info)
+            info,
+        )
 
         self.wyckoff_letters = wyckoff_letters
         self.equivalent_atoms = equivalent_atoms
 
     @staticmethod
     def from_atoms(atoms):
-        """Creates a System object from ASE.Atoms object.
-        """
+        """Creates a System object from ASE.Atoms object."""
         system = System(
             positions=atoms.get_positions(),
             symbols=atoms.get_chemical_symbols(),
@@ -70,10 +69,8 @@ class System(Atoms):
             numpy.ndarray: The scaled positions
         """
         return matid.geometry.to_scaled(
-            self.get_cell(),
-            positions,
-            wrap,
-            self.get_pbc())
+            self.get_cell(), positions, wrap, self.get_pbc()
+        )
 
     def to_cartesian(self, scaled_positions, wrap=False):
         """Used to transofrm a set of relative positions to the cartesian basis
@@ -88,10 +85,8 @@ class System(Atoms):
             numpy.ndarray: The cartesian positions
         """
         return matid.geometry.to_cartesian(
-            self.get_cell(),
-            scaled_positions,
-            wrap,
-            self.get_pbc())
+            self.get_cell(), scaled_positions, wrap, self.get_pbc()
+        )
 
     def translate(self, translation, relative=False):
         """Translates the positions by the given translation.

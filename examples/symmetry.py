@@ -101,9 +101,9 @@ scaled_positions = [
 cell = [
     [10.35500000000000, 0.00000000000000, 0.00000000000000],
     [0.00000000000000, 10.35500000000000, 0.00000000000000],
-    [0.00000000000000, 0.00000000000000, 10.35500000000000]
+    [0.00000000000000, 0.00000000000000, 10.35500000000000],
 ]
-labels = ["Si"]*46
+labels = ["Si"] * 46
 clathrate = Atoms(labels, scaled_positions=scaled_positions, cell=cell, pbc=True)
 
 # Setup the symmetry analyzer

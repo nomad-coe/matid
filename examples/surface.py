@@ -5,7 +5,7 @@ from matid import Classifier, SymmetryAnalyzer
 import ase.io
 
 # Generating a surface adsorption geometry with ASE.
-adsorbent = bcc100('Fe', size=(3, 3, 4), vacuum=8)
+adsorbent = bcc100("Fe", size=(3, 3, 4), vacuum=8)
 ase.io.write("structure.xyz", adsorbent)
 
 adsorbate = molecule("H2O")
@@ -16,7 +16,7 @@ system.set_pbc([True, True, True])
 
 # Add noise and defects to the structure
 positions = system.get_positions()
-positions += 0.25*np.random.rand(*positions.shape)
+positions += 0.25 * np.random.rand(*positions.shape)
 system.set_positions(positions)
 del system[31]
 

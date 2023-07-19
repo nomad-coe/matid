@@ -12,16 +12,17 @@ regex = re.compile("([xyzrst\+,]+)")
 try:
     # Fetch data for each space group
     n_groups = 230
-    groups = range(1, n_groups+1)
+    groups = range(1, n_groups + 1)
     continuous_translation_dict = {}
     for space_group in groups:
-
         # Do a http get request for the data
-        url = "http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-normsets?from=wycksets&gnum={}".format(space_group)
+        url = "http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-normsets?from=wycksets&gnum={}".format(
+            space_group
+        )
         html_raw = urllib.request.urlopen(url).read()
 
         # Create the soup :)
-        soup = BeautifulSoup(html_raw, 'html.parser')
+        soup = BeautifulSoup(html_raw, "html.parser")
         center = soup.body.center
         tables = center.find_all("table", align="center")
 
@@ -60,7 +61,11 @@ try:
 
             continuous_translation_dict[space_group] = cont_trans
 
-            print("Space group {} has continuous translations: {}".format(space_group, cont_trans))
+            print(
+                "Space group {} has continuous translations: {}".format(
+                    space_group, cont_trans
+                )
+            )
 
     # Write the results as a pickle file
     with open("translations_continuous.json", "w") as fout:

@@ -1,13 +1,14 @@
-import spglib
-
-import numpy as np
-
+import hashlib
+import base64
 from collections import defaultdict, OrderedDict
 from operator import attrgetter
 
+import spglib
+import numpy as np
+
 from matid.utils.segfault_protect import segfault_protect
-from matid.data.symmetry_data import PROPER_RIGID_TRANSFORMATIONS, IMPROPER_RIGID_TRANSFORMATIONS
-from matid.exceptions import CellNormalizationError, SystaxError
+from matid.data.symmetry_data import CHIRALITY_PRESERVING_EUCLIDEAN_NORMALIZERS
+from matid.exceptions import CellNormalizationError, MatIDError
 from matid.data.symmetry_data import SPACE_GROUP_INFO, WYCKOFF_SETS
 from matid.data import constants
 from matid.core.system import System
@@ -18,8 +19,8 @@ from ase import Atoms
 
 
 class SymmetryAnalyzer(object):
-    """A base class for getting symmetry related properties of unit cells.
-    """
+    """A base class for getting symmetry related properties of unit cells."""
+
     def __init__(self, system=None, symmetry_tol=None, min_2d_thickness=1):
         """
         Args:
@@ -39,8 +40,7 @@ class SymmetryAnalyzer(object):
         self.set_system(system)
 
     def set_system(self, system):
-        """Sets a new system for analysis.
-        """
+        """Sets a new system for analysis."""
         self.reset()
         self._original_system = system
 
@@ -51,6 +51,7 @@ class SymmetryAnalyzer(object):
         # Determine if the system has three periodic directions or two.
         pbc = system.get_pbc()
         n_pbc = np.sum(pbc)
+        self.n_pbc = n_pbc
 
         # Regular bulk structures
         if n_pbc == 3:
@@ -64,12 +65,14 @@ class SymmetryAnalyzer(object):
             # translational symmetries that are smaller than the basis vector
             # in the non-periodic direction.
             symmetry_broken_system = system.copy()
-            thickness = max(5, 3*matid.geometry.get_thickness(symmetry_broken_system, i_pbc))
+            thickness = max(
+                5, 3 * matid.geometry.get_thickness(symmetry_broken_system, i_pbc)
+            )
             old_cell = symmetry_broken_system.get_cell()
             old_basis = old_cell[i_pbc, :]
             old_basis_len = np.linalg.norm(old_basis)
-            old_basis_norm = old_basis/old_basis_len
-            new_basis = thickness*old_basis_norm
+            old_basis_norm = old_basis / old_basis_len
+            new_basis = thickness * old_basis_norm
             old_cell[i_pbc, :] = new_basis
             symmetry_broken_system.set_cell(old_cell)
             self._analyzed_system = symmetry_broken_system
@@ -80,8 +83,7 @@ class SymmetryAnalyzer(object):
             )
 
     def reset(self):
-        """Used to reset all the cached values.
-        """
+        """Used to reset all the cached values."""
         self._symmetry_dataset = None
 
         self._conventional_system = None
@@ -103,6 +105,38 @@ class SymmetryAnalyzer(object):
         self._primitive_equivalent_atoms = None
 
         self._best_transform = None
+
+    def get_material_id(self):
+        """Returns a 28-character identifier for this material. The identifier
+        is calculated by hashing a set of the symmetry properties found in the
+        material, including:
+
+         - Space group number
+         - Wyckoff position letters and the species occupied in them
+        """
+        spg_number = self.get_space_group_number()
+        wyckoff_sets = self.get_wyckoff_sets_conventional()
+        wyckoff_strings = []
+        for group in wyckoff_sets:
+            element = group.element
+            wyckoff_letter = group.wyckoff_letter
+            n_atoms = len(group.indices)
+            i_string = "{} {} {}".format(element, wyckoff_letter, n_atoms)
+            wyckoff_strings.append(i_string)
+        wyckoff_string = ", ".join(sorted(wyckoff_strings))
+        string = "{} {}".format(spg_number, wyckoff_string)
+        if self.n_pbc == 2:
+            string = f"2D {string}"
+
+        # Create a SHA-512 hash out of the string
+        hash_value = hashlib.sha512()
+        hash_value.update(string.encode("utf-8"))
+
+        # Make websafe
+        hash_length = 28
+        return base64.b64encode(hash_value.digest(), altchars=b"-_")[
+            :hash_length
+        ].decode("utf-8")
 
     def get_space_group_number(self):
         """
@@ -273,7 +307,8 @@ class SymmetryAnalyzer(object):
         space_group_short = self.get_space_group_international_short()
 
         prim_sys, prim_wyckoff, prim_equivalent = self._get_primitive_system(
-            conv_sys, conv_wyckoff, conv_equivalent, space_group_short)
+            conv_sys, conv_wyckoff, conv_equivalent, space_group_short
+        )
 
         self._primitive_system = prim_sys
         self._primitive_wyckoff_letters = prim_wyckoff
@@ -299,7 +334,6 @@ class SymmetryAnalyzer(object):
 
         # Regular bulk structures
         if n_pbc == 3:
-
             spglib_conv_sys = self._get_spglib_conventional_system()
 
             # Find a proper rigid transformation that produces the best combination
@@ -308,9 +342,7 @@ class SymmetryAnalyzer(object):
             wyckoff_letters = self._get_spglib_wyckoff_letters_conventional()
             equivalent_atoms = self._get_spglib_equivalent_atoms_conventional()
             ideal_sys, ideal_wyckoff = self._find_wyckoff_ground_state(
-                space_group,
-                wyckoff_letters,
-                spglib_conv_sys
+                space_group, wyckoff_letters, spglib_conv_sys
             )
             ideal_sys = System.from_atoms(ideal_sys)
             ideal_sys.set_equivalent_atoms(equivalent_atoms)
@@ -319,10 +351,10 @@ class SymmetryAnalyzer(object):
             self._conventional_system = ideal_sys
             self._conventional_wyckoff_letters = ideal_wyckoff
             self._conventional_equivalent_atoms = equivalent_atoms
+            ideal_sys.set_pbc(True)
             return ideal_sys
         # 2D materials get a special treatment
         elif n_pbc == 2:
-
             i_pbc = np.argwhere(pbc == False)[0]
 
             # Get the full 3D conventional system and it's symmetries. It will
@@ -330,13 +362,6 @@ class SymmetryAnalyzer(object):
             # corresponding to the non-periodic axis, but it does not matter in
             # this case.
             spglib_conv_sys = self._get_spglib_conventional_system()
-
-            # Determine if the structure is flat. This will affect the
-            # transformation that are allowed when finding the Wyckoff positions
-            is_flat = False
-            thickness = matid.geometry.get_thickness(self._original_system, i_pbc)
-            if thickness < 0.5*self.symmetry_tol:
-                is_flat = True
 
             # Determine the new non-periodic direction in the normalized cell.
             # The index of the originally non-periodic dimension may not correspond
@@ -346,13 +371,15 @@ class SymmetryAnalyzer(object):
             nonperiodic_axis = None
             prec = 1e-8
             for i_axis, axis in enumerate(transformation_matrix):
-                if abs(axis[i_pbc]) > prec and \
-                   abs(axis[(i_pbc+1) % 3]) < prec and \
-                   abs(axis[(i_pbc+2) % 3]) < prec:
+                if (
+                    abs(axis[i_pbc]) > prec
+                    and abs(axis[(i_pbc + 1) % 3]) < prec
+                    and abs(axis[(i_pbc + 2) % 3]) < prec
+                ):
                     nonperiodic_axis = i_axis
                     break
             if nonperiodic_axis is None:
-                raise SystaxError(
+                raise MatIDError(
                     "Could not detect the non-periodic direction in the normalized "
                     "2D cell."
                 )
@@ -366,8 +393,6 @@ class SymmetryAnalyzer(object):
                 space_group,
                 wyckoff_letters,
                 spglib_conv_sys,
-                is_flat=is_flat,
-                nonperiodic_axis=nonperiodic_axis
             )
 
             # Center the system in the non-periodic direction, also taking
@@ -386,23 +411,33 @@ class SymmetryAnalyzer(object):
             ideal_sys.translate(translation)
             ideal_sys.wrap()
 
+            # For the final system we set the correct pbc
+            ideal_sys.set_pbc(conv_pbc)
+
+            # Swap the cell axes so that the non-periodic one is always the last
+            # basis (=c)
+            swap_dim = 2
+            for i, periodic in enumerate(ideal_sys.get_pbc()):
+                if not periodic:
+                    non_periodic_dim = i
+                    break
+            if non_periodic_dim != swap_dim:
+                matid.geometry.swap_basis(ideal_sys, non_periodic_dim, swap_dim)
+
             # Minimize the cell to only just fit the atoms in the non-periodic
             # direction
             min_conv_cell = matid.geometry.get_minimized_cell(
-                ideal_sys,
-                nonperiodic_axis,
-                self.min_2d_thickness
+                ideal_sys, swap_dim, self.min_2d_thickness
             )
-
-            # For the final system we set the correct pbc
-            min_conv_cell.set_pbc(conv_pbc)
 
             self._conventional_system = min_conv_cell
             self._conventional_wyckoff_letters = ideal_wyckoff
             self._conventional_equivalent_atoms = equivalent_atoms
             return self._conventional_system
         else:
-            raise ValueError("The provided system does not have 3 or 2 periodic directions.")
+            raise ValueError(
+                "The provided system does not have 3 or 2 periodic directions."
+            )
 
     def get_rotations(self):
         """Get the rotational parts of the Seitz matrices that are associated
@@ -502,7 +537,7 @@ class SymmetryAnalyzer(object):
             space_group,
             wyckoff_letters,
             equivalent_atoms,
-            precision=0.5*self.symmetry_tol,
+            precision=0.5 * self.symmetry_tol,
             return_parameters=return_parameters,
         )
 
@@ -541,8 +576,7 @@ class SymmetryAnalyzer(object):
         return self._primitive_equivalent_atoms
 
     def get_symmetry_dataset(self):
-        """Calculates the symmetry dataset with spglib for the given system.
-        """
+        """Calculates the symmetry dataset with spglib for the given system."""
         if self._symmetry_dataset is not None:
             return self._symmetry_dataset
 
@@ -551,17 +585,15 @@ class SymmetryAnalyzer(object):
         # invalid data, so run in separate process to catch those cases
         try:
             symmetry_dataset = segfault_protect(
-                spglib.get_symmetry_dataset,
-                description,
-                self.symmetry_tol)
+                spglib.get_symmetry_dataset, description, self.symmetry_tol
+            )
         except RuntimeError:
             raise CellNormalizationError(
                 "Segfault in spglib when finding symmetry dataset. Please check "
                 " the given cell, scaled positions and atomic numbers."
             )
         if symmetry_dataset is None:
-            raise CellNormalizationError(
-                'Spglib error when finding symmetry dataset.')
+            raise CellNormalizationError("Spglib error when finding symmetry dataset.")
 
         self._symmetry_dataset = symmetry_dataset
 
@@ -622,7 +654,9 @@ class SymmetryAnalyzer(object):
             wyckoff_letters_primitive = self._get_spglib_wyckoff_letters_primitive()
             dataset = self.get_symmetry_dataset()
             mapping = dataset["std_mapping_to_primitive"]
-            self._spglib_wyckoff_letters_conventional = wyckoff_letters_primitive[mapping]
+            self._spglib_wyckoff_letters_conventional = wyckoff_letters_primitive[
+                mapping
+            ]
         return self._spglib_wyckoff_letters_conventional
 
     def _get_spglib_equivalent_atoms_conventional(self):
@@ -635,7 +669,9 @@ class SymmetryAnalyzer(object):
             equivalent_atoms_primitive = self._get_spglib_equivalent_atoms_primitive()
             dataset = self.get_symmetry_dataset()
             mapping = dataset["std_mapping_to_primitive"]
-            self._spglib_equivalent_atoms_conventional = equivalent_atoms_primitive[mapping]
+            self._spglib_equivalent_atoms_conventional = equivalent_atoms_primitive[
+                mapping
+            ]
 
         return self._spglib_equivalent_atoms_conventional
 
@@ -672,7 +708,7 @@ class SymmetryAnalyzer(object):
         dataset = self.get_symmetry_dataset()
         operations = {
             "rotations": dataset["rotations"],
-            "translations": dataset["translations"]
+            "translations": dataset["translations"],
         }
 
         return operations
@@ -711,8 +747,16 @@ class SymmetryAnalyzer(object):
         spglib_conv_equivalent = self._get_spglib_equivalent_atoms_conventional()
         space_group_short = self.get_space_group_international_short()
 
-        spglib_prim_sys, spglib_prim_wyckoff, spglib_prim_equivalent = self._get_primitive_system(
-            spglib_conv_sys, spglib_conv_wyckoff, spglib_conv_equivalent, space_group_short)
+        (
+            spglib_prim_sys,
+            spglib_prim_wyckoff,
+            spglib_prim_equivalent,
+        ) = self._get_primitive_system(
+            spglib_conv_sys,
+            spglib_conv_wyckoff,
+            spglib_conv_equivalent,
+            space_group_short,
+        )
 
         self._spglib_primitive_system = spglib_prim_sys
         self._spglib_wyckoff_letters_primitive = spglib_prim_wyckoff
@@ -765,11 +809,12 @@ class SymmetryAnalyzer(object):
         return self._spglib_primitive_to_original_mapping
 
     def _get_primitive_system(
-            self,
-            conv_system,
-            conv_wyckoff,
-            conv_equivalent,
-            space_group_international_short):
+        self,
+        conv_system,
+        conv_wyckoff,
+        conv_equivalent,
+        space_group_international_short,
+    ):
         """Returns an primitive description for an idealized system in the
         conventional cell. This description uses a primitive lattice
         where positions of the atoms, and the cell basis vectors are idealized
@@ -801,31 +846,41 @@ class SymmetryAnalyzer(object):
             return conv_system, conv_wyckoff, conv_equivalent
 
         primitive_transformations = {
-            "A": np.array([
-                [1, 0, 0],
-                [0, 1/2, -1/2],
-                [0, 1/2, 1/2],
-            ]),
-            "C": np.array([
-                [1/2, 1/2, 0],
-                [-1/2, 1/2, 0],
-                [0, 0, 1],
-            ]),
-            "R": np.array([
-                [2/3, -1/3, -1/3],
-                [1/3, 1/3, -2/3],
-                [1/3, 1/3, 1/3],
-            ]),
-            "I": np.array([
-                [-1/2, 1/2, 1/2],
-                [1/2, -1/2, 1/2],
-                [1/2, 1/2, -1/2],
-            ]),
-            "F": np.array([
-                [0, 1/2, 1/2],
-                [1/2, 0, 1/2],
-                [1/2, 1/2, 0],
-            ]),
+            "A": np.array(
+                [
+                    [1, 0, 0],
+                    [0, 1 / 2, -1 / 2],
+                    [0, 1 / 2, 1 / 2],
+                ]
+            ),
+            "C": np.array(
+                [
+                    [1 / 2, 1 / 2, 0],
+                    [-1 / 2, 1 / 2, 0],
+                    [0, 0, 1],
+                ]
+            ),
+            "R": np.array(
+                [
+                    [2 / 3, -1 / 3, -1 / 3],
+                    [1 / 3, 1 / 3, -2 / 3],
+                    [1 / 3, 1 / 3, 1 / 3],
+                ]
+            ),
+            "I": np.array(
+                [
+                    [-1 / 2, 1 / 2, 1 / 2],
+                    [1 / 2, -1 / 2, 1 / 2],
+                    [1 / 2, 1 / 2, -1 / 2],
+                ]
+            ),
+            "F": np.array(
+                [
+                    [0, 1 / 2, 1 / 2],
+                    [1 / 2, 0, 1 / 2],
+                    [1 / 2, 1 / 2, 0],
+                ]
+            ),
         }
 
         # Transform conventional cell to the primitive cell
@@ -854,14 +909,14 @@ class SymmetryAnalyzer(object):
             scaled_positions=prim_pos,
             symbols=prim_num,
             cell=prim_cell,
+            pbc=conv_system.get_pbc(),
         )
-        prim_sys.wrap(pbc=True)
+        prim_sys.wrap()
 
         return prim_sys, prim_wyckoff, prim_equivalent
 
     def _system_to_spglib_description(self, system):
-        """Transforms the given ASE.Atoms object into a tuple used by spglib.
-        """
+        """Transforms the given ASE.Atoms object into a tuple used by spglib."""
         angstrom_cell = self._analyzed_system.get_cell()
         relative_pos = self._analyzed_system.get_scaled_positions()
         atomic_numbers = self._analyzed_system.get_atomic_numbers()
@@ -870,8 +925,7 @@ class SymmetryAnalyzer(object):
         return description
 
     def _spglib_description_to_system(self, desc):
-        """Transforms a tuple used by spglib into ASE.Atoms
-        """
+        """Transforms a tuple used by spglib into ASE.Atoms"""
         system = Atoms(
             numbers=desc[2],
             cell=desc[0],
@@ -880,7 +934,7 @@ class SymmetryAnalyzer(object):
 
         return system
 
-    def _wrap_positions(self, positions, precision=1E-5, copy=True):
+    def _wrap_positions(self, positions, precision=1e-5, copy=True):
         """Wrap positions so that each element in the array is within the
         half-closed interval [0, 1)
 
@@ -905,7 +959,7 @@ class SymmetryAnalyzer(object):
 
         wrapped_positions %= 1
         abs_zero = np.absolute(wrapped_positions)
-        abs_unity = np.absolute(abs_zero-1)
+        abs_unity = np.absolute(abs_zero - 1)
 
         near_zero = np.where(abs_zero < precision)
         near_unity = np.where(abs_unity < precision)
@@ -916,12 +970,8 @@ class SymmetryAnalyzer(object):
         return wrapped_positions
 
     def _search_periodic_positions(
-            self,
-            target_pos,
-            positions,
-            cell,
-            accuracy,
-            wrap=True):
+        self, target_pos, positions, cell, accuracy, wrap=True
+    ):
         """Searches a list of positions for a match for the target position taking
         into account the periodicity of the system.
 
@@ -953,7 +1003,7 @@ class SymmetryAnalyzer(object):
         # over the distances and calculate only until the correct one is found.
         # But it turns out it is faster to calculate the distances i one
         # vectorized operation with numpy than a python loop.
-        displacements = positions-target_pos
+        displacements = positions - target_pos
 
         # Take periodicity into account by wrapping coordinate elements that
         # are bigger than 0.5 or smaller than -0.5
@@ -977,144 +1027,71 @@ class SymmetryAnalyzer(object):
             return None
 
     def _find_wyckoff_ground_state(
-            self,
-            space_group,
-            old_wyckoff_letters,
-            system,
-            is_flat=False,
-            nonperiodic_axis=None):
+        self,
+        space_group,
+        old_wyckoff_letters,
+        system,
+    ):
         """
         When given a system that has been normalized by spglib, this function
         will find a atomic positions within that cell that are most unique
         (totally unique up to isotropic scaling if no free Wyckoff parameters
         present).
 
-        The function is based on finding a "normalizer" (found for each space
-        group e.g. at the Bilbao Crystallographic Server)
-        http://www.cryst.ehu.es/), which is essentially a transform that
-        changes Wyckoff positions of atoms within a cell without breaking the
-        symmetry. Each of these normalizers, that corresponds to a proper rigid
-        transformation in the cartesian basis, is applied to give a different
-        structural representation. The algorithm then goes through each tuple
-        of Wyckoff letter and atomic number (W , Z) in a preset order: the
-        first loop goes through the Wyckoff letters in alphabetical order, and
-        the second loop goes through the atomic numbers from lowest to highest.
-        Whenever some of the possible representations has a structural
-        component corresponding to the current tuple (W , Z), the number of
-        atoms with this tuple N is calculated. The representation is stored to
-        a map structure that links each N to a list of representations and the
-        highest N is tracked. After all the representations are covered, the
-        candidate list of representations is replaced with the list
-        corresponding to the highest N. The algorithm stops whenever the
-        candidate set contains only one representation, which will be the
-        standard one.
+        The function is based on iterating through chirality-preserving
+        Euclidean normalizers (more information on normalizers can be found e.g.
+        in "Space Groups for Solid State Scientists", page 246, ISBN:
+        9780123946157, normalizers can be found for each space group e.g. at the
+        Bilbao Crystallographic Server) http://www.cryst.ehu.es/), which are
+        essentially transforms that changes Wyckoff positions of atoms within a
+        cell without changing the structure itself. Each of these normalizers
+        can be applied to give a different structural representation of the same
+        material. The algorithm then goes through each tuple of Wyckoff letter
+        and atomic number (W , Z) in a preset order: the first loop goes through
+        the Wyckoff letters in alphabetical order, and the second loop goes
+        through the atomic numbers from lowest to highest. Whenever some of the
+        possible representations has a structural component corresponding to the
+        current tuple (W , Z), the number of atoms with this tuple N is
+        calculated. The representation is stored to a map structure that links
+        each N to a list of representations and the highest N is tracked. After
+        all the representations are covered, the candidate list of
+        representations is replaced with the list corresponding to the highest
+        N. The algorithm stops whenever the candidate set contains only one
+        representation, which will be the standard one.
 
         Args:
             space_group(int): The space group of the system.
             old_wyckoff_letters(list of strings): Wyckoff letters as detected
                 by spglib for the atoms in the given system.
             system(ase.Atoms): The standardized system as given by spglib.
-            is_flat(bool): Whether the structure is flat (near zero thickness)
-                in one non-periodic direction. Applies only for 2D systems.
-            nonperiodic_axis(int): The index of a nonperiodic axis in the cell
-                basis. Applies only for 2D systems.
 
         Returns:
             (ase.Atoms, list of strings): Returns a tuple containing the found
             conventional system and the Wyckoff letters for it.
         """
-        # Gather the allowed transformations. For completely flat structures (all
-        # atoms in 2D plane), also the rigid transformation that are improper
-        # (determinant -1), will become proper, as we can always invert the
-        # non-periodic axis to change the sign of the determinant. Physically this
-        # corresponds to rotating the system rigidly through the third nonperiodic
-        # dimension.
-        transform_list = []
+        # Gather the allowed transformations. In addition to proper rotations
+        # the space group symmetries may allow improper rotations without
+        # 'breaking' the structure.
+        normalizers = []
         identity = {
             "transformation": np.identity(4),
             "permutations": {x: x for x in old_wyckoff_letters},
             "identity": True,
         }
-        transform_list.append(identity)
+        normalizers.append(identity)
+        normalizers.extend(
+            CHIRALITY_PRESERVING_EUCLIDEAN_NORMALIZERS.get(space_group, [])
+        )
 
-        proper_rigid_trans = PROPER_RIGID_TRANSFORMATIONS.get(space_group)
-        if proper_rigid_trans is not None:
-            transform_list.extend(proper_rigid_trans)
-        improper_rigid_trans = IMPROPER_RIGID_TRANSFORMATIONS.get(space_group)
-        if is_flat:
-            improper_rigid_trans = IMPROPER_RIGID_TRANSFORMATIONS.get(space_group)
-            if improper_rigid_trans is not None:
-                transform_list.extend(improper_rigid_trans)
-
-        # Test which transformations are proper rigid transformation for the
-        # current cell. TODO: Could the proper rigid transformation be checked
-        # beforehand for each normalizer by looking at the crystal lattice
-        # characteristics like orthogonality, basis sizes, etc.?
-        # TODO: There is an optimization that could slightly speed up the
-        # calculation of whether the matrix is proper rigid: If one would
-        # precalculate the inverse and transpose of the transformation matrices
-        # in the scaled basis, then one can use the rules det(ABC) =
-        # det(A)*det(B)*det(C), (ABC)^-1 = C^-1*B^-1*A^-1 and (ABC)^T =
-        # C^T*B^T*A^T to speed up the calculation.
-        cart_basis = np.eye(3)
-        cell_basis = system.get_cell()
-
-        # If the structure is flat, we ignore the non-periodic basis
-        if nonperiodic_axis is not None:
-            dim_mask = np.array((True, True, True))
-            dim_mask[nonperiodic_axis] = False
-            cart_basis = cart_basis[dim_mask, :]
-            cart_basis = cart_basis[:, dim_mask]
-            cell_basis = cell_basis[dim_mask, :]
-            cell_basis = cell_basis[:, dim_mask]
-
-        # These are the change of basis matrices for going from cartesian basis
-        # to scaled basis and vice versa
-        cart_to_cell = np.dot(cart_basis, np.linalg.inv(cell_basis))
-        cell_to_cart = np.dot(cell_basis, np.linalg.inv(cart_basis))
-        proper_transforms = []
-
-        for trans_info in transform_list:
-            trans = trans_info["transformation"]
-            nonaugmented_trans = trans[0:3, 0:3]
-
-            # Remove the non-periodic dimension from the transform as well
-            if nonperiodic_axis is not None:
-                nonaugmented_trans = nonaugmented_trans[dim_mask, :]
-                nonaugmented_trans = nonaugmented_trans[:, dim_mask]
-
-            # Here we transform the basis of the transformation matrix from
-            # scaled coordinates to cartesian coordinates. This is necessary
-            # because the scaled coordinates have a distorted metric and only
-            # the cartesian version can reveal if the transformation is proper
-            # rigid.
-            cart_trans = np.dot(cart_to_cell, np.dot(nonaugmented_trans, cell_to_cart))
-
-            # Check if the transformation is proper
-            determinant = np.linalg.det(cart_trans)
-            is_proper = abs(determinant - 1) < 1e-8
-
-            # Check if transformation is orthogonal
-            if is_proper:
-                test_inv = np.linalg.inv(cart_trans)
-                test_trans = cart_trans.T
-                is_orthogonal = np.allclose(test_inv, test_trans, rtol=0, atol=1e-8)
-
-                if is_orthogonal:
-                    proper_transforms.append(trans_info)
-
-        transform_list = proper_transforms
-
-        # If no transformation found for this space group, return the same
-        # system
-        if len(transform_list) == 1:
+        # If no normalizers found for this space group, return the same system
+        if len(normalizers) == 1:
             self._best_transform = identity
             return system, old_wyckoff_letters
 
         # Form all available representations
         representations = []
         atomic_numbers = system.get_atomic_numbers()
-        for transform in transform_list:
+        for transform in normalizers:
             perm = transform["permutations"]
             representation = {
                 "transformation": transform["transformation"],
@@ -1139,7 +1116,7 @@ class SymmetryAnalyzer(object):
 
         # Gather all available Wyckoff letters in all representations
         wyckoff_letters = set()
-        for transform in transform_list:
+        for transform in normalizers:
             i_perm = transform["permutations"]
             for orig, new in i_perm.items():
                 wyckoff_letters.add(new)
@@ -1172,7 +1149,7 @@ class SymmetryAnalyzer(object):
 
         # If no best transformation was found, then multiple transformation are
         # equal. Ensure this and then choose the first one.
-        error = SystaxError("Could not successfully decide best Wyckoff positions.")
+        error = MatIDError("Could not successfully decide best Wyckoff positions.")
         if len(representations) > 1:
             new_wyckoffs = representations[0]["wyckoff_positions"]
             n_items = len(new_wyckoffs)
@@ -1220,14 +1197,14 @@ class SymmetryAnalyzer(object):
             return new_system, new_wyckoff_letters
 
     def _get_wyckoff_sets(
-            self,
-            system,
-            space_group,
-            wyckoff_letters,
-            equivalent_atoms,
-            precision,
-            return_parameters
-            ):
+        self,
+        system,
+        space_group,
+        wyckoff_letters,
+        equivalent_atoms,
+        precision,
+        return_parameters,
+    ):
         """Used to get detailed information about about the sets of equivalent
         atoms. The detected Wyckoff set variables (x, y, z) are reported
         consistenly by selecting the ariable sets that has lowest x value, then
@@ -1276,10 +1253,7 @@ class SymmetryAnalyzer(object):
 
         # Form the Wyckoff sets
         sets = OrderedDict()
-        unique_sets, unique_indices = np.unique(
-            equivalent_atoms,
-            return_index=True
-        )
+        unique_sets, unique_indices = np.unique(equivalent_atoms, return_index=True)
         for i_set, index in enumerate(unique_indices):
             set_index = unique_sets[i_set]
 
@@ -1311,7 +1285,7 @@ class SymmetryAnalyzer(object):
                 all_pos = positions[indices]
 
                 # Get the precalculated matrices and vectors that are needed
-                # for solving the system of linear equations. 
+                # for solving the system of linear equations.
                 Ms = wyckoff_info["matrices"]
                 Cs = wyckoff_info["constants"]
 
@@ -1336,7 +1310,12 @@ class SymmetryAnalyzer(object):
                     # reversing. The values used for sorting are rounded to
                     # machine precision to avoid seeming inconsistencies in
                     # sorting.
-                    sort_columns = np.array([all_pos[:, ivar] for ivar in reversed(list(variable_map.keys()))])
+                    sort_columns = np.array(
+                        [
+                            all_pos[:, ivar]
+                            for ivar in reversed(list(variable_map.keys()))
+                        ]
+                    )
                     np.around(sort_columns, decimals=9, out=sort_columns)
                     sorted_indices = np.lexsort(sort_columns)
                     sorted_pos = all_pos[sorted_indices]
@@ -1346,7 +1325,6 @@ class SymmetryAnalyzer(object):
                     # calculated in a loop for each atom until a valid set is
                     # found.
                     for atom_index in indices:
-
                         # The first representative Wyckoff position is used for
                         # solving the variables. Only the first occurrence of
                         # the variable with multiplier 1 is used.
@@ -1357,26 +1335,29 @@ class SymmetryAnalyzer(object):
                         for idx, var in variable_map.items():
                             for icomp in range(3):
                                 if M[idx][icomp] == 1:
-                                    W[idx] = R[idx]-C[idx]
+                                    W[idx] = R[idx] - C[idx]
                                     break
 
                         # Check that found variables make sense. Otherwise
                         # continue with next position.
-                        if self._search_periodic_positions(
-                                np.dot(W, M) + C,
-                                R,
-                                cell,
-                                1e-3) is None:
+                        if (
+                            self._search_periodic_positions(
+                                np.dot(W, M) + C, R, cell, 1e-3
+                            )
+                            is None
+                        ):
                             continue
 
                         # Calculate the positions of all other atoms with the
                         # currently tested Wyckoff variables.
-                        test_positions = np.zeros(((n_trans+1)*n_expr, 3))
+                        test_positions = np.zeros(((n_trans + 1) * n_expr, 3))
                         first_test_pos = np.dot(W, Ms) + Cs
                         test_positions[0:n_expr, :] = first_test_pos
                         i_trans = 1
                         for trans in translations:
-                            test_positions[i_trans*n_expr:(i_trans+1)*n_expr, :] = first_test_pos + trans
+                            test_positions[
+                                i_trans * n_expr : (i_trans + 1) * n_expr, :
+                            ] = (first_test_pos + trans)
                             i_trans += 1
 
                         # Test if each test positions can be matched to an atom
@@ -1384,11 +1365,12 @@ class SymmetryAnalyzer(object):
                         # variables and break the loop.
                         found = True
                         for test_pos in test_positions:
-                            if self._search_periodic_positions(
-                                    test_pos,
-                                    sorted_pos,
-                                    cell,
-                                    precision) is None:
+                            if (
+                                self._search_periodic_positions(
+                                    test_pos, sorted_pos, cell, precision
+                                )
+                                is None
+                            ):
                                 found = False
                                 break
                         if found:
@@ -1400,8 +1382,12 @@ class SymmetryAnalyzer(object):
                             "Could not resolve the free Wyckoff parameters for "
                             "Wyckoff letter '{}' in space group {}. Problem in "
                             "determining variables for element '{}' at indices "
-                            "'{}'."
-                            .format(wset.wyckoff_letter, wset.space_group, wset.element, wset.indices)
+                            "'{}'.".format(
+                                wset.wyckoff_letter,
+                                wset.space_group,
+                                wset.element,
+                                wset.indices,
+                            )
                         )
                     else:
                         # Wrap Wyckoff variables to be between [0, 1] and save
@@ -1415,6 +1401,8 @@ class SymmetryAnalyzer(object):
         # sorted by atomic number. Groups with the same Wyckoff letter and
         # atomic number are still randomly sorted.
         unsorted_list = list(sets.values())
-        sorted_list = sorted(unsorted_list, key=attrgetter('wyckoff_letter', 'atomic_number'))
+        sorted_list = sorted(
+            unsorted_list, key=attrgetter("wyckoff_letter", "atomic_number")
+        )
 
         return sorted_list
