@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/nomad-coe/matid/main/logo/matid_logo.png" width="400">
+<img src="https://raw.githubusercontent.com/nomad-coe/matid/v2.0.0/docs/static/img/logo.png" width="400">
 
 ![Build status](https://github.com/nomad-coe/matid/actions/workflows/build.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/nomad-coe/matid/badge.svg?branch=main)](https://coveralls.io/github/nomad-coe/matid?branch=main)
@@ -7,31 +7,13 @@
 MatID is a Python package for identifying and analyzing atomistic systems based
 on their structure.
 
-## Homepage
-For more details and tutorials, visit the homepage at:
-[https://singroup.github.io/matid/](https://singroup.github.io/matid/)
+# Documentation
+For more details and tutorials, visit the documentation at:
+[https://nomad-coe.github.io/matid/](https://nomad-coe.github.io/matid/)
 
-## Installation
-The newest versions of the package are compatible with Python >= 3.7 (tested on
-3.7, 3.8, 3.9 and 3.10). MatID versions <= 0.5.4 also support Python 2.7. The
-exact list of dependencies are given in setup.py and all of them will be
-automatically installed during setup.
+You can find even more details in the following articles:
 
-The latest stable release is available through pip: (use the -\\-user flag if
-root access is not available)
-
-```sh
-    pip install matid
-```
-
-To install the latest development version, clone the source code from github
-and install with pip from local file:
-
-```sh
-    git clone https://github.com/SINGROUP/matid.git
-    cd matid
-    pip install .
-```
+- [Materials structure genealogy and high-throughput topological classification of surfaces and 2D materials](<https://doi.org/10.1038/s41524-018-0107-6>)
 
 ## Example: Surface detection and analysis
 
@@ -86,3 +68,18 @@ view(prim_sys)
 spg_number = analyzer.get_space_group_number()
 print("Space group number: {}".format(spg_number))
 ```
+
+# Installation
+
+## pip
+```sh
+pip install matid
+```
+
+## From source
+```sh
+git clone https://github.com/nomad-coe/matid.git
+cd matid
+pip install .
+```
+
