@@ -21,6 +21,7 @@ from conftest import create_graphene, create_si, create_mos2
 
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -30,8 +31,8 @@ class TestSegfaultProtect(unittest.TestCase):
     """Test that the wrapper function for guarding against SIGSEGV works as
     intended.
     """
-    def test_sigsegv_wo_args(self):
 
+    def test_sigsegv_wo_args(self):
         def sigsegv():
             os.kill(os.getpid(), signal.SIGSEGV)
 
@@ -39,7 +40,6 @@ class TestSegfaultProtect(unittest.TestCase):
             segfault_protect(sigsegv)
 
     def test_sigsegv_w_args(self):
-
         def sigsegv(a):
             os.kill(os.getpid(), signal.SIGSEGV)
 
@@ -48,11 +48,10 @@ class TestSegfaultProtect(unittest.TestCase):
 
 
 class SymmetryAnalyser3DTests(unittest.TestCase):
-    """Tests the analysis of bulk 3D materials.
-    """
+    """Tests the analysis of bulk 3D materials."""
+
     def test_diamond(self):
-        """Test that a silicon diamond lattice is characterized correctly.
-        """
+        """Test that a silicon diamond lattice is characterized correctly."""
         # Create the system
         si = create_si()
 
@@ -79,9 +78,17 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         self.assertEqual(data.bravais_lattice, "cF")
         self.assertEqual(data.choice, "1")
         self.assertTrue(np.array_equal(data.equivalent_conv, [0, 0, 0, 0, 0, 0, 0, 0]))
-        self.assertTrue(np.array_equal(data.wyckoff_conv, ["a", "a", "a", "a", "a", "a", "a", "a"]))
-        self.assertTrue(np.array_equal(data.equivalent_original, [0, 0, 0, 0, 0, 0, 0, 0]))
-        self.assertTrue(np.array_equal(data.wyckoff_original, ["a", "a", "a", "a", "a", "a", "a", "a"]))
+        self.assertTrue(
+            np.array_equal(data.wyckoff_conv, ["a", "a", "a", "a", "a", "a", "a", "a"])
+        )
+        self.assertTrue(
+            np.array_equal(data.equivalent_original, [0, 0, 0, 0, 0, 0, 0, 0])
+        )
+        self.assertTrue(
+            np.array_equal(
+                data.wyckoff_original, ["a", "a", "a", "a", "a", "a", "a", "a"]
+            )
+        )
         self.assertTrue(np.array_equal(data.prim_wyckoff, ["a", "a"]))
         self.assertTrue(np.array_equal(data.prim_equiv, [0, 0]))
         self.assertFalse(data.has_free_wyckoff_parameters)
@@ -92,25 +99,15 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         self.assertTrue(np.array_equal(pbc_prim, [True, True, True]))
 
     def test_fcc(self):
-        """Test that a primitive NaCl fcc lattice is characterized correctly.
-        """
+        """Test that a primitive NaCl fcc lattice is characterized correctly."""
         # Create the system
-        cell = np.array(
-            [
-                [0, 2.8201, 2.8201],
-                [2.8201, 0, 2.8201],
-                [2.8201, 2.8201, 0]
-            ]
-        )
+        cell = np.array([[0, 2.8201, 2.8201], [2.8201, 0, 2.8201], [2.8201, 2.8201, 0]])
         cell[0, :] *= 1.05
         nacl = Atoms(
             symbols=["Na", "Cl"],
-            scaled_positions=np.array([
-                [0, 0, 0],
-                [0.5, 0.5, 0.5]
-            ]),
+            scaled_positions=np.array([[0, 0, 0], [0.5, 0.5, 0.5]]),
             cell=cell,
-            pbc=True
+            pbc=True,
         )
         nacl = nacl.repeat([2, 1, 1])
 
@@ -127,7 +124,9 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         self.assertEqual(data.bravais_lattice, "cF")
         self.assertEqual(data.choice, "")
         self.assertTrue(np.array_equal(data.equivalent_conv, [0, 1, 0, 1, 0, 1, 0, 1]))
-        self.assertTrue(np.array_equal(data.wyckoff_conv, ["a", "b", "a", "b", "a", "b", "a", "b"]))
+        self.assertTrue(
+            np.array_equal(data.wyckoff_conv, ["a", "b", "a", "b", "a", "b", "a", "b"])
+        )
         self.assertTrue(np.array_equal(data.equivalent_original, [0, 1, 0, 1]))
         self.assertTrue(np.array_equal(data.wyckoff_original, ["a", "b", "a", "b"]))
         self.assertTrue(np.array_equal(data.prim_equiv, [0, 1]))
@@ -144,12 +143,14 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         correctly.
         """
         from ase.lattice.cubic import BodyCenteredCubic
+
         system = BodyCenteredCubic(
             directions=[[1, 0, 0], [0, 1, 0], [1, 1, 1]],
             size=(1, 1, 1),
-            symbol='Cu',
+            symbol="Cu",
             pbc=True,
-            latticeconstant=4.0)
+            latticeconstant=4.0,
+        )
 
         # Get the data
         data = self.get_material3d_properties(system)
@@ -177,15 +178,14 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         self.assertTrue(np.array_equal(pbc_prim, [True, True, True]))
 
     def test_unsymmetric(self):
-        """Test that a random system is handled correctly.
-        """
+        """Test that a random system is handled correctly."""
         rng = RandomState(42)
-        positions = 10*rng.rand(10, 3)
+        positions = 10 * rng.rand(10, 3)
         system = Atoms(
             positions=positions,
             symbols=["H", "C", "Na", "Fe", "Cu", "He", "Ne", "Mg", "Si", "Ti"],
             cell=[10, 10, 10],
-            pbc=True
+            pbc=True,
         )
 
         # Get the data
@@ -206,14 +206,12 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
         self.assertTrue(np.array_equal(pbc_prim, [True, True, True]))
 
     def assertWyckoffGroupsOk(self, system, wyckoff_sets):
-        """Check that the Wyckoff sets contain all atoms and are ordered
-        """
+        """Check that the Wyckoff sets contain all atoms and are ordered"""
         prev_w_index = None
         prev_z = None
         n_atoms = len(system)
         n_atoms_wyckoff = 0
         for wset in wyckoff_sets:
-
             # Check that the current Wyckoff letter index is greater than
             # previous, if not the atomic number must be greater
             wyckoff_letter = wset.wyckoff_letter
@@ -266,8 +264,8 @@ class SymmetryAnalyser3DTests(unittest.TestCase):
 
 
 class SymmetryAnalyser2DTests(unittest.TestCase):
-    """Tests the analysis of bulk 2D materials.
-    """
+    """Tests the analysis of bulk 2D materials."""
+
     def test_graphene_primitive(self):
         # Original system in positions: C: d
         system = create_graphene()
@@ -287,16 +285,15 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
         # Original system in positions: C: d
         system = Atoms(
             symbols=["C", "C"],
-            cell=np.array((
-                [2.4595121467478055, 0.0, 0.0],
-                [-1.2297560733739028, 0.0, 2.13],
-                [0.0, 20.0, 0.0],
-            )),
-            scaled_positions=np.array((
-                [1/3, 2/3, 0.5],
-                [2/3, 1/3, 0.5]
-            )),
-            pbc=[True, True, False]
+            cell=np.array(
+                (
+                    [2.4595121467478055, 0.0, 0.0],
+                    [-1.2297560733739028, 0.0, 2.13],
+                    [0.0, 20.0, 0.0],
+                )
+            ),
+            scaled_positions=np.array(([1 / 3, 2 / 3, 0.5], [2 / 3, 1 / 3, 0.5])),
+            pbc=[True, True, False],
         )
 
         analyzer = SymmetryAnalyzer(system)
@@ -318,16 +315,15 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
         # to the ground state: B: a, N: c if an inversion is performed.
         system = Atoms(
             symbols=["B", "N"],
-            cell=np.array((
-                [2.4595121467478055, 0.0, 0.0],
-                [-1.2297560733739028, 2.13, 0.0],
-                [0.0, 0.0, 20.0]
-            )),
-            scaled_positions=np.array((
-                [0, 0, 0.0],
-                [2/3, 1/3, 0.0]
-            )),
-            pbc=[True, True, False]
+            cell=np.array(
+                (
+                    [2.4595121467478055, 0.0, 0.0],
+                    [-1.2297560733739028, 2.13, 0.0],
+                    [0.0, 0.0, 20.0],
+                )
+            ),
+            scaled_positions=np.array(([0, 0, 0.0], [2 / 3, 1 / 3, 0.0])),
+            pbc=[True, True, False],
         )
 
         analyzer = SymmetryAnalyzer(system)
@@ -354,16 +350,15 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
         # to the ground state: B: a, N: c if an inversion is performed.
         system = Atoms(
             symbols=["B", "N"],
-            cell=np.array((
-                [2.4595121467478055, 0.0, 0.0],
-                [0.0, 20.0, 0.0],
-                [-1.2297560733739028, 0.0, 2.13],
-            )),
-            scaled_positions=np.array((
-                [0, 0, 0.0],
-                [2/3, 0.0, 1/3]
-            )),
-            pbc=[True, False, True]
+            cell=np.array(
+                (
+                    [2.4595121467478055, 0.0, 0.0],
+                    [0.0, 20.0, 0.0],
+                    [-1.2297560733739028, 0.0, 2.13],
+                )
+            ),
+            scaled_positions=np.array(([0, 0, 0.0], [2 / 3, 0.0, 1 / 3])),
+            pbc=[True, False, True],
         )
 
         analyzer = SymmetryAnalyzer(system)
@@ -382,8 +377,7 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
         self.assertTrue(np.array_equal(pbc, [True, True, False]))
 
     def test_mos2(self):
-        """Tests a non-flat 2D system with vacuum.
-        """
+        """Tests a non-flat 2D system with vacuum."""
         system = create_mos2()
         analyzer = SymmetryAnalyzer(system)
         conv_system = analyzer.get_conventional_system()
@@ -399,15 +393,9 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
                 self.assertEqual(wset.wyckoff_letter, "h")
 
     def test_mos2_vacuum(self):
-        """Tests a non-flat 2D system with vacuum.
-        """
+        """Tests a non-flat 2D system with vacuum."""
         system = ase.build.mx2(
-            formula="MoS2",
-            kind="2H",
-            a=3.18,
-            thickness=3.19,
-            size=(5, 5, 1),
-            vacuum=8
+            formula="MoS2", kind="2H", a=3.18, thickness=3.19, size=(5, 5, 1), vacuum=8
         )
 
         analyzer = SymmetryAnalyzer(system)
@@ -425,35 +413,111 @@ class SymmetryAnalyser2DTests(unittest.TestCase):
 
 
 class WyckoffTests(unittest.TestCase):
-    """Tests for the Wyckoff information.
-    """
+    """Tests for the Wyckoff information."""
+
     def test_default_11(self):
-        """See issue: https://github.com/spglib/spglib/issues/100
-        """
+        """See issue: https://github.com/spglib/spglib/issues/100"""
         spg_11 = Atoms(
-            symbols=["Cs", "Cs", "Cs", "Cs", "Hg", "Hg", "I", "I", "I", "I", "I", "I", "I", "I"],
-            positions=np.array([
-                [9.69146609791823e-10, 1.4864766792606409e-10, 2.1853577172462063e-10],
-                [3.3905490010486266e-10, 4.918238896132229e-10, 2.21360430203356e-10],
-                [-1.2127900679182296e-10, 5.914386740739359e-10, 6.432402437246207e-10],
-                [5.088127028951374e-10, 2.4826245238677706e-10, 6.46064902203356e-10],
-                [2.8716666854716376e-10, 6.364047202750034e-11, 2.173113402377552e-10],
-                [5.607009344528362e-10, 6.764458699724996e-10, 6.420158122377551e-10],
-                [6.774950241049414e-10, 5.508695960016385e-10, 2.0178558873663998e-11],
-                [5.65784431911122e-10, 1.376848453015636e-10, 2.1575858671176543e-10],
-                [-4.08306506008426e-11, 5.351034259842179e-10, 2.1998387806870958e-10],
-                [6.805724578658182e-10, 5.50411253982781e-10, 4.175063512681291e-10],
-                [1.7037257889505867e-10, 1.892167459983615e-10, 4.44883030873664e-10],
-                [2.82083171088878e-10, 6.024014966984365e-10, 6.404630587117654e-10],
-                [8.886982536008425e-10, 2.0498291601578212e-10, 6.446883500687096e-10],
-                [1.6729514513418176e-10, 1.8967508801721902e-10, 8.42210823268129e-10]
-            ])*1e10,
-            cell=np.array([
-                [1.132741769e-9, -1.0246116e-11, 0.0],
-                [-2.84874166e-10,7.50332458e-10, 0.0],
-                [0.0, 0.0, 8.49408944e-10]
-            ])*1e10,
-            pbc=True
+            symbols=[
+                "Cs",
+                "Cs",
+                "Cs",
+                "Cs",
+                "Hg",
+                "Hg",
+                "I",
+                "I",
+                "I",
+                "I",
+                "I",
+                "I",
+                "I",
+                "I",
+            ],
+            positions=np.array(
+                [
+                    [
+                        9.69146609791823e-10,
+                        1.4864766792606409e-10,
+                        2.1853577172462063e-10,
+                    ],
+                    [
+                        3.3905490010486266e-10,
+                        4.918238896132229e-10,
+                        2.21360430203356e-10,
+                    ],
+                    [
+                        -1.2127900679182296e-10,
+                        5.914386740739359e-10,
+                        6.432402437246207e-10,
+                    ],
+                    [
+                        5.088127028951374e-10,
+                        2.4826245238677706e-10,
+                        6.46064902203356e-10,
+                    ],
+                    [
+                        2.8716666854716376e-10,
+                        6.364047202750034e-11,
+                        2.173113402377552e-10,
+                    ],
+                    [
+                        5.607009344528362e-10,
+                        6.764458699724996e-10,
+                        6.420158122377551e-10,
+                    ],
+                    [
+                        6.774950241049414e-10,
+                        5.508695960016385e-10,
+                        2.0178558873663998e-11,
+                    ],
+                    [
+                        5.65784431911122e-10,
+                        1.376848453015636e-10,
+                        2.1575858671176543e-10,
+                    ],
+                    [
+                        -4.08306506008426e-11,
+                        5.351034259842179e-10,
+                        2.1998387806870958e-10,
+                    ],
+                    [
+                        6.805724578658182e-10,
+                        5.50411253982781e-10,
+                        4.175063512681291e-10,
+                    ],
+                    [
+                        1.7037257889505867e-10,
+                        1.892167459983615e-10,
+                        4.44883030873664e-10,
+                    ],
+                    [
+                        2.82083171088878e-10,
+                        6.024014966984365e-10,
+                        6.404630587117654e-10,
+                    ],
+                    [
+                        8.886982536008425e-10,
+                        2.0498291601578212e-10,
+                        6.446883500687096e-10,
+                    ],
+                    [
+                        1.6729514513418176e-10,
+                        1.8967508801721902e-10,
+                        8.42210823268129e-10,
+                    ],
+                ]
+            )
+            * 1e10,
+            cell=np.array(
+                [
+                    [1.132741769e-9, -1.0246116e-11, 0.0],
+                    [-2.84874166e-10, 7.50332458e-10, 0.0],
+                    [0.0, 0.0, 8.49408944e-10],
+                ]
+            )
+            * 1e10,
+            pbc=True,
         )
 
         # Find the Wyckoff groups
@@ -468,12 +532,33 @@ class WyckoffTests(unittest.TestCase):
         crystallographic_orbits instead.
         """
         spg_87 = Atoms(
-            symbols=[28, 28, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 38, 38, 38, 38, 52, 52],
+            symbols=[
+                28,
+                28,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                8,
+                38,
+                38,
+                38,
+                38,
+                52,
+                52,
+            ],
             scaled_positions=[
-                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00],
+                [0.00000000e00, 0.00000000e00, 0.00000000e00],
                 [5.00000783e-01, 5.00000105e-01, 5.00000504e-01],
-                [2.57675031e-01, 2.57675031e-01, 0.00000000e+00],
-                [7.42324606e-01, 7.42324606e-01, 0.00000000e+00],
+                [2.57675031e-01, 2.57675031e-01, 0.00000000e00],
+                [7.42324606e-01, 7.42324606e-01, 0.00000000e00],
                 [7.42441461e-01, 2.57559427e-01, 4.18791129e-02],
                 [4.57816602e-01, 5.42184286e-01, 2.42498450e-01],
                 [4.13846169e-02, 9.58616271e-01, 2.57474206e-01],
@@ -488,15 +573,15 @@ class WyckoffTests(unittest.TestCase):
                 [4.99921738e-01, 2.53959000e-04, 2.50230128e-01],
                 [5.00078114e-01, 9.99744574e-01, 7.49769816e-01],
                 [2.54636000e-04, 4.99921061e-01, 7.49770880e-01],
-                [5.00000444e-01, 5.00000444e-01, 0.00000000e+00],
+                [5.00000444e-01, 5.00000444e-01, 0.00000000e00],
                 [3.38500000e-07, 9.99999661e-01, 5.00000504e-01],
             ],
             cell=[
                 [-3.93057, -3.994236, -0.010812],
                 [3.93057, -3.994236, 0.010812],
-                [-0.030735, 0.0, 7.861732]
+                [-0.030735, 0.0, 7.861732],
             ],
-            pbc=True
+            pbc=True,
         )
 
         # Find the Wyckoff groups
@@ -510,8 +595,18 @@ class WyckoffTests(unittest.TestCase):
             WyckoffSet("a", 28, "Ni", multiplicity=2, space_group=87),
             WyckoffSet("b", 52, "Te", multiplicity=2, space_group=87),
             WyckoffSet("d", 38, "Sr", multiplicity=4, space_group=87),
-            WyckoffSet("e", 8, "O", multiplicity=4, space_group=87, z=0.7423193187499998),
-            WyckoffSet("h", 8, "O", multiplicity=8, space_group=87, x=0.78407358945, y=0.70099429955),
+            WyckoffSet(
+                "e", 8, "O", multiplicity=4, space_group=87, z=0.7423193187499998
+            ),
+            WyckoffSet(
+                "h",
+                8,
+                "O",
+                multiplicity=8,
+                space_group=87,
+                x=0.78407358945,
+                y=0.70099429955,
+            ),
         ]
         for w1, w2 in zip(expected_sets, wyckoff_sets):
             self.assertEqual(w1, w2)
@@ -521,8 +616,45 @@ class WyckoffTests(unittest.TestCase):
         precicions are too strict or wrapping is done incorrectly.
         """
         sg_160 = Atoms(
-            symbols=['S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'S', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn', 'Zn'],
-            scaled_positions = [
+            symbols=[
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "S",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+                "Zn",
+            ],
+            scaled_positions=[
                 [0.33796749, 0.66203193, 0.0139048],
                 [0.02316237, 0.97683878, 0.06948712],
                 [0.70834082, 0.29166138, 0.12501806],
@@ -530,18 +662,18 @@ class WyckoffTests(unittest.TestCase):
                 [0.74538519, 0.25461701, 0.23615118],
                 [0.09722873, 0.90277243, 0.29168619],
                 [0.44907296, 0.55092646, 0.34722121],
-                [0.1342672,  0.86573396, 0.40280159],
+                [0.1342672, 0.86573396, 0.40280159],
                 [0.48612271, 0.51387671, 0.45837045],
                 [0.83797036, 0.16203183, 0.5139067],
                 [0.18981284, 0.81018832, 0.56943853],
                 [0.87500806, 0.12499413, 0.62501979],
                 [0.56018782, 0.43981159, 0.68056579],
                 [0.24537727, 0.75462388, 0.73613182],
-                [0.9305605,  0.06944169, 0.79167711],
+                [0.9305605, 0.06944169, 0.79167711],
                 [0.61574641, 0.38425301, 0.84724154],
-                [0.3009293,  0.69907186, 0.9027879],
+                [0.3009293, 0.69907186, 0.9027879],
                 [0.98611365, 0.01388855, 0.95833655],
-                [0.,         0.,         0.        ],
+                [0.0, 0.0, 0.0],
                 [0.35185321, 0.64814621, 0.05556195],
                 [0.03704207, 0.96295909, 0.1111262],
                 [0.72222199, 0.27778021, 0.16666157],
@@ -557,11 +689,15 @@ class WyckoffTests(unittest.TestCase):
                 [0.57407189, 0.42592753, 0.72221798],
                 [0.25926051, 0.74074065, 0.77778153],
                 [0.94444391, 0.05555828, 0.83332735],
-                [0.62963,    0.37036942, 0.88889231],
-                [0.31481059, 0.68519057, 0.94443176]
+                [0.62963, 0.37036942, 0.88889231],
+                [0.31481059, 0.68519057, 0.94443176],
             ],
-            cell=[[-1.917818, 3.321758, 0.0], [3.835636, 0.0, 0.0], [1.917818, -1.107253, -56.433045]],
-            pbc=True
+            cell=[
+                [-1.917818, 3.321758, 0.0],
+                [3.835636, 0.0, 0.0],
+                [1.917818, -1.107253, -56.433045],
+            ],
+            pbc=True,
         )
 
         # Find the Wyckoff groups
@@ -589,12 +725,12 @@ class WyckoffTests(unittest.TestCase):
                 [0.2456177163, 0.8331847967, 0.7855486225],
                 [0.2456177163, 0.3331858273, 0.9600690513],
             ],
-            cell= [
+            cell=[
                 [0.000000, -3.293253, 5.939270],
                 [6.584074, 0.000000, 0.000000],
                 [0.000000, 6.586507, 0.000000],
             ],
-            pbc=True
+            pbc=True,
         )
 
         # Find the Wyckoff groups
@@ -606,7 +742,16 @@ class WyckoffTests(unittest.TestCase):
         # Check that groups are correct
         expected_sets = [
             WyckoffSet("a", 79, "Au", space_group=68, multiplicity=4),
-            WyckoffSet("i", 50, "Sn", x=0.16276206029999996, y=0.11815044619999993, z=0.5827377765000001, space_group=68, multiplicity=16),
+            WyckoffSet(
+                "i",
+                50,
+                "Sn",
+                x=0.16276206029999996,
+                y=0.11815044619999993,
+                z=0.5827377765000001,
+                space_group=68,
+                multiplicity=16,
+            ),
         ]
         for w1, w2 in zip(expected_sets, wyckoff_sets):
             self.assertEqual(w1, w2)
@@ -626,12 +771,12 @@ class WyckoffTests(unittest.TestCase):
                 [0.7499993406, 0.7499993406, 0.3524397980],
                 [0.2499997802, 0.2499997802, 0.6475606156],
             ],
-            cell= [
+            cell=[
                 [3.919363, 0.000000, 0.000000],
                 [0.000000, 3.919363, 0.000000],
                 [0.000000, 0.000000, 6.895447],
             ],
-            pbc=True
+            pbc=True,
         )
 
         # Find the Wyckoff groups
@@ -657,7 +802,9 @@ class WyckoffTests(unittest.TestCase):
         # Create structure that has space group 129: the origin setting differ
         # from default settings.
         a = 2.87
-        system = ase.spacegroup.crystal('Al', [(0, 0, 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90])
+        system = ase.spacegroup.crystal(
+            "Al", [(0, 0, 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90]
+        )
 
         # Find the Wyckoff groups
         analyzer = SymmetryAnalyzer(system)
@@ -675,49 +822,112 @@ class WyckoffTests(unittest.TestCase):
         positions.
         """
         sg_194 = Atoms(
-            symbols=['As', 'As', 'As', 'As', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Ba', 'Na', 'Na', 'Na', 'Na', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'Ru', 'Ru', 'Ru', 'Ru'],
+            symbols=[
+                "As",
+                "As",
+                "As",
+                "As",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Ba",
+                "Na",
+                "Na",
+                "Na",
+                "Na",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "Ru",
+                "Ru",
+                "Ru",
+                "Ru",
+            ],
             scaled_positions=[
                 [0.33333199, 0.66666399, 0.05175819],
                 [0.33333199, 0.66666399, 0.44824203],
                 [0.66666821, 0.33333595, 0.55175807],
-                [0.66666821, 0.33333595, 0.9482419 ],
-                [0.,         0.,         0.,       ],
+                [0.66666821, 0.33333595, 0.9482419],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
                 [0.66666722, 0.33333397, 0.09251205],
-                [0.33333397, 0.66666795, 0.1788528 ],
-                [0.,         0.,         0.24999994],
+                [0.33333397, 0.66666795, 0.1788528],
+                [0.0, 0.0, 0.24999994],
                 [0.33333397, 0.66666795, 0.32114741],
                 [0.66666722, 0.33333397, 0.40748782],
-                [0.,         0.,         0.49999988],
+                [0.0, 0.0, 0.49999988],
                 [0.33333298, 0.66666597, 0.59251227],
                 [0.66666624, 0.33333199, 0.67885268],
-                [0.,         0.,         0.75000015],
+                [0.0, 0.0, 0.75000015],
                 [0.66666624, 0.33333199, 0.82114729],
-                [0.33333298, 0.66666597, 0.9074877 ],
-                [0.,         0.,         0.12337398],
-                [0.,         0.,         0.37662623],
-                [0.,         0.,         0.62337386],
-                [0.,         0.,         0.87662611],
-                [0.6666791,  0.33335772, 0.00555923],
+                [0.33333298, 0.66666597, 0.9074877],
+                [0.0, 0.0, 0.12337398],
+                [0.0, 0.0, 0.37662623],
+                [0.0, 0.0, 0.62337386],
+                [0.0, 0.0, 0.87662611],
+                [0.6666791, 0.33335772, 0.00555923],
                 [0.17488078, 0.82512516, 0.07300426],
                 [0.65024438, 0.82512516, 0.07300426],
                 [0.17487775, 0.34975551, 0.07300762],
-                [0.34937053, 0.17468681, 0.1694312 ],
-                [0.82531675, 0.17468681, 0.1694312 ],
+                [0.34937053, 0.17468681, 0.1694312],
+                [0.82531675, 0.17468681, 0.1694312],
                 [0.82531439, 0.65062831, 0.16943187],
                 [0.51194983, 0.02389918, 0.24999994],
                 [0.51194863, 0.48805335, 0.24999994],
                 [0.97610519, 0.48805335, 0.24999994],
-                [0.82531439, 0.65062831, 0.330568  ],
+                [0.82531439, 0.65062831, 0.330568],
                 [0.34937053, 0.17468681, 0.33056868],
                 [0.82531675, 0.17468681, 0.33056868],
                 [0.17487775, 0.34975551, 0.42699259],
                 [0.17488078, 0.82512516, 0.42699596],
                 [0.65024438, 0.82512516, 0.42699596],
-                [0.6666791,  0.33335772, 0.49444065],
+                [0.6666791, 0.33335772, 0.49444065],
                 [0.33332111, 0.66664222, 0.50555911],
                 [0.34975412, 0.17487479, 0.57300413],
                 [0.82511943, 0.17487479, 0.57300413],
-                [0.82512246, 0.65024444, 0.5730075 ],
+                [0.82512246, 0.65024444, 0.5730075],
                 [0.17468346, 0.82531314, 0.66943108],
                 [0.65062968, 0.82531314, 0.66943108],
                 [0.17468582, 0.34937163, 0.66943175],
@@ -731,12 +941,16 @@ class WyckoffTests(unittest.TestCase):
                 [0.34975412, 0.17487479, 0.92699584],
                 [0.82511943, 0.17487479, 0.92699584],
                 [0.33332111, 0.66664222, 0.99444086],
-                [0.6666692,  0.33333793, 0.20364914],
-                [0.6666692,  0.33333793, 0.29635074],
+                [0.6666692, 0.33333793, 0.20364914],
+                [0.6666692, 0.33333793, 0.29635074],
                 [0.33333101, 0.66666201, 0.70364901],
                 [0.33333101, 0.66666201, 0.79635095],
             ],
-            cell=[[5.835617, 0.0, 0.0], [-2.917809, 5.05373, 0.0], [0.0, 0.0, 29.701967]],
+            cell=[
+                [5.835617, 0.0, 0.0],
+                [-2.917809, 5.05373, 0.0],
+                [0.0, 0.0, 29.701967],
+            ],
             pbc=True,
         )
 
@@ -756,9 +970,21 @@ class WyckoffTests(unittest.TestCase):
             WyckoffSet("f", 44, "Ru", multiplicity=4, space_group=194, z=0.70364914),
             WyckoffSet("f", 56, "Ba", multiplicity=4, space_group=194, z=0.59251205),
             WyckoffSet("f", 56, "Ba", multiplicity=4, space_group=194, z=0.1788528),
-            WyckoffSet("h", 8, "O", multiplicity=6, space_group=194, x=0.5119494849999999),
-            WyckoffSet("k", 8, "O", multiplicity=12, space_group=194, x=0.17487978999999995, z=0.07300426000000003),
-            WyckoffSet("k", 8, "O", multiplicity=12, space_group=194, x=0.82531286, z=0.1694312),
+            WyckoffSet(
+                "h", 8, "O", multiplicity=6, space_group=194, x=0.5119494849999999
+            ),
+            WyckoffSet(
+                "k",
+                8,
+                "O",
+                multiplicity=12,
+                space_group=194,
+                x=0.17487978999999995,
+                z=0.07300426000000003,
+            ),
+            WyckoffSet(
+                "k", 8, "O", multiplicity=12, space_group=194, x=0.82531286, z=0.1694312
+            ),
         ]
         for w1, w2 in zip(expected_sets, wyckoff_sets):
             self.assertEqual(w1, w2)
@@ -769,7 +995,9 @@ class WyckoffTests(unittest.TestCase):
         """
         # Create structure
         a = 2.87
-        fcc = ase.spacegroup.crystal('Al', [(0, 0, 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90])
+        fcc = ase.spacegroup.crystal(
+            "Al", [(0, 0, 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90]
+        )
 
         # Find the Wyckoff groups
         analyzer = SymmetryAnalyzer(fcc)
@@ -793,7 +1021,9 @@ class WyckoffTests(unittest.TestCase):
         # Create structure
         var = {"x": 0.13}
         a = 12
-        fcc = ase.spacegroup.crystal('Al', [(0, var["x"], 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90])
+        fcc = ase.spacegroup.crystal(
+            "Al", [(0, var["x"], 0)], spacegroup=225, cellpar=[a, a, a, 90, 90, 90]
+        )
 
         # Find the Wyckoff groups
         analyzer = SymmetryAnalyzer(fcc)
@@ -814,7 +1044,12 @@ class WyckoffTests(unittest.TestCase):
         # Create structure
         var = {"y": 0.077, "z": 0.13}
         a = 40
-        fcc = ase.spacegroup.crystal('Al', [(0, var["y"], var["z"])], spacegroup=225, cellpar=[a, a, a, 90, 90, 90])
+        fcc = ase.spacegroup.crystal(
+            "Al",
+            [(0, var["y"], var["z"])],
+            spacegroup=225,
+            cellpar=[a, a, a, 90, 90, 90],
+        )
 
         # Find the Wyckoff groups
         analyzer = SymmetryAnalyzer(fcc)
@@ -824,7 +1059,9 @@ class WyckoffTests(unittest.TestCase):
         # the ones that are used in creating the structure, but they are
         # nonetheless consistently determined.
         expected_sets = [
-            WyckoffSet("j", 13, "Al", space_group=225, multiplicity=96, y=0.077, z=0.87),
+            WyckoffSet(
+                "j", 13, "Al", space_group=225, multiplicity=96, y=0.077, z=0.87
+            ),
         ]
         for w1, w2 in zip(expected_sets, wyckoff_sets):
             self.assertEqual(w1, w2)
@@ -836,7 +1073,12 @@ class WyckoffTests(unittest.TestCase):
         # Create structure
         var = {"x": 0.077, "y": 0.13, "z": 0.36}
         a = 100
-        fcc = ase.spacegroup.crystal('Al', [(var["x"], var["y"], var["z"])], spacegroup=225, cellpar=[a, a, a, 90, 90, 90])
+        fcc = ase.spacegroup.crystal(
+            "Al",
+            [(var["x"], var["y"], var["z"])],
+            spacegroup=225,
+            cellpar=[a, a, a, 90, 90, 90],
+        )
 
         # Find the Wyckoff groups
         analyzer = SymmetryAnalyzer(fcc)
@@ -846,7 +1088,16 @@ class WyckoffTests(unittest.TestCase):
         # the ones that are used in creating the structure, but they are
         # nonetheless consistently determined.
         expected_sets = [
-            WyckoffSet("l", 13, "Al", space_group=225, multiplicity=192, x=0.577, y=0.13, z=0.86),
+            WyckoffSet(
+                "l",
+                13,
+                "Al",
+                space_group=225,
+                multiplicity=192,
+                x=0.577,
+                y=0.13,
+                z=0.86,
+            ),
         ]
         for w1, w2 in zip(expected_sets, wyckoff_sets):
             self.assertEqual(w1, w2)
@@ -856,27 +1107,27 @@ class GroundStateTests(unittest.TestCase):
     """Tests that the correct normalizer is applied to reach minimal
     configuration score that defines the Wyckoff positions.
     """
+
     def test_translation(self):
-        """Test a transform that translates atoms.
-        """
+        """Test a transform that translates atoms."""
         # The original system belongs to space group 12, see
         # http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-normsets?from=wycksets&gnum=12
         # and
         # http://www.cryst.ehu.es/cgi-bin/cryst/programs/nph-wp-list?gnum=012
         system = Atoms(
             cell=[
-                [3.3, 0., 0.],
-                [0., 1., 0.],
-                [-1., 0., 3.],
+                [3.3, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [-1.0, 0.0, 3.0],
             ],
             scaled_positions=[
-                [0.5, 0.5, 0.],
-                [0.5, 0.,  0.5],
-                [0.,  0.,  0.],
-                [0.,  0.5, 0.5],
+                [0.5, 0.5, 0.0],
+                [0.5, 0.0, 0.5],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.5, 0.5],
             ],
             symbols=["C", "H", "C", "H"],
-            pbc=True
+            pbc=True,
         )
         # The assumed ground state
         correct_state = ["d", "a", "d", "a"]
@@ -920,16 +1171,16 @@ class GroundStateTests(unittest.TestCase):
         """
         system = Atoms(
             cell=[
-                [1, 0., 0.],
-                [0., 2.66, 0.],
-                [0., 0., 1.66],
+                [1, 0.0, 0.0],
+                [0.0, 2.66, 0.0],
+                [0.0, 0.0, 1.66],
             ],
             scaled_positions=[
-                [0.0, 1/2, 0.0],
+                [0.0, 1 / 2, 0.0],
                 [0.0, 0.0, 0.0],
             ],
             symbols=["H", "C"],
-            pbc=True
+            pbc=True,
         )
         analyzer = SymmetryAnalyzer(system)
         space_group = analyzer.get_space_group_number()
@@ -963,7 +1214,9 @@ class GroundStateTests(unittest.TestCase):
         z_prim = zb_prim_conv.get_atomic_numbers()
 
         # Conventional
-        zb_conv = ase.build.bulk("ZnS", crystalstructure="zincblende", a=5.42, cubic=True)
+        zb_conv = ase.build.bulk(
+            "ZnS", crystalstructure="zincblende", a=5.42, cubic=True
+        )
         analyzer_conv = SymmetryAnalyzer(zb_conv)
         zb_conv_conv = analyzer_conv.get_conventional_system()
         wyckoff_conv = analyzer_conv.get_wyckoff_letters_conventional()
@@ -982,7 +1235,7 @@ class GroundStateTests(unittest.TestCase):
             self.assertTrue(found)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suites = []
     suites.append(unittest.TestLoader().loadTestsFromTestCase(TestSegfaultProtect))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(SymmetryAnalyser3DTests))

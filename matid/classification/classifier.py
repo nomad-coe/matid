@@ -4,49 +4,53 @@ import numpy as np
 from ase.data import covalent_radii
 from ase.data.vdw_alvarez import vdw_radii
 
-from matid.classifications import \
-    Surface, \
-    Atom, \
-    Material2D, \
-    Unknown, \
-    Class0D, \
-    Class1D, \
-    Class2D, \
-    Class3D
-    # Crystal
+from matid.classifications import (
+    Surface,
+    Atom,
+    Material2D,
+    Unknown,
+    Class0D,
+    Class1D,
+    Class2D,
+    Class3D,
+)
+
+# Crystal
 import matid.geometry
 from matid.data import constants
 from matid.classification.periodicfinder import PeriodicFinder
+
 # from matid.symmetry.symmetryanalyzer import SymmetryAnalyzer
 
 
-class Classifier():
+class Classifier:
     """A class that is used to analyze the contents of an atomistic system and
     separate the consituent atoms into different components along with other
     meaningful information.
     """
+
     def __init__(
-            self,
-            seed_position="cm",
-            max_cell_size=constants.MAX_CELL_SIZE,
-            pos_tol=None,
-            pos_tol_mode="relative",
-            pos_tol_scaling=constants.POS_TOL_SCALING,
-            angle_tol=constants.ANGLE_TOL,
-            cluster_threshold=constants.CLUSTER_THRESHOLD,
-            radii="covalent",
-            crystallinity_threshold=constants.CRYSTALLINITY_THRESHOLD,
-            delaunay_threshold=constants.DELAUNAY_THRESHOLD,
-            bond_threshold=constants.BOND_THRESHOLD,
-            delaunay_threshold_mode="relative",
-            chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
-            cell_size_tol=constants.CELL_SIZE_TOL,
-            max_n_atoms=constants.MAX_N_ATOMS,
-            max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
-            max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
-            symmetry_tol=constants.SYMMETRY_TOL,
-            min_coverage=constants.MIN_COVERAGE
-            ):
+        self,
+        seed_position="cm",
+        max_cell_size=constants.MAX_CELL_SIZE,
+        pos_tol=None,
+        pos_tol_mode="relative",
+        pos_tol_scaling=constants.POS_TOL_SCALING,
+        angle_tol=constants.ANGLE_TOL,
+        cluster_threshold=constants.CLUSTER_THRESHOLD,
+        radii="covalent",
+        crystallinity_threshold=constants.CRYSTALLINITY_THRESHOLD,
+        delaunay_threshold=constants.DELAUNAY_THRESHOLD,
+        bond_threshold=constants.BOND_THRESHOLD,
+        delaunay_threshold_mode="relative",
+        chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
+        cell_size_tol=constants.CELL_SIZE_TOL,
+        max_n_atoms=constants.MAX_N_ATOMS,
+        max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
+        max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
+        symmetry_tol=constants.SYMMETRY_TOL,
+        min_coverage=constants.MIN_COVERAGE,
+    ):
         """
         Args:
             seed_position(str | np.ndarray): The seed position. Either provide
@@ -151,12 +155,18 @@ class Classifier():
         # Check pos tolerance mode
         allowed_modes = set(["relative", "absolute"])
         if pos_tol_mode not in allowed_modes:
-            raise ValueError("Unknown value '{}' for 'pos_tol_mode'.".format(pos_tol_mode))
+            raise ValueError(
+                "Unknown value '{}' for 'pos_tol_mode'.".format(pos_tol_mode)
+            )
 
         # Check delaunay tolerance mode
         allowed_modes = set(["relative", "absolute"])
         if delaunay_threshold_mode not in allowed_modes:
-            raise ValueError("Unknown value '{}' for 'delaunay_threshold_mode'.".format(delaunay_threshold_mode))
+            raise ValueError(
+                "Unknown value '{}' for 'delaunay_threshold_mode'.".format(
+                    delaunay_threshold_mode
+                )
+            )
 
     def classify(self, input_system):
         """A function that analyzes the system and breaks it into different
@@ -177,7 +187,9 @@ class Classifier():
         try:
             system.wrap()
         except Exception:
-            raise ValueError("Cannot process system with zero-volume cell and periodic boundaries.")
+            raise ValueError(
+                "Cannot process system with zero-volume cell and periodic boundaries."
+            )
         self.system = system
         classification = None
 
@@ -197,7 +209,10 @@ class Classifier():
         # If pos_tol_mode or delaunay_threshold_mode is relative, get the
         # average distance to closest neighbours
         num = system.get_atomic_numbers()
-        if self.pos_tol_mode == "relative" or self.delaunay_threshold_mode == "relative":
+        if (
+            self.pos_tol_mode == "relative"
+            or self.delaunay_threshold_mode == "relative"
+        ):
             min_basis = np.linalg.norm(cell, axis=1).min()
             dist_matrix_mod = np.array(distances.dist_matrix_mic)
             np.fill_diagonal(dist_matrix_mod, min_basis)
@@ -206,7 +221,7 @@ class Classifier():
             mean_min_dist = min_dist.mean()
 
             if self.pos_tol_mode == "relative":
-                self.abs_pos_tol = np.array(self.pos_tol)*global_min_dist
+                self.abs_pos_tol = np.array(self.pos_tol) * global_min_dist
             elif self.pos_tol_mode == "absolute":
                 self.abs_pos_tol = self.pos_tol
 
@@ -217,9 +232,7 @@ class Classifier():
 
         # Get the system dimensionality
         dimensionality = matid.geometry.get_dimensionality(
-            system,
-            self.cluster_threshold,
-            distances.dist_matrix_radii_mic
+            system, self.cluster_threshold, distances.dist_matrix_radii_mic
         )
         if dimensionality is None:
             return Unknown(input_system)
@@ -239,7 +252,6 @@ class Classifier():
 
         # 2D structures
         elif dimensionality == 2:
-
             classification = Class2D(input_system)
 
             # Get the indices of the used seed atoms
@@ -269,11 +281,7 @@ class Classifier():
                     seed_indices = self.seed_position
 
             # Find the best region by trying out different parameters options
-            best_region = self.cross_validate_region(
-                system,
-                seed_indices,
-                distances
-            )
+            best_region = self.cross_validate_region(system, seed_indices, distances)
 
             if best_region is not None:
                 # Check that the region was connected cyclically in two
@@ -299,7 +307,7 @@ class Classifier():
                 # pattern is found inside a structure.
                 n_atoms = len(system)
                 n_basis_atoms = len(basis_indices)
-                coverage = n_basis_atoms/n_atoms
+                coverage = n_basis_atoms / n_atoms
                 covered = coverage >= self.min_coverage
 
                 if not split and covered and region_is_periodic:
@@ -315,11 +323,11 @@ class Classifier():
         return classification
 
     def cross_validate_region(
-            self,
-            system,
-            seed_indices,
-            distances,
-        ):
+        self,
+        system,
+        seed_indices,
+        distances,
+    ):
         """Given a system tries multiple combinations of different search
         parameters to find a prototype cell and a corresponding region that
         best explains the underlying structure.
@@ -339,7 +347,6 @@ class Classifier():
         for index in seed_indices:
             for size in self.max_cell_size:
                 for tol in self.abs_pos_tol:
-
                     # Run the region detection on the whole system.
                     periodicfinder = PeriodicFinder(
                         angle_tol=self.angle_tol,
@@ -347,7 +354,7 @@ class Classifier():
                         cell_size_tol=self.cell_size_tol,
                         max_2d_cell_height=self.max_2d_cell_height,
                         max_2d_single_cell_size=self.max_2d_single_cell_size,
-                        chem_similarity_threshold=self.chem_similarity_threshold
+                        chem_similarity_threshold=self.chem_similarity_threshold,
                     )
                     region = periodicfinder.get_region(
                         system,
@@ -356,7 +363,7 @@ class Classifier():
                         tol,
                         self.abs_delaunay_threshold,
                         self.bond_threshold,
-                        distances=distances
+                        distances=distances,
                     )
 
                     if region is not None:

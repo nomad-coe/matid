@@ -1,7 +1,7 @@
 import ase.build
 
 
-class SurfaceGenerator():
+class SurfaceGenerator:
     """Used to generate different kind of cuts from a given crystal cell.
 
     This class uses the function ase.build.surface to construct a surface from
@@ -10,6 +10,7 @@ class SurfaceGenerator():
     algorithm can be found at
     https://wiki.fysik.dtu.dk/ase/ase/build/surface.html#create-specific-non-common-surfaces
     """
+
     def __init__(self):
         """
         Args:

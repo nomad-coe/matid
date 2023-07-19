@@ -18,17 +18,18 @@ class LinkedUnitCollection(dict):
     Essentially this is a special flavor of a regular dictionary: the keys can
     only be a sequence of three integers, and the values should be LinkedUnits.
     """
+
     def __init__(
-            self,
-            system,
-            cell,
-            is_2d,
-            dist_matrix_radii_pbc,
-            disp_tensor_finite,
-            delaunay_threshold=constants.DELAUNAY_THRESHOLD,
-            chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
-            bond_threshold=constants.BOND_THRESHOLD,
-        ):
+        self,
+        system,
+        cell,
+        is_2d,
+        dist_matrix_radii_pbc,
+        disp_tensor_finite,
+        delaunay_threshold=constants.DELAUNAY_THRESHOLD,
+        chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
+        bond_threshold=constants.BOND_THRESHOLD,
+    ):
         """
         Args:
             system(ase.Atoms): A reference to the system from which this
@@ -70,20 +71,16 @@ class LinkedUnitCollection(dict):
             key = tuple(key)
         except:
             raise TypeError(
-                "Could not transform the given key '{}' into tuple."
-                .format(key)
+                "Could not transform the given key '{}' into tuple.".format(key)
             )
         if len(key) != 3:
             raise ValueError(
-                "The given coordinate '{}' does not have three components."
-                .format(key)
+                "The given coordinate '{}' does not have three components.".format(key)
             )
 
         # Check that old unit is not overwritten
         if key in dict.keys(self):
-            raise ValueError(
-                "Overriding existing units is not supported."
-            )
+            raise ValueError("Overriding existing units is not supported.")
 
         dict.__setitem__(self, key, value)
 
@@ -103,7 +100,6 @@ class LinkedUnitCollection(dict):
                 recreated_system += i_atoms
 
         return recreated_system
-
 
     def get_basis_atom_neighbourhood(self):
         """For each atom in the basis calculates the chemical neighbourhood.
@@ -139,11 +135,7 @@ class LinkedUnitCollection(dict):
             env_list = []
             for i in range(len(cell)):
                 i_env = self.get_chemical_environment(
-                    cell,
-                    i,
-                    disp,
-                    tvecs,
-                    tvecs_reduced
+                    cell, i, disp, tvecs, tvecs_reduced
                 )
                 env_list.append(i_env)
             self._basis_environments = env_list
@@ -195,16 +187,23 @@ class LinkedUnitCollection(dict):
 
                 indices = set()
                 for unit in self.values():
-
                     # Compare the chemical environment near this atom to the one
                     # that is present in the prototype cell. If these
                     # neighbourhoods are too different, then the atom is not
                     # counted as being a part of the region.
                     for i_index, index in enumerate(unit.basis_indices):
                         if index is not None:
-                            real_environment = self.get_chemical_environment(self.system, index, self.disp_tensor_finite, translations, translations_reduced)
+                            real_environment = self.get_chemical_environment(
+                                self.system,
+                                index,
+                                self.disp_tensor_finite,
+                                translations,
+                                translations_reduced,
+                            )
                             ideal_environment = neighbour_map[i_index]
-                            chem_similarity = self.get_chemical_similarity(ideal_environment, real_environment)
+                            chem_similarity = self.get_chemical_similarity(
+                                ideal_environment, real_environment
+                            )
                             if chem_similarity >= self.chem_similarity_threshold:
                                 indices.add(index)
 
@@ -225,13 +224,8 @@ class LinkedUnitCollection(dict):
         return additional_indices
 
     def get_chemical_environment(
-            self,
-            system,
-            index,
-            disp_tensor_finite,
-            translations,
-            translations_reduced
-        ):
+        self, system, index, disp_tensor_finite, translations, translations_reduced
+    ):
         """Get the chemical environment around an atom. The chemical
         environment is quantified simply by the number of different species
         around a certain distance when the covalent radii have been considered.
@@ -274,11 +268,10 @@ class LinkedUnitCollection(dict):
             if real_value is not None:
                 score += min(real_value, ideal_value)
 
-        return score/max_score
+        return score / max_score
 
     def get_interstitials(self):
-        """Get the indices of interstitial atoms in the original system.
-        """
+        """Get the indices of interstitial atoms in the original system."""
         inside_indices, _ = self.get_inside_and_outside_indices()
         inside_indices = set(inside_indices)
         substitutions = self.get_substitutions()
@@ -295,8 +288,7 @@ class LinkedUnitCollection(dict):
         """
         if self._clusters is None:
             clusters = matid.geometry.get_clusters(
-                self.dist_matrix_radii_pbc,
-                self.bond_threshold
+                self.dist_matrix_radii_pbc, self.bond_threshold
             )
             clusters = [set(list(x)) for x in clusters]
             self._clusters = clusters
@@ -317,7 +309,6 @@ class LinkedUnitCollection(dict):
             np.ndarray: Indices of the adsorbates in the original system.
         """
         if self._adsorbates is None:
-
             _, outside_indices = self.get_inside_and_outside_indices()
             basis_elements = set(self.cell.get_atomic_numbers())
             outside_indices = outside_indices
@@ -331,7 +322,6 @@ class LinkedUnitCollection(dict):
             outside_indices = np.array(list(outside_indices))
 
             if len(outside_indices) != 0:
-
                 basis_elements = set(basis_elements)
                 adsorbates = []
                 for index in outside_indices:
@@ -345,16 +335,14 @@ class LinkedUnitCollection(dict):
         return self._adsorbates
 
     def get_substitutions(self):
-        """Get the substitutions in the region.
-        """
+        """Get the substitutions in the region."""
         if self._substitutions is None:
-
             # Gather all substitutions
             # all_substitutions = []
             # for cell in self.values():
-                # subst = cell.substitutions
-                # if len(subst) != 0:
-                    # all_substitutions.extend(subst)
+            # subst = cell.substitutions
+            # if len(subst) != 0:
+            # all_substitutions.extend(subst)
 
             # The substitutions are validate based on their chemical
             # environment and position in the triangulation.
@@ -365,7 +353,6 @@ class LinkedUnitCollection(dict):
             translations, translations_reduced = self.get_chem_env_translations()
 
             for unit in self.values():
-
                 # Compare the chemical environment near this atom to the one
                 # that is present in the prototype cell. If these
                 # neighbourhoods are too different, then the atom is not
@@ -381,10 +368,12 @@ class LinkedUnitCollection(dict):
                                 subst_index,
                                 self.disp_tensor_finite,
                                 translations,
-                                translations_reduced
+                                translations_reduced,
                             )
                             ideal_environment = neighbour_map[i_index]
-                            chem_similarity = self.get_chemical_similarity(ideal_environment, real_environment)
+                            chem_similarity = self.get_chemical_similarity(
+                                ideal_environment, real_environment
+                            )
                             if chem_similarity >= self.chem_similarity_threshold:
                                 valid_subst.append(subst)
             self._substitutions = valid_subst
@@ -392,20 +381,20 @@ class LinkedUnitCollection(dict):
             # In 2D materials all substitutions in the cell are valid
             # substitutions
             # if self.is_2d:
-                # self._substitutions = all_substitutions
+            # self._substitutions = all_substitutions
             # else:
-                # # In surfaces the substitutions have to be validate by whether they
-                # # are inside the tesselation or not
-                # inside_indices, _ = self.get_inside_and_outside_indices()
-                # inside_set = set(inside_indices)
+            # # In surfaces the substitutions have to be validate by whether they
+            # # are inside the tesselation or not
+            # inside_indices, _ = self.get_inside_and_outside_indices()
+            # inside_set = set(inside_indices)
 
-                # # Find substitutions that are inside the tesselation
-                # valid_subst = []
-                # for subst in all_substitutions:
-                    # subst_index = subst.index
-                    # if subst_index in inside_set:
-                        # valid_subst.append(subst)
-                # self._substitutions = valid_subst
+            # # Find substitutions that are inside the tesselation
+            # valid_subst = []
+            # for subst in all_substitutions:
+            # subst_index = subst.index
+            # if subst_index in inside_set:
+            # valid_subst.append(subst)
+            # self._substitutions = valid_subst
 
         return self._substitutions
 
@@ -417,7 +406,6 @@ class LinkedUnitCollection(dict):
             The Atoms object has the same properties as the original system.
         """
         if self._vacancies is None:
-
             # Gather all vacancies
             all_vacancies = []
             for cell in self.values():
@@ -444,8 +432,7 @@ class LinkedUnitCollection(dict):
         return self._vacancies
 
     def get_tetrahedra_decomposition(self):
-        """Get the tetrahedra decomposition for this region.
-        """
+        """Get the tetrahedra decomposition for this region."""
         if self._decomposition is None:
             # Get the positions of basis atoms
             basis_indices = self.get_basis_indices()
@@ -453,15 +440,13 @@ class LinkedUnitCollection(dict):
 
             # Perform tetrahedra decomposition
             self._decomposition = matid.geometry.get_tetrahedra_decomposition(
-                valid_sys,
-                self.delaunay_threshold
+                valid_sys, self.delaunay_threshold
             )
 
         return self._decomposition
 
     def get_all_indices(self):
-        """Get all the indices that are present in the full system.
-        """
+        """Get all the indices that are present in the full system."""
         return set(range(len(self.system)))
 
     def get_unknowns(self):
@@ -534,11 +519,21 @@ class LinkedUnitCollection(dict):
         return connected_directions
 
 
-class LinkedUnit():
+class LinkedUnit:
     """Represents a cell that is connected to others in 3D space to form a
     structure, e.g. a surface.
     """
-    def __init__(self, index, seed_index, seed_coordinate, cell, basis_indices, substitutions, vacancies):
+
+    def __init__(
+        self,
+        index,
+        seed_index,
+        seed_coordinate,
+        cell,
+        basis_indices,
+        substitutions,
+        vacancies,
+    ):
         """
         Args:
             index(tuple of three ints):
@@ -561,9 +556,9 @@ class LinkedUnit():
         self.vacancies = vacancies
 
 
-class Substitution():
-    """Represents a substitutional point defect.
-    """
+class Substitution:
+    """Represents a substitutional point defect."""
+
     def __init__(self, index, position, original_element, substitutional_element):
         """
         Args:

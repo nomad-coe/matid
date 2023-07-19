@@ -28,10 +28,10 @@ for key, value in space_hall_map.items():
     choice = dataset["choice"]
 
     # try:
-        # origin = int(choice)
+    # origin = int(choice)
     # except ValueError as e:
-        # if choice != "H":
-            # print(choice)
+    # if choice != "H":
+    # print(choice)
 
     if choice == "":
         print(spglib.get_spacegroup_type(value[0])["choice"])

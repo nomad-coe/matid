@@ -62,8 +62,7 @@ for hall_number in range(1, 531):
         }
         crystal_system_letter = crystal_system_map.get(crystal_system)
         space_group_database[number]["bravais_lattice"] = (
-            crystal_system_letter +
-            lattice_type
+            crystal_system_letter + lattice_type
         )
 
 # Write the results as a pickle file

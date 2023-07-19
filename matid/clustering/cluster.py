@@ -17,11 +17,23 @@ class Classification(Enum):
     Surface = "2D Surface"
 
 
-class Cluster():
+class Cluster:
     """
     Represents a part of a bigger system.
     """
-    def __init__(self, indices=None, species=None, region=None, dimensionality=None, classification=None, cell=None, system=None, distances=None, bond_threshold=None):
+
+    def __init__(
+        self,
+        indices=None,
+        species=None,
+        region=None,
+        dimensionality=None,
+        classification=None,
+        cell=None,
+        system=None,
+        distances=None,
+        bond_threshold=None,
+    ):
         if isinstance(indices, list):
             self.indices = indices
         else:
@@ -40,14 +52,12 @@ class Cluster():
         return len(self.indices)
 
     def _distance_matrix_radii_mic(self) -> int:
-        """Used to fetch the prototypical cell for this cluster if one exists.
-        """
+        """Used to fetch the prototypical cell for this cluster if one exists."""
         return self.distances.dist_matrix_radii_mic[np.ix_(self.indices, self.indices)]
 
     @lru_cache(maxsize=1)
     def cell(self) -> int:
-        """Used to fetch the prototypical cell for this cluster if one exists.
-        """
+        """Used to fetch the prototypical cell for this cluster if one exists."""
         if self._cell:
             return self._cell
         if self.region:
@@ -56,21 +66,19 @@ class Cluster():
 
     @lru_cache(maxsize=1)
     def dimensionality(self) -> int:
-        """Used to fetch the dimensionality of the cluster.
-        """
+        """Used to fetch the dimensionality of the cluster."""
         if self._dimensionality is not None:
             return self._dimensionality
 
         return matid.geometry.get_dimensionality(
             self.system[self.indices],
             self.bond_threshold,
-            dist_matrix_radii_mic_1x=self._distance_matrix_radii_mic()
+            dist_matrix_radii_mic_1x=self._distance_matrix_radii_mic(),
         )
 
     @lru_cache(maxsize=1)
     def classification(self) -> str:
-        """Used to classify this cluster.
-        """
+        """Used to classify this cluster."""
         if self._classification:
             return self._classification
 
