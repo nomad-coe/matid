@@ -112,7 +112,7 @@ const config = {
               },
               {
                 label: 'Symmetry Analysis',
-                to: '/docs/symmetry/symmetry-analysis-basics',
+                to: '/docs/symmetry/symmetry-basics',
               },
             ],
           },
