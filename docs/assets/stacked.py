@@ -7,37 +7,30 @@ from ase.visualize import view
 from matid.clustering import Clusterer
 
 # Copper surface
-surface = fcc111('Cu', size=(6, 6, 3), vacuum=0)
+surface = fcc111("Cu", size=(6, 6, 3), vacuum=0)
 surface.rotate(v=[0, 0, 1], a=-60, rotate_cell=True)
 surface.wrap()
 
 # MoS2
-mos2 = mx2(
-    formula='MoS2',
-    kind='2H',
-    a=3.18,
-    thickness=3.19,
-    size=(5, 5, 1)
-)
+mos2 = mx2(formula="MoS2", kind="2H", a=3.18, thickness=3.19, size=(5, 5, 1))
 
 # Graphene sheet
 graphene = Atoms(
-	symbols=["C", "C"],
-	cell=np.array((
-		[2.4595121467478055, 0.0, 0.0],
-		[-1.2297560733739028, 2.13, 0.0],
-		[0.0, 0.0, 20.0]
-	)),
-	scaled_positions=np.array((
-		[1/3, 2/3, 0.5],
-		[2/3, 1/3, 0.5]
-	)),
-	pbc=[True, True, False]
-)*[6, 6, 1]
+    symbols=["C", "C"],
+    cell=np.array(
+        (
+            [2.4595121467478055, 0.0, 0.0],
+            [-1.2297560733739028, 2.13, 0.0],
+            [0.0, 0.0, 20.0],
+        )
+    ),
+    scaled_positions=np.array(([1 / 3, 2 / 3, 0.5], [2 / 3, 1 / 3, 0.5])),
+    pbc=[True, True, False],
+) * [6, 6, 1]
 
 # Center structures in the horizontal plane
 surface_com = surface.get_center_of_mass()
-cell_center = 1/2 * surface.get_cell().sum(axis=0)
+cell_center = 1 / 2 * surface.get_cell().sum(axis=0)
 mos2_com = mos2.get_center_of_mass()
 mos2.translate(cell_center - mos2_com)
 graphene_com = graphene.get_center_of_mass()
@@ -59,7 +52,7 @@ scaled_positions = system.get_scaled_positions()
 system.set_cell(3 * system.get_cell())
 system.center()
 system.set_pbc(False)
-write('system.xyz', system)
+write("system.xyz", system)
 
 # Peform clustering and view results
 # clusterer = Clusterer()
