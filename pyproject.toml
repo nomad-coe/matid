@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'matid'
-version = '0.6.3'
-description = 'MatID is a python package for identifying and analyzing atomistic systems based on their structure.'
+version = '2.0.0'
+description = 'MatID is a Python package for identifying and analyzing atomistic systems based on their structure.'
 readme = "README.md"
 authors = [{ name = "Lauri Himanen" }]
 license = { file = "LICENSE" }

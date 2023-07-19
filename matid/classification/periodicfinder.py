@@ -2,7 +2,6 @@ import itertools
 from collections import deque, defaultdict, OrderedDict
 
 import numpy as np
-from numpy.core.umath_tests import inner1d
 import networkx as nx
 from ase import Atoms
 
@@ -11,6 +10,9 @@ from matid.data import constants
 from matid.core.linkedunits import LinkedUnitCollection, LinkedUnit
 from matid.core.distances import Distances
 from matid.exceptions import MatIDError
+
+def inner1d(a, b):
+    return (a * b).sum(axis=1)
 
 # These are the directions in which the recursive search can progress into. Note
 # that also diagonal directions should be included in order for the search to
