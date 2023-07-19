@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/nomad-coe/matid/v2.0.0/docs/static/img/logo.png" width="400">
+<img src="https://raw.githubusercontent.com/nomad-coe/matid/v2.0.0/docs/static/img/logo.png" width="350">
 
 ![Build status](https://github.com/nomad-coe/matid/actions/workflows/build.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/nomad-coe/matid/badge.svg?branch=main)](https://coveralls.io/github/nomad-coe/matid?branch=main)
