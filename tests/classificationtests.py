@@ -207,7 +207,7 @@ class DimensionalityTests(unittest.TestCase):
 
             # Test a system that has a non-orthogonal cell.
             system = ase.io.read(
-                "./structures/ROJiORHNwL4q0WTvNUy0mW5s2Buuq+PSX9X4dQR2r1cjQ9kBtuC-wI6MO8B.xyz"
+                "./data/ROJiORHNwL4q0WTvNUy0mW5s2Buuq+PSX9X4dQR2r1cjQ9kBtuC-wI6MO8B.xyz"
             )
             dimensionality = matid.geometry.get_dimensionality(
                 system, radii=radii, cluster_threshold=cluster_threshold
@@ -444,7 +444,7 @@ class PeriodicFinderTests(unittest.TestCase):
     # test does not yet pass because the full cluster is not detected
     # correctly.
     # """
-    # system = ase.io.read("./structures/cu55.xyz")
+    # system = ase.io.read("./data/cu55.xyz")
     # system.set_cell([20, 20, 20])
     # system.set_pbc(True)
     # system.center()
@@ -693,7 +693,7 @@ class Material2DTests(unittest.TestCase):
         because of too sparse cell.
         """
         system = ase.io.read(
-            "./structures/R6JuJXj20goPQ0vv6aAVYpNyuwGgN+P_PaYo5EiiPChgUe9B6JnTX6BcOwt.xyz"
+            "./data/R6JuJXj20goPQ0vv6aAVYpNyuwGgN+P_PaYo5EiiPChgUe9B6JnTX6BcOwt.xyz"
         )
         # view(system)
 
@@ -740,7 +740,7 @@ class Material2DTests(unittest.TestCase):
         below the threshold MAX_SINGLE_CELL_SIZE.
         """
         system = ase.io.read(
-            "./structures/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PgZTqAjcn_4hHS3fozZkAI0Jxtdas.xyz"
+            "./data/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PgZTqAjcn_4hHS3fozZkAI0Jxtdas.xyz"
         )
         # view(system)
 
@@ -765,7 +765,7 @@ class Material2DTests(unittest.TestCase):
         Should be detected by using TSA on the cell.
         """
         system = ase.io.read(
-            "./structures/RloVGNkMhI83gtwzF5DmftT6fM31d+P9ZCykgTQkZ7aIFmr-vje9gq8p6fc.xyz"
+            "./data/RloVGNkMhI83gtwzF5DmftT6fM31d+P9ZCykgTQkZ7aIFmr-vje9gq8p6fc.xyz"
         )
 
         classifier = Classifier()
@@ -826,7 +826,7 @@ class Material2DTests(unittest.TestCase):
         found correctly.
         """
         system = ase.io.read(
-            "./structures/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PKPif9Fqbl30oVX-710UwCHGMd83y.xyz"
+            "./data/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PKPif9Fqbl30oVX-710UwCHGMd83y.xyz"
         )
 
         classifier = Classifier()
@@ -838,7 +838,7 @@ class Material2DTests(unittest.TestCase):
         recognized and the other recognized as adsorbate.
         """
         system = ase.io.read(
-            "./structures/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PDLFIM7Xvy9JaEqwS72kDtDr_Szhp.xyz"
+            "./data/RJv-r5Vwf6ypWElBSq_hTCOaxEU89+PDLFIM7Xvy9JaEqwS72kDtDr_Szhp.xyz"
         )
 
         classifier = Classifier()
@@ -1220,7 +1220,7 @@ class Material2DTests(unittest.TestCase):
         share the same elements.
         """
         system = ase.io.read(
-            "./structures/RloVGNkMhI83gtwzF5DmftT6fM31d+PKxGoPkNrvdpZrlLS-V14MszJ-57L.xyz"
+            "./data/RloVGNkMhI83gtwzF5DmftT6fM31d+PKxGoPkNrvdpZrlLS-V14MszJ-57L.xyz"
         )
         # view(system)
 
@@ -1586,7 +1586,7 @@ class SurfaceTests(unittest.TestCase):
         values for \omega_v and \omega_c are not suitable.
         """
         system = ase.io.read(
-            "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PIkKcrxeOf997qnQ_hWRXLdMsmpAf.xyz"
+            "./data/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PIkKcrxeOf997qnQ_hWRXLdMsmpAf.xyz"
         )
         # view(system)
         classifier = Classifier()
@@ -1600,7 +1600,7 @@ class SurfaceTests(unittest.TestCase):
         algorithm cannot find it.
         """
         system = ase.io.read(
-            "./structures/Rhn-EWQQN8Z-lbmZwoWPyrGiM9Isx+PbYDgCBSwbq3nxONqWaq03HYUn8_V.xyz"
+            "./data/Rhn-EWQQN8Z-lbmZwoWPyrGiM9Isx+PbYDgCBSwbq3nxONqWaq03HYUn8_V.xyz"
         )
         # view(system)
         classifier = Classifier()
@@ -1613,7 +1613,7 @@ class SurfaceTests(unittest.TestCase):
         information, and one of them is missing an atom.
         """
         system = ase.io.read(
-            "./structures/Rq0LUBXa6rZ-mddbQUZJXOIVAIg-J+Pm73-Kx5CWtuIHzLTr5R-Nir2el0i.xyz"
+            "./data/Rq0LUBXa6rZ-mddbQUZJXOIVAIg-J+Pm73-Kx5CWtuIHzLTr5R-Nir2el0i.xyz"
         )
         # view(system)
         classifier = Classifier()
@@ -1624,7 +1624,7 @@ class SurfaceTests(unittest.TestCase):
     def test_thin_surface(self):
         """A realistic surface with only two layers."""
         system = ase.io.read(
-            "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PYu3zrqdlNhhs9tII2lnvJ3Gj7tai.xyz"
+            "./data/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PYu3zrqdlNhhs9tII2lnvJ3Gj7tai.xyz"
         )
         # view(system)
         classifier = Classifier()
@@ -1638,7 +1638,7 @@ class SurfaceTests(unittest.TestCase):
         carbon dioxide adsorbate is very hard to distinguish from the surface.
         """
         system = ase.io.read(
-            "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PmZsb-Uf3AIGQyTBZDg4ZgxXaq5UB.xyz"
+            "./data/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PmZsb-Uf3AIGQyTBZDg4ZgxXaq5UB.xyz"
         )
         # view(system)
         classifier = Classifier()
@@ -1727,7 +1727,7 @@ class SurfaceTests(unittest.TestCase):
         is not tuned correctly.
         """
         system = ase.io.read(
-            "./structures/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
+            "./data/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
         )
         # view(system)
 
@@ -1759,7 +1759,7 @@ class SurfaceTests(unittest.TestCase):
     # identified as outliers. Such systems still pose a challenge to the
     # algorithm.
     # """
-    # system = ase.io.read("./structures/Rhn-EWQQN8Z-lbmZwoWPyrGiM9Isx+PbYDgCBSwbq3nxONqWaq03HYUn8_V.xyz")
+    # system = ase.io.read("./data/Rhn-EWQQN8Z-lbmZwoWPyrGiM9Isx+PbYDgCBSwbq3nxONqWaq03HYUn8_V.xyz")
     # view(system)
 
     # classifier = Classifier()
@@ -1775,7 +1775,7 @@ class SurfaceTests(unittest.TestCase):
         exhibit the correct chemical neighbourhood are identified.
         """
         system = ase.io.read(
-            "./structures/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbsl6Hlb_C1aXadFiJ58UCUek5a8x.xyz"
+            "./data/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbsl6Hlb_C1aXadFiJ58UCUek5a8x.xyz"
         )
         # view(system)
 
@@ -1833,7 +1833,7 @@ class SurfaceTests(unittest.TestCase):
         cell boundaries are not allowed.
         """
         system = ase.io.read(
-            "./structures/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+PEzXqLISX8Pam-HlJMxeLc86lcKgf.xyz"
+            "./data/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+PEzXqLISX8Pam-HlJMxeLc86lcKgf.xyz"
         )
 
         classifier = Classifier()
@@ -1858,7 +1858,7 @@ class SurfaceTests(unittest.TestCase):
         detected if the size of the connected components would not be checked.
         """
         system = ase.io.read(
-            "./structures/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+P8Wnwz4dfyea6UAD0WEBadXv83wyf.xyz"
+            "./data/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+P8Wnwz4dfyea6UAD0WEBadXv83wyf.xyz"
         )
         # view(system)
 
@@ -1882,7 +1882,7 @@ class SurfaceTests(unittest.TestCase):
 
     def test_surface_with_one_basis_vector_as_span(self):
         system = ase.io.read(
-            "./structures/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+PFw_-OtcPJ5og8XMItaAAFYhQUaY6.xyz"
+            "./data/RDtJ5cTyLBPt4PA182VbCzoCxf5Js+PFw_-OtcPJ5og8XMItaAAFYhQUaY6.xyz"
         )
         # view(system)
 
@@ -1910,7 +1910,7 @@ class SurfaceTests(unittest.TestCase):
         be detected as single surface.
         """
         system = ase.io.read(
-            "./structures/RscdVKibS4pD0O_Yo1CSwkznfiL1c+PCvflj-qTkfRcUaCISfn8fm-2oaVW.xyz"
+            "./data/RscdVKibS4pD0O_Yo1CSwkznfiL1c+PCvflj-qTkfRcUaCISfn8fm-2oaVW.xyz"
         )
         # view(system)
 
@@ -1967,7 +1967,7 @@ class SurfaceTests(unittest.TestCase):
         only two repetitions in the surface normal direction.
         """
         system = ase.io.read(
-            "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+Pkl2CiGU9KP0uluTY8M3PeGEb4OS_.xyz"
+            "./data/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+Pkl2CiGU9KP0uluTY8M3PeGEb4OS_.xyz"
         )
         # view(system)
 
@@ -2400,7 +2400,7 @@ class SearchGraphTests(unittest.TestCase):
         not wrap across it.
         """
         system = ase.io.read(
-            "./structures/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
+            "./data/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
         )
         # view(system)
 
@@ -2414,7 +2414,7 @@ class SearchGraphTests(unittest.TestCase):
     def test_surface_adsorbate(self):
         """Test graph search in the presence of adsorbates."""
         system = ase.io.read(
-            "./structures/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbco91p05ftuJQ38__Y0_TDg9tNIy.xyz"
+            "./data/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbco91p05ftuJQ38__Y0_TDg9tNIy.xyz"
         )
         # view(system)
 
