@@ -4,6 +4,7 @@ a atomic system.
 import math
 import itertools
 from collections import defaultdict
+from sys import getsizeof
 
 import numpy as np
 from numpy.random import RandomState
@@ -143,6 +144,8 @@ def get_dimensionality(
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
             num_2x = system_2x.get_atomic_numbers()
+            print("=======================================")
+            print("Started disp calc")
             _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
                 pos_2x,
@@ -422,35 +425,6 @@ def make_random_displacement(system, delta, rng=None):
     system.set_positions(new_pos)
 
 
-def get_extended_system(system, target_size):
-    """Replicate the system in different directions to reach the given target
-    size.
-
-    Args:
-        system (ase.Atoms): The original system.
-        target_size (float): The target size for the extended system in
-            angstroms.
-
-    Returns:
-        ase.Atoms: The extended system.
-    """
-    pbc = system.get_pbc()
-    cell = system.get_cell()
-
-    repetitions = np.array([1, 1, 1])
-    for i, pbc in enumerate(pbc):
-        # Only extend in the periodic dimensions
-        basis = cell[i, :]
-        if pbc:
-            size = np.linalg.norm(basis)
-            i_repetition = np.maximum(np.round(target_size / size), 1).astype(int)
-            repetitions[i] = i_repetition
-
-    extended_system = system.repeat(repetitions)
-
-    return extended_system
-
-
 def get_clusters(dist_matrix, threshold, min_samples=1):
     """Used to detect clusters with the DBSCAN algorithm.
 
@@ -645,9 +619,6 @@ def get_displacement_tensor(
         pbc(boolean or a list of booleans): Periodicity of the axes
         mic(boolean): Whether to return the displacement to the nearest
             periodic copy
-        mic_copies(np.ndarray): The maximum number of periodic copies to
-            consider in each direction. If not specified, the maximum possible
-            number of copies is determined and used.
 
     Returns:
         np.ndarray: 3D displacement tensor
@@ -672,7 +643,9 @@ def get_displacement_tensor(
     # If minimum image convention is used, get the corrected vectors
     if mic:
         flattened_disp = np.reshape(disp_tensor, (-1, 3))
+        print("Started mic calc")
         D, D_len, factors = find_mic(flattened_disp, cell, pbc, max_distance)
+        print("Finished mic calc")
         disp_tensor = np.reshape(D, tensor_shape)
         if return_factors:
             factors = np.reshape(factors, tensor_shape)
