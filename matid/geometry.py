@@ -18,6 +18,7 @@ from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
 from matid.core.distances import Distances
 import matid.geometry
+import matid.ext
 
 from sklearn.cluster import DBSCAN
 
@@ -119,6 +120,13 @@ def get_dimensionality(
             max_distance=max_distance,
             return_distances=True,
         )
+        # _, dist_matrix_mic_1x = get_displacement_tensor_ext(
+        #     pos_1x,
+        #     cell_1x,
+        #     pbc,
+        #     cutoff=max_distance,
+        #     return_distances=True,
+        # )
         radii_1x = radii[num_1x]
         radii_matrix_1x = radii_1x[:, None] + radii_1x[None, :]
         dist_matrix_radii_mic_1x = dist_matrix_mic_1x - radii_matrix_1x
@@ -144,8 +152,6 @@ def get_dimensionality(
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
             num_2x = system_2x.get_atomic_numbers()
-            print("=======================================")
-            print("Started disp calc")
             _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
                 pos_2x,
@@ -155,6 +161,13 @@ def get_dimensionality(
                 max_distance=max_distance,
                 return_distances=True,
             )
+            # _, dist_matrix_mic_2x = get_displacement_tensor_ext(
+            #     pos_2x,
+            #     cell_2x,
+            #     pbc,
+            #     cutoff=max_distance,
+            #     return_distances=True,
+            # )
             radii_2x = radii[num_2x]
             radii_matrix_2x = radii_2x[:, None] + radii_2x[None, :]
             dist_matrix_radii_mic_2x = dist_matrix_mic_2x - radii_matrix_2x
@@ -643,9 +656,7 @@ def get_displacement_tensor(
     # If minimum image convention is used, get the corrected vectors
     if mic:
         flattened_disp = np.reshape(disp_tensor, (-1, 3))
-        print("Started mic calc")
         D, D_len, factors = find_mic(flattened_disp, cell, pbc, max_distance)
-        print("Finished mic calc")
         disp_tensor = np.reshape(D, tensor_shape)
         if return_factors:
             factors = np.reshape(factors, tensor_shape)
@@ -665,6 +676,39 @@ def get_displacement_tensor(
         return disp_tensor, lengths
     else:
         return disp_tensor
+
+
+def get_displacement_tensor_ext(
+    positions,
+    cell=None,
+    pbc=False,
+    mic=False,
+    cutoff=float('inf'),
+    return_factors=False,
+    return_distances=False,
+):
+    if cell is None:
+        cell = np.zeros((3, 3))
+    n_atoms = positions.shape[0]
+    infinity = 10000
+    disp_tensor = np.full((n_atoms, n_atoms, 3), infinity)
+    dist_mat = np.full((n_atoms, n_atoms), infinity)
+    matid.ext.get_displacement_tensor(
+        disp_tensor,
+        dist_mat,
+        positions,
+        cell,
+        expand_pbc(pbc),
+        mic,
+        cutoff,
+        return_factors,
+        return_distances,
+    )
+
+    if return_distances:
+        return disp_tensor, dist_mat
+
+    return disp_tensor
 
 
 def find_mic(D, cell, pbc, max_distance=None):
