@@ -115,7 +115,7 @@ class SymmetryAnalyzer(object):
          - Wyckoff position letters and the species occupied in them
         """
         spg_number = self.get_space_group_number()
-        wyckoff_sets = self.get_wyckoff_sets_conventional()
+        wyckoff_sets = self.get_wyckoff_sets_conventional(False)
         wyckoff_strings = []
         for group in wyckoff_sets:
             element = group.element
