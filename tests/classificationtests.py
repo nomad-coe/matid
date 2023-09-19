@@ -1581,18 +1581,19 @@ class Class3DTests(unittest.TestCase):
 class SurfaceTests(unittest.TestCase):
     """Tests for detecting and analyzing surfaces."""
 
-    def test_adsorbate_pattern(self):
-        """Here the adsorbate will easily get included in the basis if the
-        values for \omega_v and \omega_c are not suitable.
-        """
-        system = ase.io.read(
-            "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PIkKcrxeOf997qnQ_hWRXLdMsmpAf.xyz"
-        )
-        # view(system)
-        classifier = Classifier()
-        classification = classifier.classify(system)
-        self.assertEqual(type(classification), Surface)
-        self.assertTrue(np.array_equal(classification.outliers, [24, 25, 26]))
+    # This test case is disabled due to skipping the \omega_c criterion in v2.0.0.
+    # def test_adsorbate_pattern(self):
+    #     """Here the adsorbate will easily get included in the basis if the
+    #     values for \omega_v and \omega_c are not suitable.
+    #     """
+    #     system = ase.io.read(
+    #         "./structures/RmlNIfj-YIQ14UBYjtAHtXcAEXZif+PIkKcrxeOf997qnQ_hWRXLdMsmpAf.xyz"
+    #     )
+    #     # view(system)
+    #     classifier = Classifier()
+    #     classification = classifier.classify(system)
+    #     self.assertEqual(type(classification), Surface)
+    #     self.assertTrue(np.array_equal(classification.outliers, [24, 25, 26]))
 
     def test_not_enough_repetitions(self):
         """In this system there is not enough repetitions of the cell in a
