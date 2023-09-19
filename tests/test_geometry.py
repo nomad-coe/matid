@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 import pytest
 import ase.lattice.hexagonal
 import ase.lattice.cubic
@@ -237,7 +238,7 @@ small_vacuum = Atoms(
         pytest.param(sys3d, None, True, 3, id="3D-periodic-abc"),
         pytest.param(
             ase.io.read(
-                "./tests/data/ROJiORHNwL4q0WTvNUy0mW5s2Buuq+PSX9X4dQR2r1cjQ9kBtuC-wI6MO8B.xyz"
+                Path(__file__).parent / "data/ROJiORHNwL4q0WTvNUy0mW5s2Buuq+PSX9X4dQR2r1cjQ9kBtuC-wI6MO8B.xyz"
             ),
             None,
             None,
