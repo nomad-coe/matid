@@ -111,22 +111,13 @@ def get_dimensionality(
     # 1x1x1 system
     if dist_matrix_radii_mic_1x is None:
         pos_1x = system.get_positions()
-        _, dist_matrix_mic_1x = get_displacement_tensor(
-            pos_1x,
+        _, dist_matrix_mic_1x = get_displacement_tensor_ext(
             pos_1x,
             cell_1x,
             pbc,
-            mic=True,
-            max_distance=max_distance,
+            cutoff=max_distance,
             return_distances=True,
         )
-        # _, dist_matrix_mic_1x = get_displacement_tensor_ext(
-        #     pos_1x,
-        #     cell_1x,
-        #     pbc,
-        #     cutoff=max_distance,
-        #     return_distances=True,
-        # )
         radii_1x = radii[num_1x]
         radii_matrix_1x = radii_1x[:, None] + radii_1x[None, :]
         dist_matrix_radii_mic_1x = dist_matrix_mic_1x - radii_matrix_1x
@@ -152,22 +143,13 @@ def get_dimensionality(
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
             num_2x = system_2x.get_atomic_numbers()
-            _, dist_matrix_mic_2x = get_displacement_tensor(
-                pos_2x,
+            _, dist_matrix_mic_2x = get_displacement_tensor_ext(
                 pos_2x,
                 cell_2x,
                 pbc,
-                mic=True,
-                max_distance=max_distance,
+                cutoff=max_distance,
                 return_distances=True,
             )
-            # _, dist_matrix_mic_2x = get_displacement_tensor_ext(
-            #     pos_2x,
-            #     cell_2x,
-            #     pbc,
-            #     cutoff=max_distance,
-            #     return_distances=True,
-            # )
             radii_2x = radii[num_2x]
             radii_matrix_2x = radii_2x[:, None] + radii_2x[None, :]
             dist_matrix_radii_mic_2x = dist_matrix_mic_2x - radii_matrix_2x
@@ -451,14 +433,16 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         list: A list of clusters, where each cluster is a list of indices for
         the elements belonging to the cluster.
     """
-    # As the distance have been normalized with respect to the covalent radiis,
+    # As the distances have been normalized with respect to the covalent radiis,
     # the distance matrix may in some cases have negative values. This simply
     # means that the distance between two atoms is smaller than the sum of
     # their covalent radiis. The distance values are here clipped to
     # zero to avoid problems in the cluster detection. Another option would be
     # to normalize the distances so that unity would correspond to the sum of
-    # the two radii.
-    np.clip(dist_matrix, a_min=0, a_max=None, out=dist_matrix)
+    # the two radii. In addition, any values larger than the capped: this is
+    # required in order to handle infinite values which come from distances
+    # larger than a set radial cutoff.
+    np.clip(dist_matrix, a_min=0, a_max=1.1*threshold, out=dist_matrix)
 
     # Detect clusters
     db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
@@ -687,12 +671,13 @@ def get_displacement_tensor_ext(
     return_factors=False,
     return_distances=False,
 ):
+    if cutoff is None:
+        cutoff = float('inf')
     if cell is None:
-        cell = np.zeros((3, 3))
+        cell = np.eye(3)
     n_atoms = positions.shape[0]
-    infinity = 10000
-    disp_tensor = np.full((n_atoms, n_atoms, 3), infinity)
-    dist_mat = np.full((n_atoms, n_atoms), infinity)
+    disp_tensor = np.full((n_atoms, n_atoms, 3), float('inf'))
+    dist_mat = np.full((n_atoms, n_atoms), float('inf'))
     matid.ext.get_displacement_tensor(
         disp_tensor,
         dist_mat,
@@ -1525,7 +1510,7 @@ def get_crystallinity(symmetry_analyser):
     return ratio
 
 
-def get_distances(system: Atoms) -> Distances:
+def get_distances(system: Atoms, cutoff=None) -> Distances:
     """Returns complete distance information.
 
     Args:
@@ -1536,15 +1521,15 @@ def get_distances(system: Atoms) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite = get_displacement_tensor(pos, pos)
+    disp_tensor_finite, dist_matrix_finite = get_displacement_tensor_ext(pos, cutoff=cutoff, return_distances=True)
     if pbc.any():
-        disp_tensor_mic, disp_factors = get_displacement_tensor(
-            pos, pos, cell, pbc, mic=True, return_factors=True
+        disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
+            pos, pos, cell, pbc, mic=True, max_distance=cutoff, return_factors=True, return_distances=True
         )
     else:
         disp_tensor_mic = disp_tensor_finite
         disp_factors = np.zeros(disp_tensor_finite.shape)
-    dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
+        dist_matrix_mic = dist_matrix_finite
 
     # Calculate the distance matrix where the periodicity and the covalent
     # radii have been taken into account
