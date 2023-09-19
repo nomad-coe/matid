@@ -442,7 +442,7 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
     # the two radii. In addition, any values larger than the capped: this is
     # required in order to handle infinite values which come from distances
     # larger than a set radial cutoff.
-    np.clip(dist_matrix, a_min=0, a_max=1.1*threshold, out=dist_matrix)
+    np.clip(dist_matrix, a_min=0, a_max=1.1 * threshold, out=dist_matrix)
 
     # Detect clusters
     db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
@@ -667,17 +667,17 @@ def get_displacement_tensor_ext(
     cell=None,
     pbc=False,
     mic=False,
-    cutoff=float('inf'),
+    cutoff=float("inf"),
     return_factors=False,
     return_distances=False,
 ):
     if cutoff is None:
-        cutoff = float('inf')
+        cutoff = float("inf")
     if cell is None:
         cell = np.eye(3)
     n_atoms = positions.shape[0]
-    disp_tensor = np.full((n_atoms, n_atoms, 3), float('inf'))
-    dist_mat = np.full((n_atoms, n_atoms), float('inf'))
+    disp_tensor = np.full((n_atoms, n_atoms, 3), float("inf"))
+    dist_mat = np.full((n_atoms, n_atoms), float("inf"))
     matid.ext.get_displacement_tensor(
         disp_tensor,
         dist_mat,
@@ -1521,10 +1521,19 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite, dist_matrix_finite = get_displacement_tensor_ext(pos, cutoff=cutoff, return_distances=True)
+    disp_tensor_finite, dist_matrix_finite = get_displacement_tensor_ext(
+        pos, cutoff=cutoff, return_distances=True
+    )
     if pbc.any():
         disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
-            pos, pos, cell, pbc, mic=True, max_distance=cutoff, return_factors=True, return_distances=True
+            pos,
+            pos,
+            cell,
+            pbc,
+            mic=True,
+            max_distance=cutoff,
+            return_factors=True,
+            return_distances=True,
         )
     else:
         disp_tensor_mic = disp_tensor_finite
