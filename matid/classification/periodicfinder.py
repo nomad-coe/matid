@@ -100,12 +100,12 @@ class PeriodicFinder:
 
         # If the distance information is not given, calculate it here.
         if distances is None:
-            distances = matid.geometry.get_distances(system)
+            distances = matid.geometry.get_distances(system, cutoff=max_cell_size)
 
-        self.disp_tensor_mic = distances.disp_tensor_mic
-        self.disp_tensor_finite = distances.disp_tensor_finite
+        self.distances = distances
+        self.disp_tensor = distances.disp_tensor
         self.disp_factors = distances.disp_factors
-        self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
+        self.dist_matrix_radii = distances.dist_matrix_radii
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
         region = None
@@ -166,7 +166,7 @@ class PeriodicFinder:
         """
         # Calculate a displacement tensor that takes into account the
         # periodicity of the system
-        disp_tensor = self.disp_tensor_mic
+        disp_tensor = self.disp_tensor
 
         # If the search radius exceeds beyond the periodic boundaries, extend the system
         # Get the vectors that span from the seed to all other atoms
@@ -502,7 +502,7 @@ class PeriodicFinder:
 
         # Check that the final proto cell atoms don't overlap
         if proto_cell is not None:
-            dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix_mic
+            dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix
             dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0])]
             if dist_proto_cell.min() < overlap_threshold:
                 return None, None, None
@@ -695,7 +695,7 @@ class PeriodicFinder:
         # Keep one occurrence for each seed index
 
         # Find the seed positions copies that are within the neighbourhood
-        orig_cell = system.get_cell()
+        # orig_cell = system.get_cell()
 
         # Find the cells in which the copies of the seed atom are at the
         # origin. Here we are reusing information from the displacement tensor
@@ -704,7 +704,7 @@ class PeriodicFinder:
         cells = np.zeros((len(seed_nodes), 3, 3))
         for i_node, node in enumerate(seed_nodes):
             node_index = node[0]
-            node_factor = node[1]
+            # node_factor = node[1]
 
             # Handle each basis
             for i_basis in range(3):
@@ -716,23 +716,24 @@ class PeriodicFinder:
                     a_add_neighbour, i_add_factor = a_add[0]
                     if a_add_neighbour != node_index:
                         a_final_neighbour = a_add_neighbour
-                        i_factor = i_add_factor
+                        # i_factor = i_add_factor
                         multiplier = 1
                 elif a_sub:
                     a_sub_neighbour, i_sub_factor = a_sub[0]
                     if a_sub_neighbour != node_index:
                         a_final_neighbour = a_sub_neighbour
-                        i_factor = i_sub_factor
+                        # i_factor = i_sub_factor
                         multiplier = -1
 
                 if a_final_neighbour is not None:
-                    a_correction = np.dot(
-                        (-np.array(node_factor) + np.array(i_factor)), orig_cell
-                    )
-                    a = (
-                        self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    # a_correction = np.dot(
+                    #     (-np.array(node_factor) + np.array(i_factor)), orig_cell
+                    # )
+                    # a = (
+                    #     self.disp_tensor_finite[a_final_neighbour, node_index, :]
+                    #     + a_correction
+                    # )
+                    a = self.disp_tensor[a_final_neighbour, node_index, :]
                     a *= multiplier
 
                 else:
@@ -884,7 +885,7 @@ class PeriodicFinder:
                 cell.
             seed_group_index(int): A new index of the seed atom in the cell.
         """
-        orig_cell = system.get_cell()
+        # orig_cell = system.get_cell()
 
         # We need to make the third basis vector, In 2D systems the maximum thickness of the system is defined by
         # max_cell_size.
@@ -901,7 +902,7 @@ class PeriodicFinder:
         c_norms = np.zeros((len(seed_nodes), 3))
         for i_node, node in enumerate(seed_nodes):
             node_index = node[0]
-            node_factor = node[1]
+            # node_factor = node[1]
 
             # Handle each basis
             for i_basis in range(2):
@@ -913,24 +914,25 @@ class PeriodicFinder:
                     a_add_neighbour, i_add_factor = a_add[0]
                     if a_add_neighbour != node_index:
                         a_final_neighbour = a_add_neighbour
-                        i_factor = i_add_factor
-                        multiplier = 1
+                        # i_factor = i_add_factor
+                        # multiplier = 1
                 elif a_sub:
                     a_sub_neighbour, i_sub_factor = a_sub[0]
                     if a_sub_neighbour != node_index:
                         a_final_neighbour = a_sub_neighbour
-                        i_factor = i_sub_factor
-                        multiplier = -1
+                        # i_factor = i_sub_factor
+                        # multiplier = -1
 
                 if a_final_neighbour is not None:
-                    a_correction = np.dot(
-                        (-np.array(node_factor) + np.array(i_factor)), orig_cell
-                    )
-                    a = (
-                        multiplier
-                        * self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    # a_correction = np.dot(
+                    #     (-np.array(node_factor) + np.array(i_factor)), orig_cell
+                    # )
+                    # a = (
+                    #     multiplier
+                    #     * self.disp_tensor_finite[a_final_neighbour, node_index, :]
+                    #     + a_correction
+                    # )
+                    a = self.disp_tensor[a_final_neighbour, node_index, :]
                 else:
                     a = best_spans[i_basis, :]
                 cells[i_node, i_basis, :] = a
@@ -1267,8 +1269,8 @@ class PeriodicFinder:
             system,
             unit_cell,
             is_2d,
-            self.dist_matrix_radii_mic,
-            self.disp_tensor_finite,
+            self.dist_matrix_radii,
+            self.disp_tensor,
             tesselation_distance,
             self.chem_similarity_threshold,
             bond_threshold,
@@ -1339,22 +1341,8 @@ class PeriodicFinder:
         n_periodic_dim = len(periodic_indices)
         if n_periodic_dim == 3:
             multipliers = multipliers_3d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [0, 0, 1],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            #     [0, 0, -1],
-            # ])
         if n_periodic_dim == 2:
             multipliers = multipliers_2d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            # ])
 
         return multipliers
 

@@ -24,8 +24,8 @@ class LinkedUnitCollection(dict):
         system,
         cell,
         is_2d,
-        dist_matrix_radii_pbc,
-        disp_tensor_finite,
+        dist_matrix_radii,
+        disp_tensor,
         delaunay_threshold=constants.DELAUNAY_THRESHOLD,
         chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
         bond_threshold=constants.BOND_THRESHOLD,
@@ -46,8 +46,8 @@ class LinkedUnitCollection(dict):
         self.delaunay_threshold = delaunay_threshold
         self.chem_similarity_threshold = chem_similarity_threshold
         self.bond_threshold = bond_threshold
-        self.dist_matrix_radii_pbc = dist_matrix_radii_pbc
-        self.disp_tensor_finite = disp_tensor_finite
+        self.dist_matrix_radii = dist_matrix_radii
+        self.disp_tensor = disp_tensor
         self._search_graph = nx.MultiDiGraph()
         self._wrapped_moves = []
         self._index_cell_map = {}
@@ -196,7 +196,7 @@ class LinkedUnitCollection(dict):
                             real_environment = self.get_chemical_environment(
                                 self.system,
                                 index,
-                                self.disp_tensor_finite,
+                                self.disp_tensor,
                                 translations,
                                 translations_reduced,
                             )
@@ -224,7 +224,7 @@ class LinkedUnitCollection(dict):
         return additional_indices
 
     def get_chemical_environment(
-        self, system, index, disp_tensor_finite, translations, translations_reduced
+        self, system, index, disp_tensor, translations, translations_reduced
     ):
         """Get the chemical environment around an atom. The chemical
         environment is quantified simply by the number of different species
@@ -238,7 +238,7 @@ class LinkedUnitCollection(dict):
         neighbours = defaultdict(lambda: 0)
         for j in range(n_atoms):
             j_num = num[j]
-            ij_disp = disp_tensor_finite[index, j, :]
+            ij_disp = disp_tensor[index, j, :]
 
             if index == j:
                 trans = translations_reduced
@@ -288,7 +288,7 @@ class LinkedUnitCollection(dict):
         """
         if self._clusters is None:
             clusters = matid.geometry.get_clusters(
-                self.dist_matrix_radii_pbc, self.bond_threshold
+                self.dist_matrix_radii, self.bond_threshold
             )
             clusters = [set(list(x)) for x in clusters]
             self._clusters = clusters
@@ -366,7 +366,7 @@ class LinkedUnitCollection(dict):
                             real_environment = self.get_chemical_environment(
                                 self.system,
                                 subst_index,
-                                self.disp_tensor_finite,
+                                self.disp_tensor,
                                 translations,
                                 translations_reduced,
                             )

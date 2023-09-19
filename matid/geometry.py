@@ -1521,39 +1521,30 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite, dist_matrix_finite = get_displacement_tensor_ext(
-        pos, cutoff=cutoff, return_distances=True
+    disp_tensor, disp_factors, dist_matrix = get_displacement_tensor(
+        pos,
+        pos,
+        cell,
+        pbc,
+        mic=True,
+        max_distance=cutoff,
+        return_factors=True,
+        return_distances=True,
     )
-    if pbc.any():
-        disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
-            pos,
-            pos,
-            cell,
-            pbc,
-            mic=True,
-            max_distance=cutoff,
-            return_factors=True,
-            return_distances=True,
-        )
-    else:
-        disp_tensor_mic = disp_tensor_finite
-        disp_factors = np.zeros(disp_tensor_finite.shape)
-        dist_matrix_mic = dist_matrix_finite
 
     # Calculate the distance matrix where the periodicity and the covalent
     # radii have been taken into account
-    dist_matrix_radii_mic = np.array(dist_matrix_mic)
+    dist_matrix_radii = np.array(dist_matrix)
     num = system.get_atomic_numbers()
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
-    dist_matrix_radii_mic -= radii_matrix
+    dist_matrix_radii -= radii_matrix
 
     return Distances(
-        disp_tensor_mic,
+        disp_tensor,
         disp_factors,
-        disp_tensor_finite,
-        dist_matrix_mic,
-        dist_matrix_radii_mic,
+        dist_matrix,
+        dist_matrix_radii,
     )
 
 

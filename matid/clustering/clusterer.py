@@ -137,7 +137,7 @@ class Clusterer:
         for i, i_clusters in overlap_map.items():
             if len(i_clusters) > 1:
                 surrounding_indices = set(
-                    np.argwhere(distances.dist_matrix_radii_mic[i, :] < merge_radius)[
+                    np.argwhere(distances.dist_matrix_radii[i, :] < merge_radius)[
                         :, 0
                     ]
                 )
@@ -225,7 +225,7 @@ class Clusterer:
             )
 
         # Calculate the distances here once.
-        distances = matid.geometry.get_distances(system_copy)
+        distances = matid.geometry.get_distances(system_copy, cutoff=max_cell_size)
 
         # Iteratively search for new clusters until whole system is covered
         periodic_finder = PeriodicFinder(

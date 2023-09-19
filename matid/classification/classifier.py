@@ -214,7 +214,7 @@ class Classifier:
             or self.delaunay_threshold_mode == "relative"
         ):
             min_basis = np.linalg.norm(cell, axis=1).min()
-            dist_matrix_mod = np.array(distances.dist_matrix_mic)
+            dist_matrix_mod = np.array(distances.dist_matrix)
             np.fill_diagonal(dist_matrix_mod, min_basis)
             global_min_dist = dist_matrix_mod.min()
             min_dist = np.min(dist_matrix_mod, axis=1)
@@ -232,7 +232,7 @@ class Classifier:
 
         # Get the system dimensionality
         dimensionality = matid.geometry.get_dimensionality(
-            system, self.cluster_threshold, distances.dist_matrix_radii_mic
+            system, self.cluster_threshold, distances.dist_matrix_radii
         )
         if dimensionality is None:
             return Unknown(input_system)
