@@ -6,9 +6,9 @@ name: test
 
 on:
   push:
-    branches: [ "master", "develop", "normalizer-fix" ]
+    branches: [ "main", "v2.0.0"]
   pull_request:
-    branches: [ "master", "develop" ]
+    branches: [ "main"]
 
 jobs:
   build:
