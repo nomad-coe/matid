@@ -219,7 +219,7 @@ def get_tetrahedra_decomposition(system, max_distance):
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
 
-    displacements_finite = get_displacement_tensor(pos, pos)
+    displacements_finite = get_displacement_tensor_ext(pos)
 
     # In order for the decomposition to cover also the edges, we have to extend
     # the system to cover also into the adjacent periodic images. That is done

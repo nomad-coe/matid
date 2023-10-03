@@ -52,7 +52,7 @@ class Cluster:
         return len(self.indices)
 
     def _distance_matrix_radii_mic(self) -> int:
-        """Used to fetch the prototypical cell for this cluster if one exists."""
+        """Retrieves the distance matrix with subtracted radii for this cluster."""
         return self.distances.dist_matrix_radii[np.ix_(self.indices, self.indices)]
 
     @lru_cache(maxsize=1)
