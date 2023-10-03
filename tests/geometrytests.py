@@ -160,7 +160,7 @@ class GeometryTests(unittest.TestCase):
         basis = np.array([[1.59, -2.75396078, 0]])
         searched_pos += basis
 
-        matches, subst, vac, factors = matid.geometry.get_matches(
+        matches, _, _, factors = matid.geometry.get_matches(
             system,
             searched_pos,
             numbers=[system.get_atomic_numbers()[0]],

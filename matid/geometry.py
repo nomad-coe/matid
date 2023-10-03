@@ -1071,6 +1071,28 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     return matches, substitutions, vacancies, copy_indices
 
 
+def get_matches_ext(system, positions, numbers, tolerances, mic=True):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
+
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        positions(np.ndarray): Positions to match in the system.
+        tolerances(np.ndarray): Maximum allowed distance for each vector that
+            is allowed for a match in position.
+        mic(boolean): Whether to find the minimum image copy.
+
+    Returns:
+        np.ndarray: indices of matched atoms
+        list: list of substitutions
+        list: list of vacancies
+        np.ndarray: for each searched position, an integer array representing
+            the number of the periodic copy where the match was found.
+    """
+    pass
+
+
 def to_scaled(cell, positions, wrap=False, pbc=False):
     """Used to transform a set of positions to the basis defined by the
     cell of this system.

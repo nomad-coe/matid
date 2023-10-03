@@ -269,3 +269,37 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
             cluster_threshold=cluster_threshold,
         )
         assert dimensionality == expected_dimensionality
+
+mx2 = ase.build.mx2(
+    formula="MoS2", kind="2H", a=3.18, thickness=3.19, size=(5, 5, 1), vacuum=8
+)
+mx2.set_pbc(True)
+mx2 = mx2[[0, 12]]
+@pytest.mark.parametrize(
+    "system, position, expected_matches, expected_factors",
+    [
+        pytest.param(mx2, [0, 0, 9.595], [0], (0, 0, 0), id="orthogonal, same cell"),
+        pytest.param(mx2, [1.59, -2.75396078, 9.595], [1], (0, -1, 0), id="orthogonal, cell below"),
+        # pytest.param(mx2, -mx2.get_cell()[0, :], [0], (-1, 0, 0), id="orthogonal, cell left"),
+    ],
+)
+def test_matches(system, position, expected_matches, expected_factors):
+    """Test that the correct factor is returned when finding matches that
+    are in the neighbouring cells.
+    """
+    from ase.visualize import view
+    view(system)
+    print(position)
+
+    matches, _, _, factors = matid.geometry.get_matches(
+        system,
+        np.array(position)[None, :],
+        numbers=[system.get_atomic_numbers()[0]],
+        tolerances=np.array([0.2]),
+    )
+
+    # Make sure that the atom is found in the correct copy
+    assert tuple(factors[0]) == expected_factors
+
+    # Make sure that the correct atom is found
+    assert np.array_equal(matches, expected_matches)
