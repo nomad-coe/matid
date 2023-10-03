@@ -10,7 +10,7 @@ import matid.geometry
 
 
 @pytest.mark.parametrize(
-    "positions, cell, pbc, cutoff, expected_disp, expected_dist",
+    "positions, cell, pbc, cutoff, expected_disp, expected_dist, expected_factors",
     [
         pytest.param(
             np.array(
@@ -24,6 +24,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [0, -4, 0]], [[0, 4, 0], [0, 0, 0]]]),
             np.array([[0, 4], [4, 0]]),
+            np.array([[[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]]]),
             id="finite",
         ),
         pytest.param(
@@ -38,6 +39,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [0, -4, 0]], [[0, 4, 0], [0, 0, 0]]]),
             np.array([[0, 4], [4, 0]]),
+            np.array([[[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]]]),
             id="periodic-a",
         ),
         pytest.param(
@@ -52,6 +54,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [0, 1, 0]], [[0, -1, 0], [0, 0, 0]]]),
             np.array([[0, 1], [1, 0]]),
+            np.array([[[0, 0, 0], [0, -1, 0]], [[0, 1, 0], [0, 0, 0]]]),
             id="periodic-b",
         ),
         pytest.param(
@@ -66,6 +69,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [0, -4, 0]], [[0, 4, 0], [0, 0, 0]]]),
             np.array([[0, 4], [4, 0]]),
+            np.array([[[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]]]),
             id="periodic-c",
         ),
         pytest.param(
@@ -80,6 +84,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [0, 1, 0]], [[0, -1, 0], [0, 0, 0]]]),
             np.array([[0, 1], [1, 0]]),
+            np.array([[[0, 0, 0], [0, -1, 0]], [[0, 1, 0], [0, 0, 0]]]),
             id="periodic-abc",
         ),
         # pytest.param(
@@ -98,6 +103,7 @@ import matid.geometry
         #         [0, np.inf],
         #         [np.inf, 0]
         #     ]),
+        #     np.array([[[np.inf, np.inf, np.inf], [0, 0, 0]], [[np.inf, np.inf, np.inf], [0, 0, 0]]]),
         #     id='small-cutoff'
         # ),
         pytest.param(
@@ -112,6 +118,7 @@ import matid.geometry
             10,
             np.array([[[0, 0, 0], [-2, 0, 0]], [[2, 0, 0], [0, 0, 0]]]),
             np.array([[0, 2], [2, 0]]),
+            np.array([[[0, 0, 0], [-1, 0, 0]], [[1, 0, 0], [0, 0, 0]]]),
             id="outside-cell",
         ),
         pytest.param(
@@ -126,14 +133,15 @@ import matid.geometry
             None,
             np.array([[[0, 0, 0], [-2, 0, 0]], [[2, 0, 0], [0, 0, 0]]]),
             np.array([[0, 2], [2, 0]]),
+            np.array([[[0, 0, 0], [-1, 0, 0]], [[1, 0, 0], [0, 0, 0]]]),
             id="no-cutoff",
         ),
     ],
 )
 def test_displacement_tensor(
-    positions, cell, pbc, cutoff, expected_disp, expected_dist
+    positions, cell, pbc, cutoff, expected_disp, expected_dist, expected_factors
 ):
-    disp_tensor, dist_mat = matid.geometry.get_displacement_tensor(
+    disp_tensor, factors, dist_mat = matid.geometry.get_displacement_tensor(
         positions,
         positions,
         cell,
@@ -141,14 +149,17 @@ def test_displacement_tensor(
         mic=True,
         max_distance=cutoff,
         return_distances=True,
+        return_factors=True,
     )
-    disp_tensor_ext, dist_mat_ext = matid.geometry.get_displacement_tensor_ext(
-        positions, cell, pbc, mic=True, cutoff=cutoff, return_distances=True
+    disp_tensor_ext, factors_ext, dist_mat_ext = matid.geometry.get_displacement_tensor_ext(
+        positions, cell, pbc, mic=True, cutoff=cutoff, return_distances=True, return_factors=True
     )
     assert np.allclose(disp_tensor, expected_disp)
     assert np.allclose(disp_tensor_ext, expected_disp)
     assert np.allclose(dist_mat, expected_dist)
     assert np.allclose(dist_mat_ext, expected_dist)
+    assert np.allclose(factors, expected_factors)
+    assert np.allclose(factors_ext, expected_factors)
 
 
 # 0D system

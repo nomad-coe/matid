@@ -633,9 +633,11 @@ def get_displacement_tensor_ext(
     n_atoms = positions.shape[0]
     disp_tensor = np.full((n_atoms, n_atoms, 3), float("inf"))
     dist_mat = np.full((n_atoms, n_atoms), float("inf"))
+    factors = np.full((n_atoms, n_atoms, 3), float("inf"))
     matid.ext.get_displacement_tensor(
         disp_tensor,
         dist_mat,
+        factors,
         positions,
         cell,
         expand_pbc(pbc),
@@ -645,10 +647,14 @@ def get_displacement_tensor_ext(
         return_distances,
     )
 
-    if return_distances:
+    if return_factors and return_distances:
+        return disp_tensor, factors, dist_mat
+    elif return_factors:
+        return disp_tensor, factors
+    elif return_distances:
         return disp_tensor, dist_mat
-
-    return disp_tensor
+    else:
+        return disp_tensor
 
 
 def find_mic(D, cell, pbc, max_distance=None):
@@ -1584,8 +1590,7 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor, disp_factors, dist_matrix = get_displacement_tensor(
-        pos,
+    disp_tensor, disp_factors, dist_matrix = get_displacement_tensor_ext(
         pos,
         cell,
         pbc,

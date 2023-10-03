@@ -27,6 +27,7 @@ struct ExtendedSystem {
     py::array_t<double> positions;
     py::array_t<int> atomic_numbers;
     py::array_t<int> indices;
+    py::array_t<int> factors;
 };
 
 inline vector<double> cross(const vector<double>& a, const vector<double>& b);
@@ -60,6 +61,7 @@ ExtendedSystem extend_system(
 void get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
+    py::array_t<double> factors,
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,

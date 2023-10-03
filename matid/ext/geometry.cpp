@@ -107,9 +107,11 @@ ExtendedSystem extend_system(
     py::array_t<double> ext_pos({n_atoms*n_rep, 3});
     py::array_t<int> ext_atomic_numbers({n_atoms*n_rep});
     py::array_t<int> ext_indices({n_atoms*n_rep});
+    py::array_t<int> factors({n_atoms*n_rep, 3});
     auto ext_pos_mu = ext_pos.mutable_unchecked<2>();
     auto ext_atomic_numbers_mu = ext_atomic_numbers.mutable_unchecked<1>();
     auto ext_indices_mu = ext_indices.mutable_unchecked<1>();
+    auto factors_mu = factors.mutable_unchecked<2>();
     int i_copy = 0;
     int a_limit = multipliers[0].size();
     int b_limit = multipliers[1].size();
@@ -132,6 +134,9 @@ ExtendedSystem extend_system(
                     int index = i_copy*n_atoms + l;
                     ext_atomic_numbers_mu(index) = atomic_numbers_u(l);
                     ext_indices_mu(index) = l;
+                    factors_mu(index, 0) = a_multiplier;
+                    factors_mu(index, 1) = b_multiplier;
+                    factors_mu(index, 2) = c_multiplier;
                     for (int m=0; m < 3; ++m) {
                         ext_pos_mu(index, m) = positions_u(l, m) + addition[m];
                     }
@@ -141,12 +146,13 @@ ExtendedSystem extend_system(
         }
     }
 
-    return ExtendedSystem{ext_pos, ext_atomic_numbers, ext_indices};
+    return ExtendedSystem{ext_pos, ext_atomic_numbers, ext_indices, factors};
 }
 
 void get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
+    py::array_t<double> factors,
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
@@ -189,12 +195,13 @@ void get_displacement_tensor(
     ExtendedSystem system = extend_system(positions, atomic_numbers, cell, pbc, cutoff);
 
     // Create cell list for positions of the extended system
-    CellList cell_list = CellList(system.positions, cutoff);
+    CellList cell_list = CellList(system.positions, system.factors, cutoff);
 
     // Get data for each atom in the original system
     auto original_indices_u = system.indices.unchecked<1>();
     auto distances_mu = distances.mutable_unchecked<2>();
     auto displacements_mu = displacements.mutable_unchecked<3>();
+    auto factors_mu = factors.mutable_unchecked<3>();
     for (int i = 0; i < n_atoms; ++i) {
         CellListResult result = cell_list.get_neighbours_for_index(i);
 
@@ -202,6 +209,7 @@ void get_displacement_tensor(
         distances_mu(i, i) = 0;
         for (int k=0; k < 3; ++k) {
             displacements_mu(i, i, k) = 0;
+            factors_mu(i, i, k) = 0;
         }
 
         // Loop through all neighbours and report the minimum distance for each
@@ -223,6 +231,7 @@ void get_displacement_tensor(
             distances_mu(i, it.first) = result.distances[it.second];
             for (int k=0; k < 3; ++k) {
                 displacements_mu(i, it.first, k) = result.displacements[it.second][k];
+                factors_mu(i, it.first, k) = result.factors[it.second][k];
             }
         }
     }
