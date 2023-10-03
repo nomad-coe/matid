@@ -36,4 +36,16 @@ PYBIND11_MODULE(ext, m) {
         .def_readonly("atomic_numbers", &ExtendedSystem::atomic_numbers)
         .def_readonly("indices", &ExtendedSystem::indices);
     m.def("get_displacement_tensor", &get_displacement_tensor, "Get displacement vectors respecting minimum image convention.");
+
+    // CellList
+    py::class_<CellList>(m, "CellList")
+        .def(py::init<py::array_t<double>, double>())
+        .def("get_neighbours_for_index", &CellList::get_neighbours_for_index)
+        .def("get_neighbours_for_position", &CellList::get_neighbours_for_position);
+    py::class_<CellListResult>(m, "CellListResult")
+        .def(py::init<>())
+        .def_readonly("indices", &CellListResult::indices)
+        .def_readonly("distances", &CellListResult::distances)
+        .def_readonly("distances_squared", &CellListResult::distances_squared)
+        .def_readonly("displacements", &CellListResult::displacements);
 }

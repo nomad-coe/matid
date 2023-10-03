@@ -1539,7 +1539,6 @@ class PeriodicFinder:
         used_indices,
         cell_index,
         searched_cell_indices,
-        used_seed_indices,
         used_points,
         search_graph,
         index_cell_map,
@@ -1612,7 +1611,6 @@ class PeriodicFinder:
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 pos_tolerances,
-                mic=True,
             )
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,

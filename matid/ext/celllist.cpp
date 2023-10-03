@@ -112,7 +112,7 @@ CellListResult CellList::get_neighbours_for_position(
     // The indices of the neighbouring atoms
     vector<int> neighbours;
     vector<double> distances;
-    vector<double> distancesSquared;
+    vector<double> distances_squared;
     vector<vector<double>> displacements;
 
     // Find bin for the given position
@@ -142,18 +142,18 @@ CellListResult CellList::get_neighbours_for_position(
                     double deltax = x - ix;
                     double deltay = y - iy;
                     double deltaz = z - iz;
-                    double distanceSquared = deltax*deltax + deltay*deltay + deltaz*deltaz;
-                    if (distanceSquared <= this->cutoffSquared) {
+                    double distance_squared = deltax*deltax + deltay*deltay + deltaz*deltaz;
+                    if (distance_squared <= this->cutoffSquared) {
                         neighbours.push_back(idx);
-                        distances.push_back(sqrt(distanceSquared));
-                        distancesSquared.push_back(distanceSquared);
+                        distances.push_back(sqrt(distance_squared));
+                        distances_squared.push_back(distance_squared);
                         displacements.push_back(vector<double>{deltax, deltay, deltaz});
                     }
                 }
             }
         }
     }
-    return CellListResult{neighbours, distances, distancesSquared, displacements};
+    return CellListResult{neighbours, distances, distances_squared, displacements};
 }
 
 CellListResult CellList::get_neighbours_for_index(const int idx)

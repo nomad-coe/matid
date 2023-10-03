@@ -25,7 +25,7 @@ using namespace std;
 struct CellListResult {
     vector<int> indices;
     vector<double> distances;
-    vector<double> distancesSquared;
+    vector<double> distances_squared;
     vector<vector<double>> displacements;
 };
 

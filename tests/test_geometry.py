@@ -270,16 +270,25 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
         )
         assert dimensionality == expected_dimensionality
 
+
 mx2 = ase.build.mx2(
     formula="MoS2", kind="2H", a=3.18, thickness=3.19, size=(5, 5, 1), vacuum=8
 )
 mx2.set_pbc(True)
 mx2 = mx2[[0, 12]]
+
+
 @pytest.mark.parametrize(
     "system, position, expected_matches, expected_factors",
     [
         pytest.param(mx2, [0, 0, 9.595], [0], (0, 0, 0), id="orthogonal, same cell"),
-        pytest.param(mx2, [1.59, -2.75396078, 9.595], [1], (0, -1, 0), id="orthogonal, cell below"),
+        pytest.param(
+            mx2,
+            [1.59, -2.75396078, 9.595],
+            [1],
+            (0, -1, 0),
+            id="orthogonal, cell below",
+        ),
         # pytest.param(mx2, -mx2.get_cell()[0, :], [0], (-1, 0, 0), id="orthogonal, cell left"),
     ],
 )
@@ -288,6 +297,7 @@ def test_matches(system, position, expected_matches, expected_factors):
     are in the neighbouring cells.
     """
     from ase.visualize import view
+
     view(system)
     print(position)
 
