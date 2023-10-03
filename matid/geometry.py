@@ -1595,7 +1595,7 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
         cell,
         pbc,
         mic=True,
-        max_distance=cutoff,
+        cutoff=cutoff,
         return_factors=True,
         return_distances=True,
     )
