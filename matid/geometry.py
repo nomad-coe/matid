@@ -26,28 +26,6 @@ from scipy.spatial import Delaunay
 import spglib
 
 
-def get_nearest_atom(system, position, mic=True):
-    """Finds the index of the atom nearest to the given position in the given
-    system.
-
-    Args:
-        system(ase.Atoms): The system from which the atom is searched from.
-        position(np.ndarray): The position to search.
-        mic(boolean): Whether to use the minimum image convention on periodic
-            systems.
-
-    Returns:
-        int: Index of the nearest atom in the given system.
-    """
-    positions = system.get_positions()
-    pbc = system.get_pbc()
-    cell = system.get_cell()
-    distances = get_distance_matrix(position, positions, cell=cell, pbc=pbc, mic=mic)
-    min_index = np.argmin(distances)
-
-    return min_index
-
-
 def get_dimensionality(
     system,
     cluster_threshold,
@@ -568,29 +546,6 @@ def get_wrapped_positions(scaled_pos, precision=1e-5):
     scaled_pos[near_zero] = 0
 
     return scaled_pos
-
-
-def get_distance_matrix(pos1, pos2, cell=None, pbc=None, mic=False):
-    """Calculates the distance matrix. If wrap_distances=True, calculates
-    the matrix using periodic distances
-
-    Args:
-        pos1(np.ndarray): Array of cartesian positions
-        pos2(np.ndarray): Array of cartesian positions
-        cell(): The 3x3 cell of the system. Needed if minimum image convention
-            enabled.
-        pbc(): The periodic boundary conditions of the system. Needed if
-            minimum image convention enabled.
-        mic (bool): Whether to apply minimum image convention fo the distances,
-            i.e. the distance to the closest periodic image is returned.
-
-    Returns:
-        np.ndarray: A :math:`N_{atoms} \times N_{atoms}` matrix of distances.
-    """
-    disp_tensor = get_displacement_tensor(pos1, pos2, cell, pbc, mic)
-    distance_matrix = np.linalg.norm(disp_tensor, axis=2)
-
-    return distance_matrix
 
 
 def get_displacement_tensor(

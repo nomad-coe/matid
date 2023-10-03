@@ -18,27 +18,6 @@ import matid.geometry
 class GeometryTests(unittest.TestCase):
     """Tests for the geometry module."""
 
-    def test_get_nearest_atom(self):
-        """Getting the nearest atom in a system."""
-        # Test with a finite system
-        system = molecule("H2O")
-        system.set_cell(5 * np.eye(3))
-        system.center()
-
-        location = np.array([2.5, 1.5, 6])
-        index = matid.geometry.get_nearest_atom(system, location, mic=False)
-        self.assertEqual(index, 0)  # Oxygen is closest without mic
-
-        # Test with a periodic system
-        system.set_pbc([True, True, True])
-        index = matid.geometry.get_nearest_atom(system, location, mic=True)
-        self.assertEqual(index, 2)  # Hydrogen is closest with mic
-
-        # Test with a periodic system and a shifted position
-        location2 = np.array([2.5, 3, 6])
-        index = matid.geometry.get_nearest_atom(system, location2, mic=True)
-        self.assertEqual(index, 1)  # Hydrogen is closest with mic
-
     def test_thickness(self):
         """Getting the thickness of structures."""
         system = molecule("H2O")
@@ -193,55 +172,6 @@ class GeometryTests(unittest.TestCase):
 
         # Make sure that the correct atom is found
         self.assertTrue(np.array_equal(matches, [1]))
-
-    def test_displacement_non_orthogonal(self):
-        """Test that the correct displacement is returned when the cell in
-        non-orthorhombic.
-        """
-        positions = np.array([[1.56909, 2.71871, 6.45326], [3.9248, 4.07536, 6.45326]])
-        cell = np.array([[4.7077, -2.718, 0.0], [0.0, 8.15225, 0.0], [0.0, 0.0, 50.0]])
-
-        # Fully periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            positions[0, :], positions[1, :], cell, pbc=True, mic=True
-        )
-
-        # The minimum image should be within the same cell
-        expected = np.linalg.norm(positions[0, :] - positions[1, :])
-        self.assertTrue(np.allclose(dist_mat[0], expected))
-
-    def test_distance_matrix(self):
-        pos1 = np.array(
-            [
-                [0, 0, 0],
-            ]
-        )
-        pos2 = np.array(
-            [
-                [0, 0, 7],
-                [6, 0, 0],
-            ]
-        )
-        cell = np.array([[7, 0, 0], [0, 7, 0], [0, 0, 7]])
-
-        # Non-periodic
-        dist_mat = matid.geometry.get_distance_matrix(pos1, pos2)
-        expected = np.array([[7, 6]])
-        self.assertTrue(np.allclose(dist_mat, expected))
-
-        # Fully periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            pos1, pos2, cell, pbc=True, mic=True
-        )
-        expected = np.array([[0, 1]])
-        self.assertTrue(np.allclose(dist_mat, expected))
-
-        # Partly periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            pos1, pos2, cell, pbc=[False, True, True], mic=True
-        )
-        expected = np.array([[0, 6]])
-        self.assertTrue(np.allclose(dist_mat, expected))
 
     def test_displacement_tensor(self):
         # Non-periodic
