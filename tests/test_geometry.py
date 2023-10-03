@@ -151,8 +151,18 @@ def test_displacement_tensor(
         return_distances=True,
         return_factors=True,
     )
-    disp_tensor_ext, factors_ext, dist_mat_ext = matid.geometry.get_displacement_tensor_ext(
-        positions, cell, pbc, mic=True, cutoff=cutoff, return_distances=True, return_factors=True
+    (
+        disp_tensor_ext,
+        factors_ext,
+        dist_mat_ext,
+    ) = matid.geometry.get_displacement_tensor_ext(
+        positions,
+        cell,
+        pbc,
+        mic=True,
+        cutoff=cutoff,
+        return_distances=True,
+        return_factors=True,
     )
     assert np.allclose(disp_tensor, expected_disp)
     assert np.allclose(disp_tensor_ext, expected_disp)
