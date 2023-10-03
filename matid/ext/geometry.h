@@ -19,6 +19,7 @@ limitations under the License.
 #include <vector>
 #include <stdexcept>
 #include <pybind11/numpy.h>
+#include "celllist.h"
 
 namespace py = pybind11;
 using namespace std;
@@ -27,7 +28,7 @@ struct ExtendedSystem {
     py::array_t<double> positions;
     py::array_t<int> atomic_numbers;
     py::array_t<int> indices;
-    py::array_t<int> factors;
+    py::array_t<double> factors;
 };
 
 inline vector<double> cross(const vector<double>& a, const vector<double>& b);
@@ -58,7 +59,7 @@ ExtendedSystem extend_system(
  * Calculates a pairwise displacement tensor (distance vectors) with a given
  * cutoff.
  */
-void get_displacement_tensor(
+CellList get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
     py::array_t<double> factors,

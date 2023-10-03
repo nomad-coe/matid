@@ -17,7 +17,6 @@ limitations under the License.
 #include <iostream>
 #include <limits>
 #include "geometry.h"
-#include "celllist.h"
 
 namespace py = pybind11;
 using namespace std;
@@ -107,7 +106,7 @@ ExtendedSystem extend_system(
     py::array_t<double> ext_pos({n_atoms*n_rep, 3});
     py::array_t<int> ext_atomic_numbers({n_atoms*n_rep});
     py::array_t<int> ext_indices({n_atoms*n_rep});
-    py::array_t<int> factors({n_atoms*n_rep, 3});
+    py::array_t<double> factors({n_atoms*n_rep, 3});
     auto ext_pos_mu = ext_pos.mutable_unchecked<2>();
     auto ext_atomic_numbers_mu = ext_atomic_numbers.mutable_unchecked<1>();
     auto ext_indices_mu = ext_indices.mutable_unchecked<1>();
@@ -149,7 +148,7 @@ ExtendedSystem extend_system(
     return ExtendedSystem{ext_pos, ext_atomic_numbers, ext_indices, factors};
 }
 
-void get_displacement_tensor(
+CellList get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
     py::array_t<double> factors,
@@ -185,17 +184,15 @@ void get_displacement_tensor(
                     max_length = length;
                 }
             }
-            if (max_length) {
-                cutoff = max_length;
-            }
         }
+        cutoff = max_length;
     }
 
     // Extend system
     ExtendedSystem system = extend_system(positions, atomic_numbers, cell, pbc, cutoff);
 
     // Create cell list for positions of the extended system
-    CellList cell_list = CellList(system.positions, system.factors, cutoff);
+    CellList cell_list = CellList(system.positions, system.indices, system.factors, cutoff);
 
     // Get data for each atom in the original system
     auto original_indices_u = system.indices.unchecked<1>();
@@ -235,4 +232,5 @@ void get_displacement_tensor(
             }
         }
     }
+    return cell_list;
 }

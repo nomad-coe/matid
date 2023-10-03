@@ -27,7 +27,8 @@ struct CellListResult {
     vector<double> distances;
     vector<double> distances_squared;
     vector<vector<double>> displacements;
-    vector<vector<int>> factors;
+    vector<int> indices_original;
+    vector<vector<double>> factors;
 };
 
 /**
@@ -41,7 +42,7 @@ class CellList {
          * @param positions Atomic positions in cartesian coordinates.
          * @param atomicNumbers Atomic numbers.
          */
-        CellList(py::array_t<double> positions, py::array_t<int> factors, double cutoff);
+        CellList(py::array_t<double> positions, py::array_t<int> indices, py::array_t<double> factors, double cutoff);
         /**
          * Get the indices of atoms within the radial cutoff distance from the
          * given position.
@@ -68,7 +69,8 @@ class CellList {
         void init();
 
         const py::detail::unchecked_reference<double, 2> positions;
-        const py::detail::unchecked_reference<int, 2> factors;
+        const py::detail::unchecked_reference<int, 1> indices;
+        const py::detail::unchecked_reference<double, 2> factors;
         const double cutoff;
         const double cutoffSquared;
         double xmin;

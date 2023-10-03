@@ -28,8 +28,9 @@ using namespace std;
  * @param cutoff The radius for considering atoms to be connected. Set to 0 to
  * build full connectivity.
  */
-CellList::CellList(py::array_t<double> positions, py::array_t<int> factors, double cutoff)
+CellList::CellList(py::array_t<double> positions, py::array_t<int> indices, py::array_t<double> factors, double cutoff)
     : positions(positions.unchecked<2>())
+    , indices(indices.unchecked<1>())
     , factors(factors.unchecked<2>())
     , cutoff(cutoff)
     , cutoffSquared(cutoff*cutoff)
@@ -115,7 +116,8 @@ CellListResult CellList::get_neighbours_for_position(
     vector<double> distances;
     vector<double> distances_squared;
     vector<vector<double>> displacements;
-    vector<vector<int>> factors_result;
+    vector<vector<double>> factors;
+    vector<int> indices_original;
 
     // Find bin for the given position
     int i0 = (x - this->xmin)/this->dx;
@@ -147,16 +149,17 @@ CellListResult CellList::get_neighbours_for_position(
                     double distance_squared = deltax*deltax + deltay*deltay + deltaz*deltaz;
                     if (distance_squared <= this->cutoffSquared) {
                         neighbours.push_back(idx);
+                        indices_original.push_back(this->indices(idx));
                         distances.push_back(sqrt(distance_squared));
                         distances_squared.push_back(distance_squared);
                         displacements.push_back(vector<double>{deltax, deltay, deltaz});
-                        factors_result.push_back(vector<int>{this->factors(idx, 0), this->factors(idx, 1), this->factors(idx, 2)});
+                        factors.push_back(vector<double>{this->factors(idx, 0), this->factors(idx, 1), this->factors(idx, 2)});
                     }
                 }
             }
         }
     }
-    return CellListResult{neighbours, distances, distances_squared, displacements, factors_result};
+    return CellListResult{neighbours, distances, distances_squared, displacements, indices_original, factors};
 }
 
 CellListResult CellList::get_neighbours_for_index(const int idx)
