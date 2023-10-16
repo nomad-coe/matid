@@ -35,9 +35,10 @@ CellList::CellList(py::array_t<double> positions, py::array_t<int> indices, py::
     , cutoff(cutoff)
     , cutoffSquared(cutoff*cutoff)
 {
-    if (cutoff > 0) {
-        this->init();
+    if (cutoff <= 0) {
+        throw invalid_argument("Cell list cutoff must be positive.");
     }
+    this->init();
 }
 
 void CellList::init() {

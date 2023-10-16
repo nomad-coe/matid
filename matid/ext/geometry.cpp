@@ -172,6 +172,7 @@ CellList get_displacement_tensor(
     // If an infinite cutoff is requested, we essentially want to calculate all
     // distances. This is done by extending in all directions by maximum basis
     // size.
+    double extension = cutoff;
     if (cutoff == std::numeric_limits<double>::infinity()) {
         auto cell_u = cell.unchecked<2>();
         auto pbc_u = pbc.unchecked<1>();
@@ -185,11 +186,11 @@ CellList get_displacement_tensor(
                 }
             }
         }
-        cutoff = max_length;
+        extension = max_length;
     }
 
     // Extend system
-    ExtendedSystem system = extend_system(positions, atomic_numbers, cell, pbc, cutoff);
+    ExtendedSystem system = extend_system(positions, atomic_numbers, cell, pbc, extension);
 
     // Create cell list for positions of the extended system
     CellList cell_list = CellList(system.positions, system.indices, system.factors, cutoff);
