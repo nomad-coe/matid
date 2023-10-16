@@ -160,7 +160,7 @@ class GeometryTests(unittest.TestCase):
         basis = np.array([[1.59, -2.75396078, 0]])
         searched_pos += basis
 
-        matches, _, _, factors = matid.geometry.get_matches(
+        matches, _, _, factors = matid.geometry.get_matches_old(
             system,
             searched_pos,
             numbers=[system.get_atomic_numbers()[0]],
@@ -188,12 +188,12 @@ class GeometryTests(unittest.TestCase):
             ]
         )
 
-        disp_tensor = matid.geometry.get_displacement_tensor(pos1, pos2)
+        disp_tensor = matid.geometry.get_displacement_tensor_old(pos1, pos2)
         expected = np.array(-pos2)
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Fully periodic
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos1, pos2, pbc=True, cell=cell, mic=True
         )
         expected = np.array(
@@ -207,7 +207,7 @@ class GeometryTests(unittest.TestCase):
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Fully periodic, reversed direction
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos2, pos1, pbc=True, cell=cell, mic=True
         )
         expected = np.array(
@@ -223,7 +223,7 @@ class GeometryTests(unittest.TestCase):
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Periodic in one direction
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos1, pos2, pbc=[True, False, False], cell=cell, mic=True
         )
         expected = np.array(

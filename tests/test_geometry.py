@@ -332,7 +332,12 @@ def test_cell_list_position(
     """Test that the correct factor is returned when finding matches that
     are in the neighbouring cells.
     """
-    cell_list = matid.geometry.get_cell_list(system, cutoff)
+    cell_list = matid.geometry.get_cell_list(
+        system.get_positions(),
+        range(len(system)),
+        np.tile([0, 0, 0], (len(system), 1)),
+        cutoff,
+    )
     result = cell_list.get_neighbours_for_position(
         position[0], position[1], position[2]
     )
