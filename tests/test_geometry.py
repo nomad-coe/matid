@@ -317,17 +317,25 @@ def test_extend_system(system, pbc, cutoff, expected_indices):
 @pytest.mark.parametrize(
     "system, cutoff, position, expected_indices, expected_distances",
     [
-        pytest.param(mx2, 0.1, [0, 0, 9.595], [0], [0], id="inside cutoff, zero distance"),
-        pytest.param(mx2, 0.1, [0, 0, 9.590], [0], [0.005], id="inside cutoff, nonzero distance"),
+        pytest.param(
+            mx2, 0.1, [0, 0, 9.595], [0], [0], id="inside cutoff, zero distance"
+        ),
+        pytest.param(
+            mx2, 0.1, [0, 0, 9.590], [0], [0.005], id="inside cutoff, nonzero distance"
+        ),
         pytest.param(mx2, 0.1, [0, 0, 9.595 + 0.11], [], [], id="outside cutoff"),
     ],
 )
-def test_cell_list_position(system, cutoff, position, expected_indices, expected_distances):
+def test_cell_list_position(
+    system, cutoff, position, expected_indices, expected_distances
+):
     """Test that the correct factor is returned when finding matches that
     are in the neighbouring cells.
     """
     cell_list = matid.geometry.get_cell_list(system, cutoff)
-    result = cell_list.get_neighbours_for_position(position[0], position[1], position[2])
+    result = cell_list.get_neighbours_for_position(
+        position[0], position[1], position[2]
+    )
     assert np.array_equal(result.indices, expected_indices)
     assert np.allclose(result.distances, expected_distances, rtol=0, atol=1e-8)
 
@@ -335,15 +343,73 @@ def test_cell_list_position(system, cutoff, position, expected_indices, expected
 @pytest.mark.parametrize(
     "system, pbc, position, expected_matches, expected_factors",
     [
-        pytest.param(mx2, False, [0, 0, 9.595], [0], (0, 0, 0), id="finite, within tolerance"),
-        pytest.param(mx2, False, [0, 0, 9.595 + 1.1 * tolerance], [None], (0, 0, 0), id="finite, out of tolerance"),
-        pytest.param(mx2, True, [0, 0, 9.595], [0], (0, 0, 0), id="periodic, within tolerance, same cell",),
-        pytest.param(mx2, True, (mx2.get_positions()[0] + mx2.get_cell()[0]), [0], (1, 0, 0), id="orthogonal, match in +a"),
-        pytest.param(mx2, True, (mx2.get_positions()[0] - mx2.get_cell()[0]), [0], (-1, 0, 0), id="orthogonal, match in -a"),
-        pytest.param(mx2, True, (mx2.get_positions()[0] + mx2.get_cell()[1]), [0], (0, 1, 0), id="orthogonal, match in +b"),
-        pytest.param(mx2, True, (mx2.get_positions()[0] - mx2.get_cell()[1]), [0], (0, -1, 0), id="orthogonal, match in -b"),
-        pytest.param(mx2, True, (mx2.get_positions()[0] + mx2.get_cell()[2]), [0], (0, 0, 1), id="orthogonal, match in +c"),
-        pytest.param(mx2, True, (mx2.get_positions()[0] - mx2.get_cell()[2]), [0], (0, 0, -1), id="orthogonal, match in -c"),
+        pytest.param(
+            mx2, False, [0, 0, 9.595], [0], (0, 0, 0), id="finite, within tolerance"
+        ),
+        pytest.param(
+            mx2,
+            False,
+            [0, 0, 9.595 + 1.1 * tolerance],
+            [None],
+            (0, 0, 0),
+            id="finite, out of tolerance",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            [0, 0, 9.595],
+            [0],
+            (0, 0, 0),
+            id="periodic, within tolerance, same cell",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] + mx2.get_cell()[0]),
+            [0],
+            (1, 0, 0),
+            id="orthogonal, match in +a",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] - mx2.get_cell()[0]),
+            [0],
+            (-1, 0, 0),
+            id="orthogonal, match in -a",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] + mx2.get_cell()[1]),
+            [0],
+            (0, 1, 0),
+            id="orthogonal, match in +b",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] - mx2.get_cell()[1]),
+            [0],
+            (0, -1, 0),
+            id="orthogonal, match in -b",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] + mx2.get_cell()[2]),
+            [0],
+            (0, 0, 1),
+            id="orthogonal, match in +c",
+        ),
+        pytest.param(
+            mx2,
+            True,
+            (mx2.get_positions()[0] - mx2.get_cell()[2]),
+            [0],
+            (0, 0, -1),
+            id="orthogonal, match in -c",
+        ),
     ],
 )
 def test_matches(system, pbc, position, expected_matches, expected_factors):
@@ -366,7 +432,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         extended_system.positions,
         extended_system.indices,
         extended_system.factors,
-        tolerance
+        tolerance,
     )
     matches_ext, _, _, factors_ext = matid.geometry.get_matches_ext(
         system,

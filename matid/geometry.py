@@ -1098,7 +1098,7 @@ def get_extended_system(system, cutoff=0):
         system.get_atomic_numbers(),
         system.get_cell(),
         system.get_pbc(),
-        cutoff
+        cutoff,
     )
 
     return extended_system
@@ -1114,12 +1114,7 @@ def get_cell_list(positions, indices, factors, cutoff=0):
     Returns:
         CellList object.
     """
-    cell_list = matid.ext.CellList(
-        positions,
-        indices,
-        factors,
-        cutoff
-    )
+    cell_list = matid.ext.CellList(positions, indices, factors, cutoff)
 
     return cell_list
 
