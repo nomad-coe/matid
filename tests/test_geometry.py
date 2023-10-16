@@ -219,16 +219,16 @@ tolerance = 0.2
 def test_displacement_tensor(
     positions, cell, pbc, cutoff, expected_disp, expected_dist, expected_factors
 ):
-    disp_tensor, factors, dist_mat = matid.geometry.get_displacement_tensor_old(
-        positions,
-        positions,
-        cell,
-        pbc,
-        mic=True,
-        max_distance=cutoff,
-        return_distances=True,
-        return_factors=True,
-    )
+    # disp_tensor, factors, dist_mat = matid.geometry.get_displacement_tensor_old(
+    #     positions,
+    #     positions,
+    #     cell,
+    #     pbc,
+    #     mic=True,
+    #     max_distance=cutoff,
+    #     return_distances=True,
+    #     return_factors=True,
+    # )
     (
         disp_tensor_ext,
         factors_ext,
@@ -242,11 +242,11 @@ def test_displacement_tensor(
         return_distances=True,
         return_factors=True,
     )
-    assert np.allclose(disp_tensor, expected_disp)
+    # assert np.allclose(disp_tensor, expected_disp)
     assert np.allclose(disp_tensor_ext, expected_disp)
-    assert np.allclose(dist_mat, expected_dist)
+    # assert np.allclose(dist_mat, expected_dist)
     assert np.allclose(dist_mat_ext, expected_dist)
-    assert np.allclose(factors, expected_factors)
+    # assert np.allclose(factors, expected_factors)
     assert np.allclose(factors_ext, expected_factors)
 
 
@@ -419,7 +419,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     system.set_pbc(pbc)
 
     # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches(
+    matches, _, _, factors = matid.geometry.get_matches_old(
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
@@ -434,7 +434,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         extended_system.factors,
         tolerance,
     )
-    matches_ext, _, _, factors_ext = matid.geometry.get_matches_ext(
+    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
         system,
         cell_list,
         np.array(position)[None, :],

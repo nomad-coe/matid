@@ -197,7 +197,8 @@ def get_tetrahedra_decomposition(system, max_distance):
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
 
-    displacements_finite = get_displacement_tensor(pos)
+    # displacements_finite = get_displacement_tensor(pos)
+    displacements_finite = get_displacement_tensor_old(pos, pos)
 
     # In order for the decomposition to cover also the edges, we have to extend
     # the system to cover also into the adjacent periodic images. That is done
@@ -974,7 +975,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(system, positions, numbers, tolerances):
+def get_matches_old(system, positions, numbers, tolerances):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1119,7 +1120,7 @@ def get_cell_list(positions, indices, factors, cutoff=0):
     return cell_list
 
 
-def get_matches_ext(system, cell_list, positions, numbers, tolerances):
+def get_matches(system, cell_list, positions, numbers, tolerances):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1582,15 +1583,25 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor, disp_factors, dist_matrix, cell_list = get_displacement_tensor(
+    # disp_tensor, disp_factors, dist_matrix, cell_list = get_displacement_tensor(
+    #     pos,
+    #     cell,
+    #     pbc,
+    #     mic=True,
+    #     cutoff=cutoff,
+    #     return_factors=True,
+    #     return_distances=True,
+    #     return_cell_list=True,
+    # )
+    disp_tensor, disp_factors, dist_matrix = get_displacement_tensor_old(
+        pos,
         pos,
         cell,
         pbc,
         mic=True,
-        cutoff=cutoff,
+        max_distance=cutoff,
         return_factors=True,
         return_distances=True,
-        return_cell_list=True,
     )
 
     # Calculate the distance matrix where the periodicity and the covalent
@@ -1601,9 +1612,10 @@ def get_distances(system: Atoms, cutoff=None) -> Distances:
     radii_matrix = radii[:, None] + radii[None, :]
     dist_matrix_radii -= radii_matrix
 
-    return Distances(
-        disp_tensor, disp_factors, dist_matrix, dist_matrix_radii, cell_list
-    )
+    return Distances(disp_tensor, disp_factors, dist_matrix, dist_matrix_radii)
+    # return Distances(
+    #     disp_tensor, disp_factors, dist_matrix, dist_matrix_radii, cell_list
+    # )
 
 
 def swap_basis(atoms: Atoms, a: int, b: int):
