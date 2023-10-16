@@ -1081,6 +1081,49 @@ def get_matches(system, positions, numbers, tolerances):
     return matches, substitutions, vacancies, copy_indices
 
 
+def get_extended_system(system, cutoff=0):
+    """Given a system and a cutoff value, returns a new system which has been
+    extended so that for each atom the neighbourhood within the cutoff radius is
+    present, taking periodic boundary conditions into account.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        ExtendedSystem object.
+    """
+    extended_system = matid.ext.extend_system(
+        system.get_positions(),
+        system.get_atomic_numbers(),
+        system.get_cell(),
+        system.get_pbc(),
+        cutoff
+    )
+
+    return extended_system
+
+
+def get_cell_list(positions, indices, factors, cutoff=0):
+    """Given a system and a cutoff value, returns a cell list object.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        CellList object.
+    """
+    cell_list = matid.ext.CellList(
+        positions,
+        indices,
+        factors,
+        cutoff
+    )
+
+    return cell_list
+
+
 def get_matches_ext(system, cell_list, positions, numbers, tolerances):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
@@ -1114,25 +1157,22 @@ def get_matches_ext(system, cell_list, positions, numbers, tolerances):
             position[0], position[1], position[2]
         )
         indices = cell_list_result.indices_original
-        distances = cell_list_result.distances
-        factors = cell_list_result.factors
-        print(len(factors), len(indices), len(distances))
-        print(factors)
-        print(distances)
-        print(indices)
-        min_distance_index = np.argmin(distances)
-        closest_distance = distances[min_distance_index]
-        closest_factor = factors[min_distance_index]
-        closest_index = indices[min_distance_index]
-        if closest_distance <= tolerance:
-            closest_atomic_number = atomic_numbers[closest_index]
-            copy_indices.append(closest_factor)
-            if closest_atomic_number == atomic_number:
-                matches.append(closest_index)
-                substitutions.append(None)
-            else:
-                matches.append(None)
-                substitutions.append(closest_index)
+        if len(indices) > 0:
+            distances = cell_list_result.distances
+            factors = cell_list_result.factors
+            min_distance_index = np.argmin(distances)
+            closest_distance = distances[min_distance_index]
+            closest_factor = factors[min_distance_index]
+            closest_index = indices[min_distance_index]
+            if closest_distance <= tolerance:
+                closest_atomic_number = atomic_numbers[closest_index]
+                copy_indices.append(closest_factor)
+                if closest_atomic_number == atomic_number:
+                    matches.append(closest_index)
+                    substitutions.append(None)
+                else:
+                    matches.append(None)
+                    substitutions.append(closest_index)
         else:
             matches.append(None)
             substitutions.append(None)
