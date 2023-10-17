@@ -18,27 +18,6 @@ import matid.geometry
 class GeometryTests(unittest.TestCase):
     """Tests for the geometry module."""
 
-    def test_get_nearest_atom(self):
-        """Getting the nearest atom in a system."""
-        # Test with a finite system
-        system = molecule("H2O")
-        system.set_cell(5 * np.eye(3))
-        system.center()
-
-        location = np.array([2.5, 1.5, 6])
-        index = matid.geometry.get_nearest_atom(system, location, mic=False)
-        self.assertEqual(index, 0)  # Oxygen is closest without mic
-
-        # Test with a periodic system
-        system.set_pbc([True, True, True])
-        index = matid.geometry.get_nearest_atom(system, location, mic=True)
-        self.assertEqual(index, 2)  # Hydrogen is closest with mic
-
-        # Test with a periodic system and a shifted position
-        location2 = np.array([2.5, 3, 6])
-        index = matid.geometry.get_nearest_atom(system, location2, mic=True)
-        self.assertEqual(index, 1)  # Hydrogen is closest with mic
-
     def test_thickness(self):
         """Getting the thickness of structures."""
         system = molecule("H2O")
@@ -181,7 +160,7 @@ class GeometryTests(unittest.TestCase):
         basis = np.array([[1.59, -2.75396078, 0]])
         searched_pos += basis
 
-        matches, subst, vac, factors = matid.geometry.get_matches(
+        matches, _, _, factors = matid.geometry.get_matches_old(
             system,
             searched_pos,
             numbers=[system.get_atomic_numbers()[0]],
@@ -193,55 +172,6 @@ class GeometryTests(unittest.TestCase):
 
         # Make sure that the correct atom is found
         self.assertTrue(np.array_equal(matches, [1]))
-
-    def test_displacement_non_orthogonal(self):
-        """Test that the correct displacement is returned when the cell in
-        non-orthorhombic.
-        """
-        positions = np.array([[1.56909, 2.71871, 6.45326], [3.9248, 4.07536, 6.45326]])
-        cell = np.array([[4.7077, -2.718, 0.0], [0.0, 8.15225, 0.0], [0.0, 0.0, 50.0]])
-
-        # Fully periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            positions[0, :], positions[1, :], cell, pbc=True, mic=True
-        )
-
-        # The minimum image should be within the same cell
-        expected = np.linalg.norm(positions[0, :] - positions[1, :])
-        self.assertTrue(np.allclose(dist_mat[0], expected))
-
-    def test_distance_matrix(self):
-        pos1 = np.array(
-            [
-                [0, 0, 0],
-            ]
-        )
-        pos2 = np.array(
-            [
-                [0, 0, 7],
-                [6, 0, 0],
-            ]
-        )
-        cell = np.array([[7, 0, 0], [0, 7, 0], [0, 0, 7]])
-
-        # Non-periodic
-        dist_mat = matid.geometry.get_distance_matrix(pos1, pos2)
-        expected = np.array([[7, 6]])
-        self.assertTrue(np.allclose(dist_mat, expected))
-
-        # Fully periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            pos1, pos2, cell, pbc=True, mic=True
-        )
-        expected = np.array([[0, 1]])
-        self.assertTrue(np.allclose(dist_mat, expected))
-
-        # Partly periodic with minimum image convention
-        dist_mat = matid.geometry.get_distance_matrix(
-            pos1, pos2, cell, pbc=[False, True, True], mic=True
-        )
-        expected = np.array([[0, 6]])
-        self.assertTrue(np.allclose(dist_mat, expected))
 
     def test_displacement_tensor(self):
         # Non-periodic
@@ -258,12 +188,12 @@ class GeometryTests(unittest.TestCase):
             ]
         )
 
-        disp_tensor = matid.geometry.get_displacement_tensor(pos1, pos2)
+        disp_tensor = matid.geometry.get_displacement_tensor_old(pos1, pos2)
         expected = np.array(-pos2)
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Fully periodic
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos1, pos2, pbc=True, cell=cell, mic=True
         )
         expected = np.array(
@@ -277,7 +207,7 @@ class GeometryTests(unittest.TestCase):
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Fully periodic, reversed direction
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos2, pos1, pbc=True, cell=cell, mic=True
         )
         expected = np.array(
@@ -293,7 +223,7 @@ class GeometryTests(unittest.TestCase):
         self.assertTrue(np.allclose(disp_tensor, expected))
 
         # Periodic in one direction
-        disp_tensor = matid.geometry.get_displacement_tensor(
+        disp_tensor = matid.geometry.get_displacement_tensor_old(
             pos1, pos2, pbc=[True, False, False], cell=cell, mic=True
         )
         expected = np.array(

@@ -4,6 +4,7 @@ a atomic system.
 import math
 import itertools
 from collections import defaultdict
+from sys import getsizeof
 
 import numpy as np
 from numpy.random import RandomState
@@ -17,33 +18,12 @@ from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
 from matid.core.distances import Distances
 import matid.geometry
+import matid.ext
 
 from sklearn.cluster import DBSCAN
 
 from scipy.spatial import Delaunay
 import spglib
-
-
-def get_nearest_atom(system, position, mic=True):
-    """Finds the index of the atom nearest to the given position in the given
-    system.
-
-    Args:
-        system(ase.Atoms): The system from which the atom is searched from.
-        position(np.ndarray): The position to search.
-        mic(boolean): Whether to use the minimum image convention on periodic
-            systems.
-
-    Returns:
-        int: Index of the nearest atom in the given system.
-    """
-    positions = system.get_positions()
-    pbc = system.get_pbc()
-    cell = system.get_cell()
-    distances = get_distance_matrix(position, positions, cell=cell, pbc=pbc, mic=mic)
-    min_index = np.argmin(distances)
-
-    return min_index
 
 
 def get_dimensionality(
@@ -111,11 +91,9 @@ def get_dimensionality(
         pos_1x = system.get_positions()
         _, dist_matrix_mic_1x = get_displacement_tensor(
             pos_1x,
-            pos_1x,
             cell_1x,
             pbc,
-            mic=True,
-            max_distance=max_distance,
+            cutoff=max_distance,
             return_distances=True,
         )
         radii_1x = radii[num_1x]
@@ -145,11 +123,9 @@ def get_dimensionality(
             num_2x = system_2x.get_atomic_numbers()
             _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
-                pos_2x,
                 cell_2x,
                 pbc,
-                mic=True,
-                max_distance=max_distance,
+                cutoff=max_distance,
                 return_distances=True,
             )
             radii_2x = radii[num_2x]
@@ -221,7 +197,7 @@ def get_tetrahedra_decomposition(system, max_distance):
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
 
-    displacements_finite = get_displacement_tensor(pos, pos)
+    displacements_finite = get_displacement_tensor(pos)
 
     # In order for the decomposition to cover also the edges, we have to extend
     # the system to cover also into the adjacent periodic images. That is done
@@ -422,35 +398,6 @@ def make_random_displacement(system, delta, rng=None):
     system.set_positions(new_pos)
 
 
-def get_extended_system(system, target_size):
-    """Replicate the system in different directions to reach the given target
-    size.
-
-    Args:
-        system (ase.Atoms): The original system.
-        target_size (float): The target size for the extended system in
-            angstroms.
-
-    Returns:
-        ase.Atoms: The extended system.
-    """
-    pbc = system.get_pbc()
-    cell = system.get_cell()
-
-    repetitions = np.array([1, 1, 1])
-    for i, pbc in enumerate(pbc):
-        # Only extend in the periodic dimensions
-        basis = cell[i, :]
-        if pbc:
-            size = np.linalg.norm(basis)
-            i_repetition = np.maximum(np.round(target_size / size), 1).astype(int)
-            repetitions[i] = i_repetition
-
-    extended_system = system.repeat(repetitions)
-
-    return extended_system
-
-
 def get_clusters(dist_matrix, threshold, min_samples=1):
     """Used to detect clusters with the DBSCAN algorithm.
 
@@ -464,14 +411,16 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         list: A list of clusters, where each cluster is a list of indices for
         the elements belonging to the cluster.
     """
-    # As the distance have been normalized with respect to the covalent radiis,
+    # As the distances have been normalized with respect to the covalent radiis,
     # the distance matrix may in some cases have negative values. This simply
     # means that the distance between two atoms is smaller than the sum of
     # their covalent radiis. The distance values are here clipped to
     # zero to avoid problems in the cluster detection. Another option would be
     # to normalize the distances so that unity would correspond to the sum of
-    # the two radii.
-    np.clip(dist_matrix, a_min=0, a_max=None, out=dist_matrix)
+    # the two radii. In addition, any values larger than the capped: this is
+    # required in order to handle infinite values which come from distances
+    # larger than a set radial cutoff.
+    np.clip(dist_matrix, a_min=0, a_max=1.1 * threshold, out=dist_matrix)
 
     # Detect clusters
     db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
@@ -599,30 +548,7 @@ def get_wrapped_positions(scaled_pos, precision=1e-5):
     return scaled_pos
 
 
-def get_distance_matrix(pos1, pos2, cell=None, pbc=None, mic=False):
-    """Calculates the distance matrix. If wrap_distances=True, calculates
-    the matrix using periodic distances
-
-    Args:
-        pos1(np.ndarray): Array of cartesian positions
-        pos2(np.ndarray): Array of cartesian positions
-        cell(): The 3x3 cell of the system. Needed if minimum image convention
-            enabled.
-        pbc(): The periodic boundary conditions of the system. Needed if
-            minimum image convention enabled.
-        mic (bool): Whether to apply minimum image convention fo the distances,
-            i.e. the distance to the closest periodic image is returned.
-
-    Returns:
-        np.ndarray: A :math:`N_{atoms} \times N_{atoms}` matrix of distances.
-    """
-    disp_tensor = get_displacement_tensor(pos1, pos2, cell, pbc, mic)
-    distance_matrix = np.linalg.norm(disp_tensor, axis=2)
-
-    return distance_matrix
-
-
-def get_displacement_tensor(
+def get_displacement_tensor_old(
     pos1,
     pos2,
     cell=None,
@@ -645,9 +571,6 @@ def get_displacement_tensor(
         pbc(boolean or a list of booleans): Periodicity of the axes
         mic(boolean): Whether to return the displacement to the nearest
             periodic copy
-        mic_copies(np.ndarray): The maximum number of periodic copies to
-            consider in each direction. If not specified, the maximum possible
-            number of copies is determined and used.
 
     Returns:
         np.ndarray: 3D displacement tensor
@@ -692,6 +615,50 @@ def get_displacement_tensor(
         return disp_tensor, lengths
     else:
         return disp_tensor
+
+
+def get_displacement_tensor(
+    positions,
+    cell=None,
+    pbc=False,
+    mic=False,
+    cutoff=float("inf"),
+    return_factors=False,
+    return_distances=False,
+    return_cell_list=False,
+):
+    if cutoff is None:
+        cutoff = float("inf")
+    if cell is None:
+        cell = np.eye(3)
+    n_atoms = positions.shape[0]
+    disp_tensor = np.full((n_atoms, n_atoms, 3), float("inf"))
+    dist_mat = np.full((n_atoms, n_atoms), float("inf"))
+    factors = np.full((n_atoms, n_atoms, 3), float("inf"))
+    cell_list = matid.ext.get_displacement_tensor(
+        disp_tensor,
+        dist_mat,
+        factors,
+        positions,
+        cell,
+        expand_pbc(pbc),
+        mic,
+        cutoff,
+        return_factors,
+        return_distances,
+    )
+
+    result = [disp_tensor]
+    if return_factors:
+        result.append(factors)
+    if return_distances:
+        result.append(dist_mat)
+    if return_cell_list:
+        result.append(cell_list)
+
+    if len(result) == 1:
+        return result[0]
+    return tuple(result)
 
 
 def find_mic(D, cell, pbc, max_distance=None):
@@ -1007,7 +974,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(system, positions, numbers, tolerances, mic=True):
+def get_matches_old(system, positions, numbers, tolerances):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1033,12 +1000,12 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     pbc = expand_pbc(pbc)
     scaled_pos2 = to_scaled(cell, positions, wrap=False)
 
-    _, factors, dist_matrix = get_displacement_tensor(
+    _, factors, dist_matrix = get_displacement_tensor_old(
         positions,
         orig_pos,
         cell,
         pbc,
-        mic=mic,
+        mic=True,
         max_distance=tolerances.max(),
         return_factors=True,
         return_distances=True,
@@ -1110,6 +1077,102 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
         substitutions.append(subst)
         matches.append(match)
         copy_indices.append(copy)
+
+    return matches, substitutions, vacancies, copy_indices
+
+
+def get_extended_system(system, cutoff=0):
+    """Given a system and a cutoff value, returns a new system which has been
+    extended so that for each atom the neighbourhood within the cutoff radius is
+    present, taking periodic boundary conditions into account.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        ExtendedSystem object.
+    """
+    extended_system = matid.ext.extend_system(
+        system.get_positions(),
+        system.get_atomic_numbers(),
+        system.get_cell(),
+        system.get_pbc(),
+        cutoff,
+    )
+
+    return extended_system
+
+
+def get_cell_list(positions, indices, factors, cutoff=0):
+    """Given a system and a cutoff value, returns a cell list object.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        CellList object.
+    """
+    cell_list = matid.ext.CellList(positions, indices, factors, cutoff)
+
+    return cell_list
+
+
+def get_matches(system, cell_list, positions, numbers, tolerances):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
+
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        cell_list(CellList): The cell list for an appropriately extended version
+            of the system.
+        positions(np.ndarray): Positions to match in the system.
+        tolerances(np.ndarray): Maximum allowed distance for each vector that
+            is allowed for a match in position.
+
+    Returns:
+        np.ndarray: indices of matched atoms
+        list: list of substitutions
+        list: list of vacancies
+        np.ndarray: for each searched position, an integer array representing
+            the number of the periodic copy where the match was found.
+    """
+    atomic_numbers = system.get_atomic_numbers()
+    matches = []
+    substitutions = []
+    copy_indices = []
+    vacancies = []
+    cell = system.get_cell()
+
+    # The already pre-computed cell-list is used in finding neighbours.
+    for position, atomic_number, tolerance in zip(positions, numbers, tolerances):
+        cell_list_result = cell_list.get_neighbours_for_position(
+            position[0], position[1], position[2]
+        )
+        indices = cell_list_result.indices_original
+        if len(indices) > 0:
+            distances = cell_list_result.distances
+            factors = cell_list_result.factors
+            min_distance_index = np.argmin(distances)
+            closest_distance = distances[min_distance_index]
+            closest_factor = factors[min_distance_index]
+            closest_index = indices[min_distance_index]
+            if closest_distance <= tolerance:
+                closest_atomic_number = atomic_numbers[closest_index]
+                copy_indices.append(closest_factor)
+                if closest_atomic_number == atomic_number:
+                    matches.append(closest_index)
+                    substitutions.append(None)
+                else:
+                    matches.append(None)
+                    substitutions.append(closest_index)
+        else:
+            matches.append(None)
+            substitutions.append(None)
+            copy_indices.append(np.floor(to_scaled(cell, position, wrap=False)[0]))
+            vacancies.append(Atom(atomic_number, position=position))
 
     return matches, substitutions, vacancies, copy_indices
 
@@ -1508,7 +1571,7 @@ def get_crystallinity(symmetry_analyser):
     return ratio
 
 
-def get_distances(system: Atoms) -> Distances:
+def get_distances(system: Atoms, cutoff=None) -> Distances:
     """Returns complete distance information.
 
     Args:
@@ -1519,30 +1582,27 @@ def get_distances(system: Atoms) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite = get_displacement_tensor(pos, pos)
-    if pbc.any():
-        disp_tensor_mic, disp_factors = get_displacement_tensor(
-            pos, pos, cell, pbc, mic=True, return_factors=True
-        )
-    else:
-        disp_tensor_mic = disp_tensor_finite
-        disp_factors = np.zeros(disp_tensor_finite.shape)
-    dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
+    disp_tensor, disp_factors, dist_matrix, cell_list = get_displacement_tensor(
+        pos,
+        cell,
+        pbc,
+        mic=True,
+        cutoff=cutoff,
+        return_factors=True,
+        return_distances=True,
+        return_cell_list=True,
+    )
 
     # Calculate the distance matrix where the periodicity and the covalent
     # radii have been taken into account
-    dist_matrix_radii_mic = np.array(dist_matrix_mic)
+    dist_matrix_radii = np.array(dist_matrix)
     num = system.get_atomic_numbers()
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
-    dist_matrix_radii_mic -= radii_matrix
+    dist_matrix_radii -= radii_matrix
 
     return Distances(
-        disp_tensor_mic,
-        disp_factors,
-        disp_tensor_finite,
-        dist_matrix_mic,
-        dist_matrix_radii_mic,
+        disp_tensor, disp_factors, dist_matrix, dist_matrix_radii, cell_list
     )
 
 

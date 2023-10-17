@@ -5,14 +5,14 @@ class Distances:
 
     def __init__(
         self,
-        disp_tensor_mic,
+        disp_tensor,
         disp_factors,
-        disp_tensor_finite,
-        dist_matrix_mic,
-        dist_matrix_radii_mic,
+        dist_matrix,
+        dist_matrix_radii,
+        cell_list=None,
     ):
-        self.disp_tensor_mic = disp_tensor_mic
+        self.disp_tensor = disp_tensor
         self.disp_factors = disp_factors
-        self.disp_tensor_finite = disp_tensor_finite
-        self.dist_matrix_mic = dist_matrix_mic
-        self.dist_matrix_radii_mic = dist_matrix_radii_mic
+        self.dist_matrix = dist_matrix
+        self.dist_matrix_radii = dist_matrix_radii
+        self.cell_list = cell_list
