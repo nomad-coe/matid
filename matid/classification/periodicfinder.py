@@ -521,7 +521,7 @@ class PeriodicFinder:
     ):
         """
         Creates graphs for each atom that is contained in the prototype cell.
-        These graphs represent the connectivity of the atom to other aotm in the
+        These graphs represent the connectivity of the atom to other atom in the
         neighbourhood using the best basis spans.
 
         Args:
@@ -613,22 +613,26 @@ class PeriodicFinder:
         graphs = temp_graphs
 
         # Eliminate subgraphs that do not have enough periodicity.
-        valid_graphs = []
-        neighbourhood_set = set([(x[0], tuple(x[1])) for x in neighbour_nodes])
-        for graph in graphs:
-            # The periodicity is measured by the average degree of the nodes.
-            # Only the degree of the nodes that are in the neighbourhood are
-            # taken into account.
-            degrees = []
-            for node in graph.nodes():
-                if node in neighbourhood_set:
-                    i_degree = graph.degree(node)
-                    degrees.append(i_degree)
-            mean_degree = np.array(degrees).mean()
+        valid_graphs = graphs
 
-            # Corresponds to the check \omega_c > 2(d-1) in the article.
-            if mean_degree > (dim - 1) * 2:
-                valid_graphs.append(graph)
+        # TODO: This test is disabled in order to better handle finite corners
+        # and edges, especially in finite systems.
+        # valid_graphs = []
+        # neighbourhood_set = set([(x[0], tuple(x[1])) for x in neighbour_nodes])
+        # for graph in graphs:
+        #     # The periodicity is measured by the average degree of the nodes.
+        #     # Only the degree of the nodes that are in the neighbourhood are
+        #     # taken into account.
+        #     degrees = []
+        #     for node in graph.nodes():
+        #         if node in neighbourhood_set:
+        #             i_degree = graph.degree(node)
+        #             degrees.append(i_degree)
+        #     mean_degree = np.array(degrees).mean()
+
+        #     # Corresponds to the check \omega_c > 2(d-1) in the article.
+        #     if mean_degree > (dim - 1) * 2:
+        #         valid_graphs.append(graph)
 
         # If no valid graphs found, no region can be tracked.
         if len(valid_graphs) == 0:
@@ -764,7 +768,7 @@ class PeriodicFinder:
                         i_pos,
                         i_factors,
                     ) = matid.geometry.get_positions_within_basis(
-                        system, cell, seed_pos, pos_tol
+                        system, cell, seed_pos, pos_tol, pbc=system.get_pbc()
                     )
                 except Exception:
                     return None, None, None
@@ -866,18 +870,17 @@ class PeriodicFinder:
         populated prototype unit cell for 2D systems.
 
         Args:
-            seed_index(int): Index of the seed atom in the original system
             seed_nodes(list): List of tuples containing the node index as first
                 entry, and the 3D index of the cell repetition as second entry.
                 E.g. (0, (-1, 1, 2))
-            best_span_indices():
             best_spans(np.ndarray): A set of basis vectors for the cell as 3x3
                 array.
             system(ase.Atoms): Original system
-            group_data_pbc():
-            seed_group_index(): Index of the group in which the seed atom is in.
-            adjacency_add():
-            adjacency_sub():
+            group_data_pbc:
+            seed_group_index(int): Index of the group in which the seed atom is in.
+            adjacency_add:
+            adjacency_sub:
+            pos_tol(float): Position tolerance
 
         Returns:
             unit_cell(ase.Atoms): The unit cell
@@ -887,8 +890,8 @@ class PeriodicFinder:
         """
         # orig_cell = system.get_cell()
 
-        # We need to make the third basis vector, In 2D systems the maximum thickness of the system is defined by
-        # max_cell_size.
+        # We need to make the third basis vector, In 2D systems the maximum
+        # thickness of the system is defined by max_cell_size.
         a = best_spans[0]
         b = best_spans[1]
         c_test = matid.geometry.complete_cell(a, b, 2 * self.max_cell_size)
@@ -961,7 +964,7 @@ class PeriodicFinder:
                 i_indices, i_pos, i_factors = index_cell_map[i_seed]
             else:
                 i_indices, i_pos, i_factors = matid.geometry.get_positions_within_basis(
-                    system, cell, search_coord, pos_tol
+                    system, cell, search_coord, pos_tol, pbc=system.get_pbc()
                 )
                 index_cell_map[i_seed] = (i_indices, i_pos, i_factors)
 
@@ -977,6 +980,7 @@ class PeriodicFinder:
                 OrderedDict(zip(i_cell_nodes, range(len(i_cell_nodes))))
             )
             inside_pos.append(i_pos)
+
 
         # For each node in a network, find the first relative position. Wrap
         # and average these positions to get a robust final estimate.
