@@ -332,6 +332,7 @@ def test_cell_list_position(
     assert np.allclose(result.distances, expected_distances, rtol=0, atol=1e-8)
 
 
+
 @pytest.mark.parametrize(
     "system, pbc, position, expected_matches, expected_factors",
     [
@@ -441,3 +442,61 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     # Make sure that the correct atom is found
     assert np.array_equal(matches, expected_matches)
     assert np.array_equal(matches_ext, expected_matches)
+
+
+@pytest.mark.parametrize(
+    "cell, rel_pos, expected_pos, wrap, pbc",
+    [
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array([
+                [0, 0, 0],
+                [1, 1, 1],
+                [0.5, 0.5, 0.5],
+            ]),
+            np.array([
+                [0, 0, 0],
+                [2, 3, 1],
+                [1, 1.5, 0.5],
+            ]),
+            False,
+            False,
+            id="inside, unwrapped"
+        ),
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array([
+                [0, 0, 0],
+                [2, 2, 2],
+                [0.5, 1.5, 0.5],
+            ]),
+            np.array([
+                [0, 0, 0],
+                [4, 6, 2],
+                [1, 3.5, 0.5],
+            ]),
+            False,
+            False,
+            id="outside, unwrapped"
+        ),
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array([
+                [0, 0, 0],
+                [2, 2, 2],
+                [0.5, 1.5, 0.5],
+            ]),
+            np.array([
+                [0, 0, 0],
+                [0, 0, 0],
+                [1, 1.5, 0.5],
+            ]),
+            True,
+            True,
+            id="outside, wrapped"
+        ),
+    ],
+)
+def test_to_cartesian(cell, rel_pos, expected_pos, wrap, pbc):
+    cart_pos = matid.geometry.to_cartesian(cell, rel_pos, wrap, pbc)
+    assert np.allclose(cart_pos, expected_pos)
