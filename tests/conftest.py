@@ -1,6 +1,9 @@
 import numpy as np
+from numpy.random import default_rng
 from ase import Atoms
+from ase.build import surface as ase_surface
 import ase.build
+
 
 
 def create_graphene():
@@ -54,3 +57,56 @@ def create_sic(cubic=True):
         cubic=cubic,
     )
     return system
+
+
+def rattle(atoms, displacement=0.08):
+    rng = default_rng(seed=7)
+    noise = rng.random((len(atoms), 3)) - 0.5
+    lengths = np.linalg.norm(noise, axis=1)
+    noise /= np.expand_dims(lengths, 1)
+    noise *= displacement
+    atoms_copy = atoms.copy()
+    atoms_copy.set_positions(atoms_copy.get_positions() + noise)
+    return atoms_copy
+
+
+def surface(conv_cell, indices, layers=[3, 3, 2], vacuum=10):
+    surface = ase_surface(conv_cell, indices, layers[2], vacuum=vacuum, periodic=True)
+    surface *= [layers[0], layers[1], 1]
+    return surface
+
+
+def stack(a, b, axis=2, distance=3, vacuum=10):
+    a_pos = a.get_positions()[:, axis]
+    a_max = np.max(a_pos)
+    a_min = np.min(a_pos)
+    b_pos = b.get_positions()[:, axis]
+    b_max = np.max(b_pos)
+    b_min = np.min(b_pos)
+    a_shift = np.zeros((len(a), 3))
+    a_shift[:, axis] += -a_min
+    b_shift = np.zeros((len(b), 3))
+    b_shift[:, axis] += -b_min + (a_max - a_min) + distance
+    a.translate(a_shift)
+    b.translate(b_shift)
+    stacked = a + b
+    cell = a.get_cell()
+    axis_new = cell[axis, :]
+    axis_norm = np.linalg.norm(axis_new)
+    axis_new = axis_new / axis_norm * (a_max - a_min + b_max - b_min + distance)
+    cell[axis, :] = axis_new
+    stacked.set_cell(cell)
+    ase.build.add_vacuum(stacked, vacuum)
+    return stacked
+
+
+def assert_topology(results, expected):
+    # Check that correct clusters are found
+    assert len(expected) == len(results)
+    cluster_map = {tuple(sorted(x.indices)): x for x in results}
+    for cluster_expected in expected:
+        cluster = cluster_map[tuple(sorted(cluster_expected.indices))]
+        assert cluster.dimensionality() == cluster_expected.dimensionality()
+        assert cluster.classification() == cluster_expected.classification()
+
+
