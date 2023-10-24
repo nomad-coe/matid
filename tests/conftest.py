@@ -5,7 +5,6 @@ from ase.build import surface as ase_surface
 import ase.build
 
 
-
 def create_graphene():
     system = Atoms(
         symbols=["C", "C"],
@@ -108,5 +107,3 @@ def assert_topology(results, expected):
         cluster = cluster_map[tuple(sorted(cluster_expected.indices))]
         assert cluster.dimensionality() == cluster_expected.dimensionality()
         assert cluster.classification() == cluster_expected.classification()
-
-

@@ -196,10 +196,7 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
         ),
         # Misc.
         pytest.param(
-            sparse,
-            [],
-            True,
-            id="valid region, no clusters due to sparse cell"
+            sparse, [], True, id="valid region, no clusters due to sparse cell"
         ),
         pytest.param(
             broken,
