@@ -5,6 +5,7 @@ import ase.lattice.hexagonal
 import ase.lattice.cubic
 from ase.build import molecule, nanotube, bcc100
 from ase import Atoms
+from ase.visualize import view
 
 import matid.geometry
 
@@ -85,6 +86,57 @@ mx2 = ase.build.mx2(
 )
 mx2 = mx2[[0, 12]]
 tolerance = 0.2
+
+com1 = bcc100("Fe", size=(3, 3, 4), vacuum=8)
+adsorbate = ase.Atom(position=[4, 4, 4], symbol="H")
+com1 += adsorbate
+com1.set_pbc(True)
+com1.translate([0, 0, 10])
+com1.wrap()
+
+com2 = Atoms(
+    symbols=[
+        "N",
+        "N",
+        "N",
+        "N",
+        "C",
+        "C",
+        "N",
+        "C",
+        "H",
+        "C",
+        "C",
+        "N",
+        "C",
+        "H",
+    ],
+    positions=[
+        [5.99520154, 4.36260352, 9.34466641],
+        [3.93237808, 3.20844954, 9.59369566],
+        [-0.44330457, 4.00755999, 9.58355994],
+        [1.61974674, 2.84737344, 9.36529391],
+        [2.67745295, 3.5184896, 9.09252221],
+        [4.71467838, 4.12389331, 9.05494284],
+        [2.65906057, 4.65710632, 8.18163931],
+        [3.88950688, 5.03564733, 8.17378237],
+        [4.26274113, 5.88360129, 7.59608619],
+        [0.33924086, 3.07840333, 9.06923781],
+        [-0.48556248, 2.14395639, 8.21180484],
+        [7.03506045, 2.52272554, 8.20901382],
+        [7.05303326, 3.68462936, 9.08992327],
+        [-0.11207002, 1.28102047, 7.65690464],
+    ],
+    cell=[
+        [8.751006887253668, 0.0, 0.0],
+        [-4.372606804779377, 11.962358903815558, 0.0],
+        [0.00037467328230266297, -0.000720566930414705, 16.891557236170406],
+    ],
+    pbc=True,
+)
+
+min1 = molecule("H2O")
+min1.set_cell([3, 3, 3])
 
 
 @pytest.mark.parametrize(
@@ -441,3 +493,169 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     # Make sure that the correct atom is found
     assert np.array_equal(matches, expected_matches)
     assert np.array_equal(matches_ext, expected_matches)
+
+
+@pytest.mark.parametrize(
+    "cell, rel_pos, expected_pos, wrap, pbc",
+    [
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [1, 1, 1],
+                    [0.5, 0.5, 0.5],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [2, 3, 1],
+                    [1, 1.5, 0.5],
+                ]
+            ),
+            False,
+            False,
+            id="inside, unwrapped",
+        ),
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [2, 2, 2],
+                    [0.5, 1.5, 0.5],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [4, 6, 2],
+                    [1, 3.5, 0.5],
+                ]
+            ),
+            False,
+            False,
+            id="outside, unwrapped",
+        ),
+        pytest.param(
+            np.array([[1, 1, 0], [0, 2, 0], [1, 0, 1]]),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [2, 2, 2],
+                    [0.5, 1.5, 0.5],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0, 0],
+                    [0, 0, 0],
+                    [1, 1.5, 0.5],
+                ]
+            ),
+            True,
+            True,
+            id="outside, wrapped",
+        ),
+    ],
+)
+def test_to_cartesian(cell, rel_pos, expected_pos, wrap, pbc):
+    cart_pos = matid.geometry.to_cartesian(cell, rel_pos, wrap, pbc)
+    assert np.allclose(cart_pos, expected_pos)
+
+
+@pytest.mark.parametrize(
+    "system, pbc, expected_com",
+    [
+        pytest.param(com1, True, [4.0, 4.0, 20.15], id="periodic"),
+        pytest.param(com1, False, [3.58770672, 3.58770672, 10.00200455], id="finite"),
+        pytest.param(
+            com2,
+            True,
+            [6.2609094, 3.59987973, 8.90948045],
+            id="non-orthorhombic cell, negative lattive vector components",
+        ),
+    ],
+)
+def test_center_of_mass(system, pbc, expected_com):
+    """Tests that the center of mass correctly takes periodicity into account."""
+    system.set_pbc(pbc)
+    com = matid.geometry.get_center_of_mass(system)
+    assert np.allclose(com, expected_com, atol=0.1)
+
+
+@pytest.mark.parametrize(
+    "system, axis, minimum_size, expected_cell, expected_pos",
+    [
+        pytest.param(
+            min1,
+            0,
+            0.1,
+            np.array([[0.1, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 3.0]]),
+            np.array(
+                [
+                    [0.5, 0.0, 0.039754],
+                    [0.5, 0.254413, -0.15901567],
+                    [0.5, -0.254413, -0.15901567],
+                ]
+            ),
+            id="a basis",
+        ),
+        pytest.param(
+            min1,
+            1,
+            0.1,
+            np.array([[3.0, 0.0, 0.0], [0.0, 1.526478, 0.0], [0.0, 0.0, 3.0]]),
+            np.array(
+                [
+                    [0.0, 0.5, 0.039754],
+                    [0.0, 1.0, -0.15901567],
+                    [0.0, 0.0, -0.15901567],
+                ]
+            ),
+            id="b basis",
+        ),
+        pytest.param(
+            min1,
+            2,
+            0.1,
+            np.array([[3.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 0.596309]]),
+            np.array([[0.0, 0.0, 1.0], [0.0, 0.254413, 0.0], [0.0, -0.254413, 0.0]]),
+            id="c basis",
+        ),
+        pytest.param(
+            min1,
+            2,
+            2,
+            np.array([[3.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 2]]),
+            np.array(
+                [
+                    [0.0, 0.0, 0.64907725],
+                    [0.0, 0.254413, 0.35092275],
+                    [0.0, -0.254413, 0.35092275],
+                ]
+            ),
+            id="smaller than minimum size",
+        ),
+    ],
+)
+def test_minimize_cell(system, axis, minimum_size, expected_cell, expected_pos):
+    min_system = matid.geometry.get_minimized_cell(system, axis, minimum_size)
+    min_cell = min_system.get_cell()
+    min_pos = min_system.get_scaled_positions()
+    assert np.allclose(min_cell, expected_cell, atol=0.001, rtol=0)
+    assert np.allclose(min_pos, expected_pos, atol=0.001, rtol=0)
+
+
+@pytest.mark.parametrize(
+    "system, axis, expected_thickness",
+    [
+        pytest.param(min1, 0, 0, id="a basis"),
+        pytest.param(min1, 1, 1.526478, id="b basis"),
+        pytest.param(min1, 2, 0.596309, id="c basis"),
+    ],
+)
+def test_thickness(system, axis, expected_thickness):
+    thickness = matid.geometry.get_thickness(system, axis)
+    assert thickness == expected_thickness
