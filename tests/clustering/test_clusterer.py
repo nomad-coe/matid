@@ -4,8 +4,8 @@ import ase.io
 from ase import Atoms
 from ase.build import bulk
 from ase.visualize import view
-from conftest import surface, stack, rattle, assert_topology
 
+from conftest import surface, stack, rattle, assert_topology
 from matid.clustering import Clusterer, Cluster, Classification
 
 

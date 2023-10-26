@@ -652,8 +652,8 @@ def test_minimize_cell(system, axis, minimum_size, expected_cell, expected_pos):
     "system, axis, expected_thickness",
     [
         pytest.param(min1, 0, 0, id="a basis"),
-        pytest.param(min1, 1,  1.526478, id="b basis"),
-        pytest.param(min1, 2,  0.596309, id="c basis"),
+        pytest.param(min1, 1, 1.526478, id="b basis"),
+        pytest.param(min1, 2, 0.596309, id="c basis"),
     ],
 )
 def test_thickness(system, axis, expected_thickness):
