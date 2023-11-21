@@ -349,7 +349,7 @@ def test_extend_system(system, pbc, cutoff, expected_indices):
     are in the neighbouring cells.
     """
     system.set_pbc(pbc)
-    extended_system = matid.geometry.get_extended_system(system, cutoff)
+    extended_system = matid.geometry.get_extended_system_new(system, cutoff)
     assert np.array_equal(extended_system.indices, expected_indices)
 
 
@@ -463,7 +463,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     system.set_pbc(pbc)
 
     # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches_old(
+    matches, _, _, factors = matid.geometry.get_matches(
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
@@ -471,14 +471,14 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     )
 
     # New CPP implementation
-    extended_system = matid.geometry.get_extended_system(system, tolerance)
+    extended_system = matid.geometry.get_extended_system_new(system, tolerance)
     cell_list = matid.geometry.get_cell_list(
         extended_system.positions,
         extended_system.indices,
         extended_system.factors,
         tolerance,
     )
-    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
+    matches_ext, _, _, factors_ext = matid.geometry.get_matches_new(
         system,
         cell_list,
         np.array(position)[None, :],

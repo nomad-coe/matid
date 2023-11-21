@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+cd ../tests
 export COVERAGE_FILE=".coverage"
 coverage run --source="matid" testrunner.py
 unittest=$?

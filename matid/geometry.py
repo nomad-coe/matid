@@ -428,6 +428,29 @@ def get_extended_system(system, target_size):
     return extended_system
 
 
+def get_extended_system_new(system, cutoff=0):
+    """Given a system and a cutoff value, returns a new system which has been
+    extended so that for each atom the neighbourhood within the cutoff radius is
+    present, taking periodic boundary conditions into account.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        ExtendedSystem object.
+    """
+    extended_system = matid.ext.extend_system(
+        system.get_positions(),
+        system.get_atomic_numbers(),
+        system.get_cell(),
+        system.get_pbc(),
+        cutoff,
+    )
+
+    return extended_system
+
+
 def get_clusters(dist_matrix, threshold, min_samples=1):
     """Used to detect clusters with the DBSCAN algorithm.
 
@@ -1112,6 +1135,77 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
         copy_indices.append(copy)
 
     return matches, substitutions, vacancies, copy_indices
+
+
+def get_matches_new(system, cell_list, positions, numbers, tolerances):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
+
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        cell_list(CellList): The cell list for an appropriately extended version
+            of the system.
+        positions(np.ndarray): Positions to match in the system.
+        tolerances(np.ndarray): Maximum allowed distance for each vector that
+            is allowed for a match in position.
+
+    Returns:
+        np.ndarray: indices of matched atoms
+        list: list of substitutions
+        list: list of vacancies
+        np.ndarray: for each searched position, an integer array representing
+            the number of the periodic copy where the match was found.
+    """
+    atomic_numbers = system.get_atomic_numbers()
+    matches = []
+    substitutions = []
+    copy_indices = []
+    vacancies = []
+    cell = system.get_cell()
+
+    # The already pre-computed cell-list is used in finding neighbours.
+    for position, atomic_number, tolerance in zip(positions, numbers, tolerances):
+        cell_list_result = cell_list.get_neighbours_for_position(
+            position[0], position[1], position[2]
+        )
+        indices = cell_list_result.indices_original
+        if len(indices) > 0:
+            distances = cell_list_result.distances
+            factors = cell_list_result.factors
+            min_distance_index = np.argmin(distances)
+            closest_distance = distances[min_distance_index]
+            closest_factor = factors[min_distance_index]
+            closest_index = indices[min_distance_index]
+            if closest_distance <= tolerance:
+                closest_atomic_number = atomic_numbers[closest_index]
+                copy_indices.append(closest_factor)
+                if closest_atomic_number == atomic_number:
+                    matches.append(closest_index)
+                    substitutions.append(None)
+                else:
+                    matches.append(None)
+                    substitutions.append(closest_index)
+        else:
+            matches.append(None)
+            substitutions.append(None)
+            copy_indices.append(np.floor(to_scaled(cell, position, wrap=False)[0]))
+            vacancies.append(Atom(atomic_number, position=position))
+
+    return matches, substitutions, vacancies, copy_indices
+
+
+def get_cell_list(positions, indices, factors, cutoff=0):
+    """Given a system and a cutoff value, returns a cell list object.
+
+    Args:
+        system(ASE.Atoms): System to extend
+        cutoff(float): Radial cutoff
+
+    Returns:
+        CellList object.
+    """
+    return matid.ext.CellList(positions, indices, factors, cutoff)
 
 
 def to_scaled(cell, positions, wrap=False, pbc=False):
