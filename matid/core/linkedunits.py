@@ -130,7 +130,7 @@ class LinkedUnitCollection(dict):
                     break
 
             pos = cell.get_positions()
-            disp = matid.geometry.get_displacement_tensor_old(pos, pos, cell.get_cell())
+            disp = matid.geometry.get_displacement_tensor(pos, cell.get_cell())
 
             env_list = []
             for i in range(len(cell)):

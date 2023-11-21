@@ -275,7 +275,7 @@ def test_displacement_tensor(
         disp_tensor_ext,
         factors_ext,
         dist_mat_ext,
-    ) = matid.geometry.get_displacement_tensor_new(
+    ) = matid.geometry.get_displacement_tensor(
         positions,
         cell,
         pbc,

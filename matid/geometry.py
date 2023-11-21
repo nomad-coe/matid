@@ -88,7 +88,7 @@ def get_dimensionality(
     # 1x1x1 system
     if dist_matrix_radii_mic_1x is None:
         pos_1x = system.get_positions()
-        _, dist_matrix_mic_1x = get_displacement_tensor_new(
+        _, dist_matrix_mic_1x = get_displacement_tensor(
             pos_1x,
             cell_1x,
             pbc,
@@ -121,7 +121,7 @@ def get_dimensionality(
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
             num_2x = system_2x.get_atomic_numbers()
-            _, dist_matrix_mic_2x = get_displacement_tensor_new(
+            _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
                 cell_2x,
                 pbc,
@@ -198,7 +198,7 @@ def get_tetrahedra_decomposition(system, max_distance):
     radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
 
-    displacements_finite = get_displacement_tensor_new(pos)
+    displacements_finite = get_displacement_tensor(pos)
 
     # In order for the decomposition to cover also the edges, we have to extend
     # the system to cover also into the adjacent periodic images. That is done
@@ -601,7 +601,7 @@ def get_wrapped_positions(scaled_pos, precision=1e-5):
     return scaled_pos
 
 
-def get_displacement_tensor(
+def get_displacement_tensor_old(
     pos1,
     pos2,
     cell=None,
@@ -624,9 +624,6 @@ def get_displacement_tensor(
         pbc(boolean or a list of booleans): Periodicity of the axes
         mic(boolean): Whether to return the displacement to the nearest
             periodic copy
-        mic_copies(np.ndarray): The maximum number of periodic copies to
-            consider in each direction. If not specified, the maximum possible
-            number of copies is determined and used.
 
     Returns:
         np.ndarray: 3D displacement tensor
@@ -673,7 +670,7 @@ def get_displacement_tensor(
         return disp_tensor
 
 
-def get_displacement_tensor_new(
+def get_displacement_tensor(
     positions,
     cell=None,
     pbc=False,
@@ -1056,7 +1053,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     pbc = expand_pbc(pbc)
     scaled_pos2 = to_scaled(cell, positions, wrap=False)
 
-    _, factors, dist_matrix = get_displacement_tensor(
+    _, factors, dist_matrix = get_displacement_tensor_old(
         positions,
         orig_pos,
         cell,
@@ -1613,9 +1610,9 @@ def get_distances(system: Atoms) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite = get_displacement_tensor_new(pos)
+    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
-        disp_tensor_mic, disp_factors = get_displacement_tensor_new(
+        disp_tensor_mic, disp_factors = get_displacement_tensor(
             pos, cell, pbc, mic=True, return_factors=True
         )
     else:
