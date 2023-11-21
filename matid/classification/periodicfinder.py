@@ -1415,7 +1415,7 @@ class PeriodicFinder:
             # Wrapping is here disabled because it does not handle well values
             # that are negative within machine precision.
             cell_pos = unit_cell.get_scaled_positions(wrap=False)
-        except:
+        except Exception:
             return
         cell_num = unit_cell.get_atomic_numbers()
         old_basis = unit_cell.get_cell()
@@ -1502,7 +1502,6 @@ class PeriodicFinder:
             used_indices,
             cell_index,
             searched_cell_indices,
-            used_seed_indices,
             collection._used_points,
             collection._search_graph,
             collection._index_cell_map,
@@ -1557,7 +1556,6 @@ class PeriodicFinder:
         used_indices,
         cell_index,
         searched_cell_indices,
-        used_seed_indices,
         used_points,
         search_graph,
         index_cell_map,
