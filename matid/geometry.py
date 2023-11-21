@@ -1162,7 +1162,9 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
+    # wrapped_pos = ase.geometry.wrap_positions(positions, cell, system.get_pbc())
     for position, atomic_number, tolerance in zip(positions, numbers, tolerances):
+        # Each tested position is wrapped inside the cell if one exists
         cell_list_result = cell_list.get_neighbours_for_position(
             position[0], position[1], position[2]
         )
@@ -1610,10 +1612,10 @@ def get_distances(system: Atoms) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
-    disp_tensor_finite = get_displacement_tensor(pos)
+    disp_tensor_finite, cell_list = get_displacement_tensor(pos, return_cell_list=True)
     if pbc.any():
-        disp_tensor_mic, disp_factors = get_displacement_tensor(
-            pos, cell, pbc, mic=True, return_factors=True
+        disp_tensor_mic, disp_factors, cell_list = get_displacement_tensor(
+            pos, cell, pbc, mic=True, return_factors=True, return_cell_list=True
         )
     else:
         disp_tensor_mic = disp_tensor_finite
@@ -1634,6 +1636,7 @@ def get_distances(system: Atoms) -> Distances:
         disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
+        cell_list
     )
 
 

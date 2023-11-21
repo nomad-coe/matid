@@ -409,10 +409,18 @@ def test_cell_list_position(
         pytest.param(
             mx2,
             True,
+            np.array([0, 0, 9.595]) + mx2.get_cell().sum(axis=0) * 2,
+            [None],  # TODO: The new implementation should probably return a match here?
+            (2, 2, 2),
+            id="periodic, position way outside original cell",
+        ),
+        pytest.param(
+            mx2,
+            True,
             (mx2.get_positions()[0] + mx2.get_cell()[0]),
             [0],
             (1, 0, 0),
-            id="orthogonal, match in +a",
+            id="match in +a",
         ),
         pytest.param(
             mx2,
@@ -420,7 +428,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[0]),
             [0],
             (-1, 0, 0),
-            id="orthogonal, match in -a",
+            id="match in -a",
         ),
         pytest.param(
             mx2,
@@ -428,7 +436,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] + mx2.get_cell()[1]),
             [0],
             (0, 1, 0),
-            id="orthogonal, match in +b",
+            id="match in +b",
         ),
         pytest.param(
             mx2,
@@ -436,7 +444,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[1]),
             [0],
             (0, -1, 0),
-            id="orthogonal, match in -b",
+            id="match in -b",
         ),
         pytest.param(
             mx2,
@@ -444,7 +452,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] + mx2.get_cell()[2]),
             [0],
             (0, 0, 1),
-            id="orthogonal, match in +c",
+            id="match in +c",
         ),
         pytest.param(
             mx2,
@@ -452,7 +460,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[2]),
             [0],
             (0, 0, -1),
-            id="orthogonal, match in -c",
+            id="match in -c",
         ),
     ],
 )

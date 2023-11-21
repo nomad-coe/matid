@@ -106,6 +106,7 @@ class PeriodicFinder:
         self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
+        self.cell_list = distances.cell_list
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
         region = None
@@ -235,12 +236,19 @@ class PeriodicFinder:
             i_adj_list_sub = defaultdict(list)
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
+
             add_indices, _, _, add_factors = matid.geometry.get_matches(
                 system, add_pos, neighbour_num, i_pos_tol
             )
             sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system, sub_pos, neighbour_num, i_pos_tol
             )
+            # add_indices, _, _, add_factors = matid.geometry.get_matches_new(
+            #     system, self.cell_list, add_pos, neighbour_num, i_pos_tol
+            # )
+            # sub_indices, _, _, sub_factors = matid.geometry.get_matches_new(
+            #     system, self.cell_list, sub_pos, neighbour_num, i_pos_tol
+            # )
 
             n_metric = 0
             for i_neigh in range(n_neighbours):
