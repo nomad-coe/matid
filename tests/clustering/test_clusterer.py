@@ -213,10 +213,7 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
             id="remove unconnected outliers from region",
         ),
         pytest.param(
-            ase.io.read(
-                Path(__file__).parent.parent
-                / "data/system-CVC.extxyz"
-            ),
+            ase.io.read(Path(__file__).parent.parent / "data/system-CVC.extxyz"),
             [
                 Cluster(
                     range(123),

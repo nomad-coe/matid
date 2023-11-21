@@ -137,7 +137,9 @@ class Clusterer:
         for i, i_clusters in overlap_map.items():
             if len(i_clusters) > 1:
                 surrounding_indices = set(
-                    np.argwhere(distances.dist_matrix_radii_mic[i, :] < merge_radius)[:, 0]
+                    np.argwhere(distances.dist_matrix_radii_mic[i, :] < merge_radius)[
+                        :, 0
+                    ]
                 )
                 max_near = 0
                 max_cluster = i_clusters[0]

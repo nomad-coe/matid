@@ -979,7 +979,6 @@ class PeriodicFinder:
             )
             inside_pos.append(i_pos)
 
-
         # For each node in a network, find the first relative position. Wrap
         # and average these positions to get a robust final estimate.
         averaged_rel_pos = []
