@@ -1092,7 +1092,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     matches = []
     substitutions = []
     vacancies = []
-    copy_indices = []
+    copy_indices = np.zeros((len(positions), 3))
 
     for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
         match = None
@@ -1129,7 +1129,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
 
         substitutions.append(subst)
         matches.append(match)
-        copy_indices.append(copy)
+        copy_indices[i] = copy
 
     return matches, substitutions, vacancies, copy_indices
 
@@ -1157,14 +1157,17 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
     atomic_numbers = system.get_atomic_numbers()
     matches = []
     substitutions = []
-    copy_indices = []
+    copy_indices = np.zeros((len(positions), 3))
     vacancies = []
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
-    # wrapped_pos = ase.geometry.wrap_positions(positions, cell, system.get_pbc())
-    for position, atomic_number, tolerance in zip(positions, numbers, tolerances):
-        # Each tested position is wrapped inside the cell if one exists
+    for i, (position, atomic_number, tolerance) in enumerate(
+        zip(positions, numbers, tolerances)
+    ):
+        match = None
+        substitution = None
+        copy_index = None
         cell_list_result = cell_list.get_neighbours_for_position(
             position[0], position[1], position[2]
         )
@@ -1178,18 +1181,18 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
             closest_index = indices[min_distance_index]
             if closest_distance <= tolerance:
                 closest_atomic_number = atomic_numbers[closest_index]
-                copy_indices.append(closest_factor)
+                copy_index = closest_factor
                 if closest_atomic_number == atomic_number:
-                    matches.append(closest_index)
+                    match = closest_index
                     substitutions.append(None)
                 else:
-                    matches.append(None)
                     substitutions.append(closest_index)
-        else:
-            matches.append(None)
-            substitutions.append(None)
-            copy_indices.append(np.floor(to_scaled(cell, position, wrap=False)[0]))
+        matches.append(match)
+        substitutions.append(substitution)
+        if match is None and substitution is None:
             vacancies.append(Atom(atomic_number, position=position))
+            copy_index = np.floor(to_scaled(cell, position, wrap=False)[0])
+        copy_indices[i] = copy_index
 
     return matches, substitutions, vacancies, copy_indices
 
@@ -1636,7 +1639,7 @@ def get_distances(system: Atoms) -> Distances:
         disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
-        cell_list
+        cell_list,
     )
 
 
