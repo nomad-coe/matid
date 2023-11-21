@@ -6,7 +6,7 @@ name: test
 
 on:
   push:
-    branches: [ "main", "develop"]
+    branches: [ "main", "develop", "fix"]
   pull_request:
     branches: [ "main"]
 
