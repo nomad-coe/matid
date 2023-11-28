@@ -1,9 +1,11 @@
-import numpy as np
+import time
 from pathlib import Path
+
+import numpy as np
 import pytest
 import ase.lattice.hexagonal
 import ase.lattice.cubic
-from ase.build import molecule, nanotube, bcc100
+from ase.build import molecule, nanotube, bcc100, bulk
 from ase import Atoms
 from ase.visualize import view
 
@@ -736,3 +738,37 @@ def test_minimize_cell(system, axis, minimum_size, expected_cell, expected_pos):
 def test_thickness(system, axis, expected_thickness):
     thickness = matid.geometry.get_thickness(system, axis)
     assert thickness == expected_thickness
+
+def test_displacement_tensor_performance():
+    system = bulk("NaCl", "rocksalt", a=5.64) * [10, 10, 10]
+    cutoff = 10
+
+    start = time.time()
+    matid.geometry.get_displacement_tensor(
+        system.get_positions(),
+        system.get_cell(),
+        system.get_pbc(),
+        mic=True,
+        cutoff=cutoff,
+        return_distances=True,
+        return_factors=False,
+    )
+    end = time.time()
+    elapsed_new = end - start
+
+    start = time.time()
+    matid.geometry.get_displacement_tensor_old(
+        system.get_positions(),
+        system.get_positions(),
+        system.get_cell(),
+        system.get_pbc(),
+        mic=True,
+        cutoff=cutoff,
+        return_distances=True,
+        return_factors=False,
+    )
+    end = time.time()
+    elapsed_old = end - start
+
+    ratio = elapsed_old / elapsed_new
+    assert ratio > 10

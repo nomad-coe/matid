@@ -607,7 +607,7 @@ def get_displacement_tensor_old(
     cell=None,
     pbc=None,
     mic=False,
-    max_distance=None,
+    cutoff=None,
     return_factors=False,
     return_distances=False,
 ):
@@ -648,7 +648,7 @@ def get_displacement_tensor_old(
     # If minimum image convention is used, get the corrected vectors
     if mic:
         flattened_disp = np.reshape(disp_tensor, (-1, 3))
-        D, D_len, factors = find_mic(flattened_disp, cell, pbc, max_distance)
+        D, D_len, factors = find_mic(flattened_disp, cell, pbc, cutoff)
         disp_tensor = np.reshape(D, tensor_shape)
         if return_factors:
             factors = np.reshape(factors, tensor_shape)
@@ -1059,7 +1059,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
         cell,
         pbc,
         mic=mic,
-        max_distance=tolerances.max(),
+        cutoff=tolerances.max(),
         return_factors=True,
         return_distances=True,
     )
