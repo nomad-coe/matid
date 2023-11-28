@@ -14,7 +14,6 @@ limitations under the License.
 */
 
 #include <unordered_map>
-#include <iostream>
 #include <limits>
 #include "geometry.h"
 
@@ -195,43 +194,8 @@ CellList get_displacement_tensor(
     // Create cell list for positions of the extended system
     CellList cell_list = CellList(system.positions, system.indices, system.factors, cutoff);
 
-    // Get data for each atom in the original system
-    auto original_indices_u = system.indices.unchecked<1>();
-    auto distances_mu = distances.mutable_unchecked<2>();
-    auto displacements_mu = displacements.mutable_unchecked<3>();
-    auto factors_mu = factors.mutable_unchecked<3>();
-    for (int i = 0; i < n_atoms; ++i) {
-        CellListResult result = cell_list.get_neighbours_for_index(i);
+    // Calculate distances information
+    cell_list.get_displacement_tensor(displacements, distances, factors, system.indices, n_atoms);
 
-        // Report self-distance as zero
-        distances_mu(i, i) = 0;
-        for (int k=0; k < 3; ++k) {
-            displacements_mu(i, i, k) = 0;
-            factors_mu(i, i, k) = 0;
-        }
-
-        // Loop through all neighbours and report the minimum distance for each
-        // original index. Self-distances are ignored.
-        unordered_map<int, double> min_dist_map;
-        unordered_map<int, int> min_index_map;
-        for (int idx=0; idx < result.indices.size(); ++idx) {
-            int j = original_indices_u(result.indices[idx]);
-            if (j == i) {
-                continue;
-            }
-            double distance = result.distances[idx];
-            if (min_dist_map.find(j) == min_dist_map.end() || distance < min_dist_map[j]) {
-                min_dist_map[j] = distance;
-                min_index_map[j] = idx;
-            }
-        }
-        for (auto& it: min_index_map) {
-            distances_mu(i, it.first) = result.distances[it.second];
-            for (int k=0; k < 3; ++k) {
-                displacements_mu(i, it.first, k) = result.displacements[it.second][k];
-                factors_mu(i, it.first, k) = result.factors[it.second][k];
-            }
-        }
-    }
     return cell_list;
 }

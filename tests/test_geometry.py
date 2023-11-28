@@ -1,9 +1,11 @@
-import numpy as np
+import time
 from pathlib import Path
+
+import numpy as np
 import pytest
 import ase.lattice.hexagonal
 import ase.lattice.cubic
-from ase.build import molecule, nanotube, bcc100
+from ase.build import molecule, nanotube, bcc100, bulk
 from ase import Atoms
 from ase.visualize import view
 
@@ -336,21 +338,90 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
 
 
 @pytest.mark.parametrize(
-    "system, pbc, cutoff, expected_indices",
+    "system, pbc, cutoff, expected_indices, expected_factors",
     [
-        pytest.param(mx2, False, 0, [0, 1], id="finite, zero cutoff"),
-        pytest.param(mx2, False, 1, [0, 1], id="finite, nonzero cutoff"),
-        pytest.param(mx2, True, 0, [0, 1], id="periodic, zero cutoff"),
-        pytest.param(mx2, True, 1, np.tile([0, 1], 27), id="periodic, nonzero cutoff"),
+        pytest.param(
+            mx2, False, 0, [0, 1], [[0, 0, 0], [0, 0, 0]], id="finite, zero cutoff"
+        ),
+        pytest.param(
+            mx2, False, 1, [0, 1], [[0, 0, 0], [0, 0, 0]], id="finite, nonzero cutoff"
+        ),
+        pytest.param(
+            mx2, True, 0, [0, 1], [[0, 0, 0], [0, 0, 0]], id="periodic, zero cutoff"
+        ),
+        pytest.param(
+            mx2,
+            True,
+            1,
+            np.tile([0, 1], 27),
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 1.0, -1.0],
+                [0.0, 1.0, -1.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 1.0],
+                [0.0, -1.0, 1.0],
+                [0.0, -1.0, -1.0],
+                [0.0, -1.0, -1.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, -1.0],
+                [1.0, 0.0, -1.0],
+                [1.0, 1.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, -1.0],
+                [1.0, 1.0, -1.0],
+                [1.0, -1.0, 0.0],
+                [1.0, -1.0, 0.0],
+                [1.0, -1.0, 1.0],
+                [1.0, -1.0, 1.0],
+                [1.0, -1.0, -1.0],
+                [1.0, -1.0, -1.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 1.0],
+                [-1.0, 0.0, 1.0],
+                [-1.0, 0.0, -1.0],
+                [-1.0, 0.0, -1.0],
+                [-1.0, 1.0, 0.0],
+                [-1.0, 1.0, 0.0],
+                [-1.0, 1.0, 1.0],
+                [-1.0, 1.0, 1.0],
+                [-1.0, 1.0, -1.0],
+                [-1.0, 1.0, -1.0],
+                [-1.0, -1.0, 0.0],
+                [-1.0, -1.0, 0.0],
+                [-1.0, -1.0, 1.0],
+                [-1.0, -1.0, 1.0],
+                [-1.0, -1.0, -1.0],
+                [-1.0, -1.0, -1.0],
+            ],
+            id="periodic, nonzero cutoff",
+        ),
     ],
 )
-def test_extend_system(system, pbc, cutoff, expected_indices):
+def test_extend_system(system, pbc, cutoff, expected_indices, expected_factors):
     """Test that the correct factor is returned when finding matches that
     are in the neighbouring cells.
     """
     system.set_pbc(pbc)
     extended_system = matid.geometry.get_extended_system(system, cutoff)
     assert np.array_equal(extended_system.indices, expected_indices)
+    assert np.array_equal(extended_system.factors, expected_factors)
 
 
 @pytest.mark.parametrize(
@@ -409,10 +480,18 @@ def test_cell_list_position(
         pytest.param(
             mx2,
             True,
+            np.array([0, 0, 9.595]) + mx2.get_cell().sum(axis=0) * 2,
+            [None],  # TODO: The new implementation should probably return a match here?
+            (2, 2, 2),
+            id="periodic, position way outside original cell",
+        ),
+        pytest.param(
+            mx2,
+            True,
             (mx2.get_positions()[0] + mx2.get_cell()[0]),
             [0],
             (1, 0, 0),
-            id="orthogonal, match in +a",
+            id="match in +a",
         ),
         pytest.param(
             mx2,
@@ -420,7 +499,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[0]),
             [0],
             (-1, 0, 0),
-            id="orthogonal, match in -a",
+            id="match in -a",
         ),
         pytest.param(
             mx2,
@@ -428,7 +507,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] + mx2.get_cell()[1]),
             [0],
             (0, 1, 0),
-            id="orthogonal, match in +b",
+            id="match in +b",
         ),
         pytest.param(
             mx2,
@@ -436,7 +515,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[1]),
             [0],
             (0, -1, 0),
-            id="orthogonal, match in -b",
+            id="match in -b",
         ),
         pytest.param(
             mx2,
@@ -444,7 +523,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] + mx2.get_cell()[2]),
             [0],
             (0, 0, 1),
-            id="orthogonal, match in +c",
+            id="match in +c",
         ),
         pytest.param(
             mx2,
@@ -452,7 +531,7 @@ def test_cell_list_position(
             (mx2.get_positions()[0] - mx2.get_cell()[2]),
             [0],
             (0, 0, -1),
-            id="orthogonal, match in -c",
+            id="match in -c",
         ),
     ],
 )
@@ -463,7 +542,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     system.set_pbc(pbc)
 
     # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches_old(
+    matches, _, _, factors = matid.geometry.get_matches(
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
@@ -478,7 +557,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         extended_system.factors,
         tolerance,
     )
-    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
+    matches_ext, _, _, factors_ext = matid.geometry.get_matches_new(
         system,
         cell_list,
         np.array(position)[None, :],
@@ -659,3 +738,38 @@ def test_minimize_cell(system, axis, minimum_size, expected_cell, expected_pos):
 def test_thickness(system, axis, expected_thickness):
     thickness = matid.geometry.get_thickness(system, axis)
     assert thickness == expected_thickness
+
+
+def test_displacement_tensor_performance():
+    system = bulk("NaCl", "rocksalt", a=5.64) * [10, 10, 10]
+    cutoff = 10
+
+    start = time.time()
+    matid.geometry.get_displacement_tensor(
+        system.get_positions(),
+        system.get_cell(),
+        system.get_pbc(),
+        mic=True,
+        cutoff=cutoff,
+        return_distances=True,
+        return_factors=False,
+    )
+    end = time.time()
+    elapsed_new = end - start
+
+    start = time.time()
+    matid.geometry.get_displacement_tensor_old(
+        system.get_positions(),
+        system.get_positions(),
+        system.get_cell(),
+        system.get_pbc(),
+        mic=True,
+        cutoff=cutoff,
+        return_distances=True,
+        return_factors=False,
+    )
+    end = time.time()
+    elapsed_old = end - start
+
+    ratio = elapsed_old / elapsed_new
+    assert ratio > 40

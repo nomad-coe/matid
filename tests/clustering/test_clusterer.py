@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 import ase.io
@@ -209,6 +211,23 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
             ],
             True,
             id="remove unconnected outliers from region",
+        ),
+        pytest.param(
+            ase.io.read(Path(__file__).parent.parent / "data/system-CVC.extxyz"),
+            [
+                Cluster(
+                    range(123),
+                    dimensionality=0,
+                    classification=Classification.Class0D,
+                ),
+                Cluster(
+                    range(123, 178),
+                    dimensionality=0,
+                    classification=Classification.Class0D,
+                ),
+            ],
+            False,
+            id="tests that the new CPP implementation does not break things",
         ),
         # pytest.param(
         #     alternatives,
