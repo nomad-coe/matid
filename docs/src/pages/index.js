@@ -69,13 +69,29 @@ function Stack() {
   const handleMouseLeave = useCallback(() => setStack('all'), [])
 
   return <div
+    onMouseMove={handleMouseMove}
+    onMouseLeave={handleMouseLeave}
     className={styles.stackContainer}
   >
     <img
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      src={require(`@site/static/img/${stack}_cropped.png`).default}
+      src={require('@site/static/img/all_cropped.png').default}
       className={styles.stack}
+      style={{visibility: stack === 'all' ? 'visible' : 'hidden'}}
+    />
+    <img
+      src={require('@site/static/img/cu_cropped.png').default}
+      className={styles.stack}
+      style={{visibility: stack === 'cu' ? 'visible' : 'hidden'}}
+    />
+    <img
+      src={require('@site/static/img/mos2_cropped.png').default}
+      className={styles.stack}
+      style={{visibility: stack === 'mos2' ? 'visible' : 'hidden'}}
+    />
+    <img
+      src={require('@site/static/img/graphene_cropped.png').default}
+      className={styles.stack}
+      style={{visibility: stack === 'graphene' ? 'visible' : 'hidden'}}
     />
   </div>
 }

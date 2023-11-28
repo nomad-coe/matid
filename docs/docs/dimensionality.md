@@ -5,7 +5,7 @@ sidebar_position: 4
 # Dimensionality Analysis
 MatID can be used to find out the dimensionality of an atomistic geometry. The
 definition of dimensionality can be quite tricky, so it will be good to know the
-basics behind our definition. Dimensionality in MatID could be defined as: __the number of dimensions in which theconnected to itself through periodic boundary conditions__. What is meant by **connected** is explained below in section X. It should be noted that MatID does **not consider the shape or size** of a structure when assigning dimensionality, but instead uses the periodic boundary conditions of your system to determine the intended dimensionality.
+basics behind our definition. Dimensionality in MatID could be defined as: __the number of dimensions in which the structre is connected to itself through periodic boundary conditions__. What is meant by **connected** is explained below in section X. It should be noted that MatID does **not consider the shape or size** of a structure when assigning dimensionality, but instead uses the periodic boundary conditions of your system to determine the intended dimensionality.
 
 To determine the dimensionality of a system, MatID uses a modified version of the
 topological scaling algorithm (TSA) [1]_. The algorithm is based on analyzing
@@ -43,10 +43,10 @@ periodic neighbour we obtain the correct clusters regardless of what shape of
 cell is used in the original simulation.
 
 The clustering uses two parameters: the minimum cluster size
-:math:`n_\mathrm{min}` and the neighbourhood radius :math:`\epsilon`. We set
-:math:`n_\mathrm{min}` to 1 to allow clusters consisting of even single atoms
-and :math:`\epsilon` defaults to 3.5 Å. At present, a system, in which there is
-more than one cluster in the original non-repeated system (:math:`N_1 \gt 1`),
+$n_\mathrm{min}$ and the neighbourhood radius $\epsilon$. We set
+$n_\mathrm{min}$ to 1 to allow clusters consisting of even single atoms
+and $\epsilon$ defaults to 3.5 Å. At present, a system, in which there is
+more than one cluster in the original non-repeated system ($N_1 \gt 1$),
 is classified as unknown. Such a case corresponds to systems with multiple
 components that are spatially separated, such as a molecule far above a
 surface, low density gases, widely spaced clusters in vacuum, etc.
