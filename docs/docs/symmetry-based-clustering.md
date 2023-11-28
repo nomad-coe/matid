@@ -13,7 +13,7 @@ Clustering is performed using the `SBC` class. The basic syntax is relatively
 simple: you have to initialize the SBC class with parameters that are suitable
 for your use case (sensible defaults are provided), and then call the
 `get_clusters()`-method. The following demonstrates this on a existing structure
-file [](system.xyz):
+file:
 
 ```python
 from ase.io import read
