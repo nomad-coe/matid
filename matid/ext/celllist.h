@@ -60,6 +60,17 @@ class CellList {
          * @param i Index of the atom for which neighbours are queried for.
          */
         CellListResult get_neighbours_for_index(const int i);
+        /**
+         * Used to calculate the full displacement tensor in an efficient
+         * manner.
+         */
+        void get_displacement_tensor(
+            py::array_t<double> displacements,
+            py::array_t<double> distances,
+            py::array_t<double> factors,
+            py::array_t<int> original_indices,
+            int n_atoms
+        );
 
     private:
         /**

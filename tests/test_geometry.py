@@ -771,4 +771,4 @@ def test_displacement_tensor_performance():
     elapsed_old = end - start
 
     ratio = elapsed_old / elapsed_new
-    assert ratio > 10
+    assert ratio > 40
