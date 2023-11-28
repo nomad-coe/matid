@@ -617,7 +617,7 @@ class PeriodicFinder:
         # Eliminate subgraphs that do not have enough periodicity.
         valid_graphs = graphs
 
-        # TODO: This test is disabled in order to better handle finite corners
+        # NOTE: This test is disabled in matid>=2.0.0 in order to better handle finite corners
         # and edges, especially in finite systems.
         # valid_graphs = []
         # neighbourhood_set = set([(x[0], tuple(x[1])) for x in neighbour_nodes])
@@ -1344,22 +1344,8 @@ class PeriodicFinder:
         n_periodic_dim = len(periodic_indices)
         if n_periodic_dim == 3:
             multipliers = multipliers_3d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [0, 0, 1],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            #     [0, 0, -1],
-            # ])
         if n_periodic_dim == 2:
             multipliers = multipliers_2d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            # ])
 
         return multipliers
 

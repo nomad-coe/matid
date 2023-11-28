@@ -399,36 +399,7 @@ def make_random_displacement(system, delta, rng=None):
     system.set_positions(new_pos)
 
 
-def get_extended_system(system, target_size):
-    """Replicate the system in different directions to reach the given target
-    size.
-
-    Args:
-        system (ase.Atoms): The original system.
-        target_size (float): The target size for the extended system in
-            angstroms.
-
-    Returns:
-        ase.Atoms: The extended system.
-    """
-    pbc = system.get_pbc()
-    cell = system.get_cell()
-
-    repetitions = np.array([1, 1, 1])
-    for i, pbc in enumerate(pbc):
-        # Only extend in the periodic dimensions
-        basis = cell[i, :]
-        if pbc:
-            size = np.linalg.norm(basis)
-            i_repetition = np.maximum(np.round(target_size / size), 1).astype(int)
-            repetitions[i] = i_repetition
-
-    extended_system = system.repeat(repetitions)
-
-    return extended_system
-
-
-def get_extended_system_new(system, cutoff=0):
+def get_extended_system(system, cutoff=0):
     """Given a system and a cutoff value, returns a new system which has been
     extended so that for each atom the neighbourhood within the cutoff radius is
     present, taking periodic boundary conditions into account.
