@@ -1092,7 +1092,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     matches = []
     substitutions = []
     vacancies = []
-    copy_indices = np.zeros((len(positions), 3))
+    copy_indices = np.zeros((len(positions), 3), dtype=int)
 
     for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
         match = None

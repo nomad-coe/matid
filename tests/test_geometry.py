@@ -336,21 +336,90 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
 
 
 @pytest.mark.parametrize(
-    "system, pbc, cutoff, expected_indices",
+    "system, pbc, cutoff, expected_indices, expected_factors",
     [
-        pytest.param(mx2, False, 0, [0, 1], id="finite, zero cutoff"),
-        pytest.param(mx2, False, 1, [0, 1], id="finite, nonzero cutoff"),
-        pytest.param(mx2, True, 0, [0, 1], id="periodic, zero cutoff"),
-        pytest.param(mx2, True, 1, np.tile([0, 1], 27), id="periodic, nonzero cutoff"),
+        pytest.param(
+            mx2, False, 0, [0, 1], [[0, 0, 0], [0, 0, 0]], id="finite, zero cutoff"
+        ),
+        pytest.param(
+            mx2, False, 1, [0, 1], [[0, 0, 0], [0, 0, 0]], id="finite, nonzero cutoff"
+        ),
+        pytest.param(
+            mx2, True, 0, [0, 1], [[0, 0, 0], [0, 0, 0]], id="periodic, zero cutoff"
+        ),
+        pytest.param(
+            mx2,
+            True,
+            1,
+            np.tile([0, 1], 27),
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 1.0, -1.0],
+                [0.0, 1.0, -1.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 1.0],
+                [0.0, -1.0, 1.0],
+                [0.0, -1.0, -1.0],
+                [0.0, -1.0, -1.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, -1.0],
+                [1.0, 0.0, -1.0],
+                [1.0, 1.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, -1.0],
+                [1.0, 1.0, -1.0],
+                [1.0, -1.0, 0.0],
+                [1.0, -1.0, 0.0],
+                [1.0, -1.0, 1.0],
+                [1.0, -1.0, 1.0],
+                [1.0, -1.0, -1.0],
+                [1.0, -1.0, -1.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 1.0],
+                [-1.0, 0.0, 1.0],
+                [-1.0, 0.0, -1.0],
+                [-1.0, 0.0, -1.0],
+                [-1.0, 1.0, 0.0],
+                [-1.0, 1.0, 0.0],
+                [-1.0, 1.0, 1.0],
+                [-1.0, 1.0, 1.0],
+                [-1.0, 1.0, -1.0],
+                [-1.0, 1.0, -1.0],
+                [-1.0, -1.0, 0.0],
+                [-1.0, -1.0, 0.0],
+                [-1.0, -1.0, 1.0],
+                [-1.0, -1.0, 1.0],
+                [-1.0, -1.0, -1.0],
+                [-1.0, -1.0, -1.0],
+            ],
+            id="periodic, nonzero cutoff",
+        ),
     ],
 )
-def test_extend_system(system, pbc, cutoff, expected_indices):
+def test_extend_system(system, pbc, cutoff, expected_indices, expected_factors):
     """Test that the correct factor is returned when finding matches that
     are in the neighbouring cells.
     """
     system.set_pbc(pbc)
     extended_system = matid.geometry.get_extended_system_new(system, cutoff)
     assert np.array_equal(extended_system.indices, expected_indices)
+    assert np.array_equal(extended_system.factors, expected_factors)
 
 
 @pytest.mark.parametrize(

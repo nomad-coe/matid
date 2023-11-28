@@ -237,24 +237,12 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            # from ase.visualize import view
-            # view(system)
-            # print(add_pos)
-            # add_indices, _, _, add_factors = matid.geometry.get_matches_new(
-            #     system, self.cell_list, add_pos, neighbour_num, i_pos_tol
-            # )
-            # print(add_factors)
-            # sub_indices, _, _, sub_factors = matid.geometry.get_matches_new(
-            #     system, self.cell_list, sub_pos, neighbour_num, i_pos_tol
-            # )
             add_indices, _, _, add_factors = matid.geometry.get_matches(
                 system, add_pos, neighbour_num, i_pos_tol
             )
-            # print(add_factors)
             sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system, sub_pos, neighbour_num, i_pos_tol
             )
-            # raise
 
             n_metric = 0
             for i_neigh in range(n_neighbours):

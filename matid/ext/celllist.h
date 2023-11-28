@@ -68,9 +68,12 @@ class CellList {
          */
         void init();
 
-        const py::detail::unchecked_reference<double, 2> positions;
-        const py::detail::unchecked_reference<int, 1> indices;
-        const py::detail::unchecked_reference<double, 2> factors;
+        // const py::detail::unchecked_reference<double, 2> positions;
+        // const py::detail::unchecked_reference<int, 1> indices;
+        // const py::detail::unchecked_reference<double, 2> factors;
+        vector<vector<double>> positions;
+        vector<int> indices;
+        vector<vector<double>> factors;
         const double cutoff;
         const double cutoffSquared;
         double xmin;

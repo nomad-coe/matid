@@ -14,7 +14,6 @@ limitations under the License.
 */
 
 #include <unordered_map>
-#include <iostream>
 #include <limits>
 #include "geometry.h"
 

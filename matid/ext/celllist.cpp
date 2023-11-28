@@ -29,27 +29,49 @@ using namespace std;
  * build full connectivity.
  */
 CellList::CellList(py::array_t<double> positions, py::array_t<int> indices, py::array_t<double> factors, double cutoff)
-    : positions(positions.unchecked<2>())
-    , indices(indices.unchecked<1>())
-    , factors(factors.unchecked<2>())
-    , cutoff(cutoff)
+    : cutoff(cutoff)
     , cutoffSquared(cutoff*cutoff)
 {
     if (cutoff <= 0) {
         throw invalid_argument("Cell list cutoff must be positive.");
     }
+
+    // Copy the numpy data, as the numpy memory may get cleaned!
+    auto positions_u = positions.unchecked<2>();
+    for (int i = 0; i < positions_u.shape(0); ++i) {
+        vector<double> row(positions_u.shape(1));
+        for (int j = 0; j < positions_u.shape(1); ++j) {
+            row[j] = positions_u(i, j);
+        }
+        this->positions.push_back(row);
+    }
+    auto factors_u = factors.unchecked<2>();
+    for (int i = 0; i < factors_u.shape(0); ++i) {
+        vector<double> row(factors_u.shape(1));
+        for (int j = 0; j < factors_u.shape(1); ++j) {
+            row[j] = factors_u(i, j);
+        }
+        this->factors.push_back(row);
+    }
+    auto indices_u = indices.unchecked<1>();
+    vector<int> row(indices_u.shape(0));
+    for (int i = 0; i < indices_u.shape(0); ++i) {
+        row[i] = indices_u(i);
+    }
+    this->indices = row;
+
     this->init();
 }
 
 void CellList::init() {
     // Find cell limits
-    this->xmin = this->xmax = this->positions(0, 0);
-    this->ymin = this->ymax = this->positions(0, 1);
-    this->zmin = this->zmax = this->positions(0, 2);
-    for (int i = 0; i < this->positions.shape(0); i++) {
-        double x = this->positions(i, 0);
-        double y = this->positions(i, 1);
-        double z = this->positions(i, 2);
+    this->xmin = this->xmax = this->positions[0][0];
+    this->ymin = this->ymax = this->positions[0][1];
+    this->zmin = this->zmax = this->positions[0][2];
+    for (int i = 0; i < this->positions.size(); i++) {
+        double x = this->positions[i][0];
+        double y = this->positions[i][1];
+        double z = this->positions[i][2];
         if (x < this->xmin) {
             this->xmin = x;
         };
@@ -92,10 +114,10 @@ void CellList::init() {
     this->bins = vector<vector<vector<vector<int>>>>(this->nx, vector<vector<vector<int>>>(this->ny, vector<vector<int>>(this->nz, vector<int>())));
 
     // Fill the bins with atom indices
-    for (int idx = 0; idx < this->positions.shape(0); idx++) {
-        double x = this->positions(idx, 0);
-        double y = this->positions(idx, 1);
-        double z = this->positions(idx, 2);
+    for (int idx = 0; idx < this->positions.size(); idx++) {
+        double x = this->positions[idx][0];
+        double y = this->positions[idx][1];
+        double z = this->positions[idx][2];
 
         // Get bin index
         int i = (x - this->xmin)/this->dx;
@@ -141,20 +163,20 @@ CellListResult CellList::get_neighbours_for_position(
                 // For each atom in the current bin, calculate the actual distance
                 vector<int> binIndices = this->bins[i][j][k];
                 for (auto &idx : binIndices) {
-                    double ix = this->positions(idx, 0);
-                    double iy = this->positions(idx, 1);
-                    double iz = this->positions(idx, 2);
+                    double ix = this->positions[idx][0];
+                    double iy = this->positions[idx][1];
+                    double iz = this->positions[idx][2];
                     double deltax = x - ix;
                     double deltay = y - iy;
                     double deltaz = z - iz;
                     double distance_squared = deltax*deltax + deltay*deltay + deltaz*deltaz;
                     if (distance_squared <= this->cutoffSquared) {
                         neighbours.push_back(idx);
-                        indices_original.push_back(this->indices(idx));
+                        indices_original.push_back(this->indices[idx]);
                         distances.push_back(sqrt(distance_squared));
                         distances_squared.push_back(distance_squared);
                         displacements.push_back(vector<double>{deltax, deltay, deltaz});
-                        factors.push_back(vector<double>{this->factors(idx, 0), this->factors(idx, 1), this->factors(idx, 2)});
+                        factors.push_back(this->factors[idx]);
                     }
                 }
             }
@@ -165,9 +187,9 @@ CellListResult CellList::get_neighbours_for_position(
 
 CellListResult CellList::get_neighbours_for_index(const int idx)
 {
-    double x = this->positions(idx, 0);
-    double y = this->positions(idx, 1);
-    double z = this->positions(idx, 2);
+    double x = this->positions[idx][0];
+    double y = this->positions[idx][1];
+    double z = this->positions[idx][2];
     CellListResult result = this->get_neighbours_for_position(x, y, z);
 
     return result;
