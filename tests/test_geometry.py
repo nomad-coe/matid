@@ -739,6 +739,7 @@ def test_thickness(system, axis, expected_thickness):
     thickness = matid.geometry.get_thickness(system, axis)
     assert thickness == expected_thickness
 
+
 def test_displacement_tensor_performance():
     system = bulk("NaCl", "rocksalt", a=5.64) * [10, 10, 10]
     cutoff = 10
