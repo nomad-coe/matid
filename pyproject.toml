@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel", "pybind11~=2.6.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,8 +12,8 @@ license = { file = "LICENSE" }
 requires-python = ">=3.7"
 dependencies = [
     "numpy",
-    "scipy",
     "ase",
+    "scipy",
     "spglib>=1.15.0",
     "scikit-learn",
     "networkx>=2.4",

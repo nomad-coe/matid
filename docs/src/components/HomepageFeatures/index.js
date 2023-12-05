@@ -5,14 +5,13 @@ import styles from './styles.module.css';
 
 const FeatureList = [
   {
-    title: 'Identify components using translational symmetry',
-    link: '/docs/clustering/clustering-basics',
+    title: 'Symmetry-based Clustering',
+    link: '/docs/symmetry-based-clustering',
     description: (
       <>
-        There are several tools for building atomistic systems from components,
-        but the reverse process of identifying these components from an existing
-        system is much harder. This is one of the main tasks for
-        which MatID was designed for.
+        MatID contains a novel clustering approach called Symmetry-based
+        Clustering (SBC) that can be used to identify meaningful components from
+        atomistic systems.
       </>
     ),
   },

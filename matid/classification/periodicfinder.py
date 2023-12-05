@@ -106,6 +106,7 @@ class PeriodicFinder:
         self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
+        self.cell_list = distances.cell_list
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
         region = None
@@ -235,6 +236,7 @@ class PeriodicFinder:
             i_adj_list_sub = defaultdict(list)
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
+
             add_indices, _, _, add_factors = matid.geometry.get_matches(
                 system, add_pos, neighbour_num, i_pos_tol
             )
@@ -615,7 +617,7 @@ class PeriodicFinder:
         # Eliminate subgraphs that do not have enough periodicity.
         valid_graphs = graphs
 
-        # TODO: This test is disabled in order to better handle finite corners
+        # NOTE: This test is disabled in matid>=2.0.0 in order to better handle finite corners
         # and edges, especially in finite systems.
         # valid_graphs = []
         # neighbourhood_set = set([(x[0], tuple(x[1])) for x in neighbour_nodes])
@@ -978,7 +980,6 @@ class PeriodicFinder:
                 OrderedDict(zip(i_cell_nodes, range(len(i_cell_nodes))))
             )
             inside_pos.append(i_pos)
-
 
         # For each node in a network, find the first relative position. Wrap
         # and average these positions to get a robust final estimate.
@@ -1343,22 +1344,8 @@ class PeriodicFinder:
         n_periodic_dim = len(periodic_indices)
         if n_periodic_dim == 3:
             multipliers = multipliers_3d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [0, 0, 1],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            #     [0, 0, -1],
-            # ])
         if n_periodic_dim == 2:
             multipliers = multipliers_2d
-            # multipliers = np.array([
-            #     [1, 0, 0],
-            #     [0, 1, 0],
-            #     [-1, 0, 0],
-            #     [0, -1, 0],
-            # ])
 
         return multipliers
 
@@ -1416,7 +1403,7 @@ class PeriodicFinder:
             # Wrapping is here disabled because it does not handle well values
             # that are negative within machine precision.
             cell_pos = unit_cell.get_scaled_positions(wrap=False)
-        except:
+        except Exception:
             return
         cell_num = unit_cell.get_atomic_numbers()
         old_basis = unit_cell.get_cell()
@@ -1503,7 +1490,6 @@ class PeriodicFinder:
             used_indices,
             cell_index,
             searched_cell_indices,
-            used_seed_indices,
             collection._used_points,
             collection._search_graph,
             collection._index_cell_map,
@@ -1558,7 +1544,6 @@ class PeriodicFinder:
         used_indices,
         cell_index,
         searched_cell_indices,
-        used_seed_indices,
         used_points,
         search_graph,
         index_cell_map,
