@@ -16,6 +16,7 @@ import ase.geometry
 from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
 from matid.core.distances import Distances
+from matid.data.constants import CLUSTER_THRESHOLD
 import matid.geometry
 import matid.ext
 
@@ -27,7 +28,7 @@ import spglib
 
 def get_dimensionality(
     system,
-    cluster_threshold,
+    cluster_threshold=CLUSTER_THRESHOLD,
     dist_matrix_radii_mic_1x=None,
     return_clusters=False,
     radii="covalent",
@@ -83,7 +84,7 @@ def get_dimensionality(
             )
     system_radii = radii[num_1x]
     max_radii = system_radii.max()
-    max_distance = cluster_threshold + 2 * max_radii
+    cutoff = cluster_threshold + 2 * max_radii
 
     # 1x1x1 system
     if dist_matrix_radii_mic_1x is None:
@@ -93,7 +94,7 @@ def get_dimensionality(
             cell_1x,
             pbc,
             mic=True,
-            cutoff=max_distance,
+            cutoff=cutoff,
             return_distances=True,
         )
         radii_1x = radii[num_1x]
@@ -126,7 +127,7 @@ def get_dimensionality(
                 cell_2x,
                 pbc,
                 mic=True,
-                cutoff=max_distance,
+                cutoff=cutoff,
                 return_distances=True,
             )
             radii_2x = radii[num_2x]

@@ -1,10 +1,6 @@
 import numpy as np
 
-# from ase.visualize import view
-from ase.data import covalent_radii
-from ase.data.vdw_alvarez import vdw_radii
-
-from matid.classifications import (
+from matid.classification.classifications import (
     Surface,
     Atom,
     Material2D,
@@ -14,19 +10,18 @@ from matid.classifications import (
     Class2D,
     Class3D,
 )
-
-# Crystal
 import matid.geometry
 from matid.data import constants
-from matid.classification.periodicfinder import PeriodicFinder
-
-# from matid.symmetry.symmetryanalyzer import SymmetryAnalyzer
+from matid.core.periodicfinder import PeriodicFinder
 
 
 class Classifier:
     """A class that is used to analyze the contents of an atomistic system and
     separate the consituent atoms into different components along with other
     meaningful information.
+
+    NOTE: This class belongs to the old API of the matid package and may be
+    deprecated in the future.
     """
 
     def __init__(

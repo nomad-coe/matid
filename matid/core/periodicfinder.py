@@ -9,7 +9,7 @@ import matid.geometry
 from matid.data import constants
 from matid.core.linkedunits import LinkedUnitCollection, LinkedUnit
 from matid.core.distances import Distances
-from matid.exceptions import MatIDError
+from matid.utils.exceptions import MatIDError
 
 
 def inner1d(a, b):

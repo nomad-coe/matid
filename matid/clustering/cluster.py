@@ -3,7 +3,6 @@ from functools import lru_cache
 import numpy as np
 
 import matid.geometry
-from matid.data import constants
 
 
 class Classification(Enum):

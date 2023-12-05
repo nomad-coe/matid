@@ -8,7 +8,7 @@ from ase.build import bulk
 from ase.visualize import view
 
 from conftest import surface, stack, rattle, assert_topology
-from matid.clustering import Clusterer, Cluster, Classification
+from matid.clustering import SBC, Cluster
 
 
 surface_fcc = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
@@ -247,5 +247,5 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
 def test_clustering(system, clusters_expected, pbc, noise):
     system = rattle(system, noise)
     system.set_pbc(pbc)
-    results = Clusterer().get_clusters(system)
+    results = SBC().get_clusters(system)
     assert_topology(results, clusters_expected)

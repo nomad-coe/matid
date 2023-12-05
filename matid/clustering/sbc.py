@@ -3,20 +3,19 @@ from collections import defaultdict
 import numpy as np
 
 import matid.geometry
-from matid.clustering import Cluster
-from matid.classification.periodicfinder import PeriodicFinder
+from matid.clustering.cluster import Cluster
+from matid.core.periodicfinder import PeriodicFinder
 
 
-class Clusterer:
+class SBC:
     """
-    Class for partitioning a more complex system into structurally similar
-    clusters.
+    Class for performing Symmetry-based clustering (SBC).
 
-    You can apply this class for e.g. partitioning a larger material into
-    grains, a heterostructure into it's component etc. The clustering is based
-    on finding periodically repeating motifs, and as such it is not suitable
-    for e.g. finding molecules. Any atoms that do not have enough periodic
-    repetitions will be returned as isolated clusters.
+    You can apply this class for partitioning a larger material into grains, a
+    heterostructure into it's component etc. The clustering is based on finding
+    periodically repeating motifs, and as such it is not suitable for e.g.
+    finding molecules. Any atoms that do not have enough periodic repetitions
+    will be returned as isolated clusters.
     """
 
     def __init__(self, seed=7):
@@ -26,7 +25,7 @@ class Clusterer:
         """
         self.rng = np.random.default_rng(seed)
 
-    def merge_clusters(self, system, clusters, merge_threshold, distances):
+    def _merge_clusters(self, system, clusters, merge_threshold, distances):
         """
         Used to merge clusters that have the same species and share atoms.
         """
@@ -109,7 +108,7 @@ class Clusterer:
 
         return isolated_clusters + clusters
 
-    def localize_clusters(self, system, clusters, merge_radius, distances):
+    def _localize_clusters(self, system, clusters, merge_radius, distances):
         """
         Used to resolve overlaps between clusters by assigning the overlapping
         atoms to the "nearest" cluster.
@@ -156,7 +155,7 @@ class Clusterer:
                     cluster.indices = list(ind_set)
         return clusters
 
-    def clean_clusters(self, clusters):
+    def _clean_clusters(self, clusters):
         """
         Cleans out any "dangling" atoms from the cluster by examining chemical
         connectivity. Required because the periodic search does not care about
@@ -274,18 +273,18 @@ class Clusterer:
         # Check overlaps of the regions. For large overlaps the grains are
         # merged (the real region was probably cut into pieces by unfortunate
         # selection of the seed atom)
-        clusters = self.merge_clusters(
+        clusters = self._merge_clusters(
             system_copy, clusters, merge_threshold, distances
         )
 
         # Any remaining overlaps are resolved by assigning atoms to the
         # "nearest" cluster
-        clusters = self.localize_clusters(
+        clusters = self._localize_clusters(
             system_copy, clusters, merge_radius, distances
         )
 
         # Any atoms that are not chemically connected to the region will be
         # excluded.
-        clusters = self.clean_clusters(clusters)
+        clusters = self._clean_clusters(clusters)
 
         return clusters

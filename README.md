@@ -19,54 +19,38 @@ You can find even more details in the following articles:
 
 ```python
 import numpy as np
+import ase.io
 from ase.visualize import view
-from ase.build import bcc100, molecule
-from matid import Classifier, SymmetryAnalyzer
 
-# Generating a surface adsorption geometry with ASE.
-adsorbent = bcc100('Fe', size=(3, 3, 4), vacuum=8)
-adsorbate = molecule("H2O")
-adsorbate.rotate(180, [1, 0, 0])
-adsorbate.translate([4.3, 4.3, 13.5])
-system = adsorbent + adsorbate
-system.set_pbc([True, True, True])
+from matid.clustering import SBC
+from matid.symmetry import SymmetryAnalyzer
+from matid.geometry import get_dimensionality
 
-# Add noise and defects to the structure
-positions = system.get_positions()
-positions += 0.25*np.random.rand(*positions.shape)
-system.set_positions(positions)
-del system[31]
+# Load structure from a file
+system = ase.io.read('data/system.xyz')
 
-# Visualize the final system
-view(system)
+# Find interesting substructures using Symmetry-based Clustering (SBC)
+sbc = SBC()
+clusters = sbc.get_clusters(system)
 
-# Run the classification
-classifier = Classifier(pos_tol=1.0, max_cell_size=6)
-classification = classifier.classify(system)
+# Analyze each found cluster printing out the indices of the atoms belonging to
+# this cluster and visualizing the conventional cell from which the cluster was
+# built from.
+for cluster in clusters:
 
-# Print classification
-print("Structure classified as: {}".format(classification))
+	# Get the indices of the atoms belonging to this cluster
+	indices = cluster.indices
+	print(indices)
 
-# Print found outliers
-outliers = classification.outliers
-print("Outlier atoms indices: {}".format(outliers))
+	# Get the dimensionality of the cluster
+	dimensionality = get_dimensionality(system[indices])
+	print(dimensionality)
 
-# Visualize the cell that was found by matid
-prototype_cell = classification.prototype_cell
-view(prototype_cell)
+	# Visualize the conventional cell which the cluster is based on
+	analyzer = SymmetryAnalyzer(cluster.cell(), symmetry_tol=0.5)
+	conv_sys = analyzer.get_conventional_system()
+	view(conv_sys)
 
-# Visualize the corresponding conventional cell
-analyzer = SymmetryAnalyzer(prototype_cell, symmetry_tol=0.5)
-conv_sys = analyzer.get_conventional_system()
-view(conv_sys)
-
-# Visualize the corresponding primitive cell
-prim_sys = analyzer.get_primitive_system()
-view(prim_sys)
-
-# Print space group number
-spg_number = analyzer.get_space_group_number()
-print("Space group number: {}".format(spg_number))
 ```
 
 # Installation

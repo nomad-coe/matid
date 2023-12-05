@@ -4,7 +4,7 @@ from ase.io import write
 from ase.build import fcc111, mx2
 from ase.visualize import view
 
-from matid.clustering import Clusterer
+from matid.clustering.sbc import SBC
 
 # Copper surface
 surface = fcc111("Cu", size=(6, 6, 3), vacuum=0)
@@ -55,8 +55,8 @@ system.set_pbc(False)
 write("system.xyz", system)
 
 # Peform clustering and view results
-# clusterer = Clusterer()
-# clusters = clusterer.get_clusters(system)
-# print(clusters)
-# for cluster in clusters:
-# 	view(system[cluster.indices])
+sbc = SBC()
+clusters = sbc.get_clusters(system)
+print(clusters)
+for cluster in clusters:
+	view(system[cluster.indices])
