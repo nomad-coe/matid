@@ -16,23 +16,23 @@ clusters = sbc.get_clusters(system)
 # built from.
 for cluster in clusters:
 
-	# Get the indices of the atoms belonging to this cluster
-	indices = cluster.indices
-	print(indices)
+    # Get the indices of the atoms belonging to this cluster
+    indices = cluster.indices
+    print(indices)
 
-	# Get the dimensionality of the cluster
-	dimensionality = cluster.get_dimensionality()
-	print(dimensionality)
+    # Get the dimensionality of the cluster
+    dimensionality = cluster.get_dimensionality()
+    print(dimensionality)
 
-	# Get the cell from which the cluster is constructed from. The periodicity
-	# of this cell indicates in which directions the unit cell has been found to
-	# be repeated in (at least once, possibly infinitely).
-	cell = cluster.get_cell()
-	n_repeated_directions = sum(cell.get_pbc())
-	print(n_repeated_directions)
+    # Get the cell from which the cluster is constructed from. The periodicity
+    # of this cell indicates in which directions the unit cell has been found to
+    # be repeated in (at least once, possibly infinitely).
+    cell = cluster.get_cell()
+    n_repeated_directions = sum(cell.get_pbc())
+    print(n_repeated_directions)
 
-	# Analyze some symmetry properties of the underlying cell to better identify
-	# the material from which the cluster has been constructed from.
-	analyzer = SymmetryAnalyzer(cell, symmetry_tol=0.5)
-	conv_sys = analyzer.get_conventional_system()
-	view(conv_sys)
+    # Analyze some symmetry properties of the underlying cell to better identify
+    # the material from which the cluster has been constructed from.
+    analyzer = SymmetryAnalyzer(cell, symmetry_tol=0.5)
+    conv_sys = analyzer.get_conventional_system()
+    view(conv_sys)
