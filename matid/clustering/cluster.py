@@ -43,7 +43,9 @@ class Cluster:
     def _get_distance_matrix_radii_mic(self) -> np.ndarray:
         """Retrieves the distance matrix with subtracted radii for this cluster."""
         if self._distance_matrix_radii_mic is None:
-            self._distance_matrix_radii_mic = self._distances.dist_matrix_radii_mic[np.ix_(self.indices, self.indices)]
+            self._distance_matrix_radii_mic = self._distances.dist_matrix_radii_mic[
+                np.ix_(self.indices, self.indices)
+            ]
         return self._distance_matrix_radii_mic
 
     def get_cell(self) -> Atoms:

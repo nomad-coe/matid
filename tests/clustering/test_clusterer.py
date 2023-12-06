@@ -180,19 +180,23 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
         # Bulk
         pytest.param(
             bulk_one_atom,
-            [Cluster(
-                [0],
-                dimensionality=3,
-            )],
+            [
+                Cluster(
+                    [0],
+                    dimensionality=3,
+                )
+            ],
             True,
             id="bulk, only one atom in cluster, still a valid cluster",
         ),
         pytest.param(
             bulk_unwrapped,
-            [Cluster(
-                [0],
-                dimensionality=3,
-            )],
+            [
+                Cluster(
+                    [0],
+                    dimensionality=3,
+                )
+            ],
             True,
             id="bulk, unwrapped coordinates",
         ),

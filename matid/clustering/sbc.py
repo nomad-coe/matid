@@ -25,7 +25,9 @@ class SBC:
         """
         self.rng = np.random.default_rng(seed)
 
-    def _merge_clusters(self, system, clusters, merge_threshold, distances, bond_threshold):
+    def _merge_clusters(
+        self, system, clusters, merge_threshold, distances, bond_threshold
+    ):
         """
         Used to merge clusters that have the same species and share atoms.
         """
@@ -65,7 +67,7 @@ class SBC:
                 largest_region,
                 system=system,
                 distances=distances,
-                bond_threshold=bond_threshold
+                bond_threshold=bond_threshold,
             )
 
         isolated_clusters = []
@@ -280,7 +282,7 @@ class SBC:
                         system=system_copy,
                         distances=distances,
                         radii=radii,
-                        bond_threshold=bond_threshold
+                        bond_threshold=bond_threshold,
                     )
                 )
                 indices -= i_indices
