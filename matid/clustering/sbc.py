@@ -25,7 +25,7 @@ class SBC:
         """
         self.rng = np.random.default_rng(seed)
 
-    def _merge_clusters(self, system, clusters, merge_threshold, distances):
+    def _merge_clusters(self, system, clusters, merge_threshold, distances, bond_threshold):
         """
         Used to merge clusters that have the same species and share atoms.
         """
@@ -54,7 +54,7 @@ class SBC:
             # regions. There currently is no mechanism for mergin two regions
             # together.
             sorted_regions = sorted(
-                [a.region, b.region],
+                [a._region, b._region],
                 key=lambda x: -1 if x is None else len(x.get_basis_indices()),
             )
             largest_region = sorted_regions[-1]
@@ -65,12 +65,12 @@ class SBC:
                 largest_region,
                 system=system,
                 distances=distances,
-                bond_threshold=a.bond_threshold,
+                bond_threshold=bond_threshold
             )
 
         isolated_clusters = []
         while True:
-            if len(clusters) == 0 or clusters[0].merged:
+            if len(clusters) == 0 or clusters[0]._merged:
                 break
             i_cluster = clusters.pop(0)
             i_indices = set(i_cluster.indices)
@@ -98,7 +98,7 @@ class SBC:
 
                 if best_overlap_score > merge_threshold:
                     merged = merge(system, i_cluster, target_cluster)
-                    merged.merged = True
+                    merged._merged = True
                     isolated = False
                     clusters.pop(best_grain)
                     clusters.append(merged)
@@ -155,7 +155,7 @@ class SBC:
                     cluster.indices = list(ind_set)
         return clusters
 
-    def _clean_clusters(self, clusters):
+    def _clean_clusters(self, clusters, bond_threshold):
         """
         Cleans out any "dangling" atoms from the cluster by examining chemical
         connectivity. Required because the periodic search does not care about
@@ -171,8 +171,8 @@ class SBC:
         """
         for cluster in clusters:
             dbscan_clusters = matid.geometry.get_clusters(
-                cluster._distance_matrix_radii_mic(),
-                cluster.bond_threshold,
+                cluster._get_distance_matrix_radii_mic(),
+                bond_threshold,
                 min_samples=1,
             )
             largest_indices = max(dbscan_clusters, key=lambda x: len(x))
@@ -189,6 +189,7 @@ class SBC:
         merge_radius=1,
         bond_threshold=0.65,
         overlap_threshold=-0.1,
+        radii="covalent",
     ):
         """
         Used to detect and return structurally separate clusters within the
@@ -200,16 +201,27 @@ class SBC:
             max_cell_size (float): max_cell_size parameter for PeriodicFinder.get_region
             pos_tol (float): pos_tol parameter for PeriodicFinder.get_region
             merge_threshold (float): A threshold for merging two clusters
-              together. Give as a fraction of shared atoms. Value of 1 would
-              mean that clusters are never merged, value of 0 means that they
-              are merged always when at least one atom is shared.
+                together. Give as a fraction of shared atoms. Value of 1 would
+                mean that clusters are never merged, value of 0 means that they
+                are merged always when at least one atom is shared.
             merge_radius (float): Radius for finding nearby atoms when deciding
                 which cluster is closest. The atomic radii are subtracted from
                 distances. Given in angstroms.
             bond_threshold(float): Used to control the connectivity threshold
-              for defining a chemical connection between atoms. Controls e.g.
-              what types of unit cells are accepted and how outliers are removed
-              from clusters.
+                for defining a chemical connection between atoms. Controls e.g.
+                what types of unit cells are accepted and how outliers are
+                removed from clusters.
+            overlap_threshold(float): Used to exclude non-physical cells by
+                checking overlap of atoms. Overlap between two atoms is
+                calculated by subtracting atomic radii from the distance between
+                the atoms.
+            radii(str|np.ndarray): The radii to use for atoms. Use either a preset
+                or a custom list of atomic radii for each atom. The available presets are:
+
+                    - covalent: Covalent radii from DOI:10.1039/B801115J
+                    - vdw: van Der Waals radii from DOI:10.1039/C3DT50599E
+                    - vdw_covalent: preferably van Der Waals radii, covalent if vdw
+                    not defined.
 
         Returns:
             A list of Clusters.
@@ -223,8 +235,11 @@ class SBC:
                 "Cannot process system with zero-volume cell and periodic boundaries."
             )
 
-        # Calculate the distances here once.
-        distances = matid.geometry.get_distances(system_copy)
+        atomic_numbers = system.get_atomic_numbers()
+        radii = matid.geometry.get_radii(radii, atomic_numbers)
+
+        # Calculate the distances here once if they have not been provided.
+        distances = matid.geometry.get_distances(system_copy, radii)
 
         # Iteratively search for new clusters until whole system is covered
         periodic_finder = PeriodicFinder(
@@ -232,7 +247,6 @@ class SBC:
         )
         indices = set(list(range(len(system_copy))))
         clusters = []
-        atomic_numbers = system.get_atomic_numbers()
         while len(indices) != 0:
             i_seed = self.rng.choice(list(indices), 1)[0]
             i_grain, mask = periodic_finder.get_region(
@@ -265,7 +279,8 @@ class SBC:
                         i_grain,
                         system=system_copy,
                         distances=distances,
-                        bond_threshold=bond_threshold,
+                        radii=radii,
+                        bond_threshold=bond_threshold
                     )
                 )
                 indices -= i_indices
@@ -274,7 +289,7 @@ class SBC:
         # merged (the real region was probably cut into pieces by unfortunate
         # selection of the seed atom)
         clusters = self._merge_clusters(
-            system_copy, clusters, merge_threshold, distances
+            system_copy, clusters, merge_threshold, distances, bond_threshold
         )
 
         # Any remaining overlaps are resolved by assigning atoms to the
@@ -285,6 +300,6 @@ class SBC:
 
         # Any atoms that are not chemically connected to the region will be
         # excluded.
-        clusters = self._clean_clusters(clusters)
+        clusters = self._clean_clusters(clusters, bond_threshold)
 
         return clusters

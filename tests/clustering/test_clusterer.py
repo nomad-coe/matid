@@ -100,7 +100,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_fcc)),
                     dimensionality=2,
-                    classification=Classification.Surface,
                 )
             ],
             True,
@@ -112,7 +111,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_rocksalt)),
                     dimensionality=2,
-                    classification=Classification.Surface,
                 )
             ],
             True,
@@ -124,7 +122,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_fluorite)),
                     dimensionality=2,
-                    classification=Classification.Surface,
                 )
             ],
             True,
@@ -137,7 +134,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_fcc)),
                     dimensionality=0,
-                    classification=Classification.Class0D,
                 )
             ],
             False,
@@ -149,7 +145,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_rocksalt)),
                     dimensionality=0,
-                    classification=Classification.Class0D,
                 )
             ],
             False,
@@ -161,7 +156,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(len(surface_fluorite_extended)),
                     dimensionality=0,
-                    classification=Classification.Class0D,
                 )
             ],
             False,
@@ -172,12 +166,12 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
             stacked_shared_species,
             [
                 Cluster(
-                    range(9), dimensionality=2, classification=Classification.Surface
+                    range(9),
+                    dimensionality=2,
                 ),
                 Cluster(
                     range(9, 18),
                     dimensionality=2,
-                    classification=Classification.Surface,
                 ),
             ],
             True,
@@ -186,13 +180,19 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
         # Bulk
         pytest.param(
             bulk_one_atom,
-            [Cluster([0], dimensionality=3, classification=Classification.Class3D)],
+            [Cluster(
+                [0],
+                dimensionality=3,
+            )],
             True,
             id="bulk, only one atom in cluster, still a valid cluster",
         ),
         pytest.param(
             bulk_unwrapped,
-            [Cluster([0], dimensionality=3, classification=Classification.Class3D)],
+            [Cluster(
+                [0],
+                dimensionality=3,
+            )],
             True,
             id="bulk, unwrapped coordinates",
         ),
@@ -206,7 +206,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(1, 17),
                     dimensionality=2,
-                    classification=Classification.Surface,
                 )
             ],
             True,
@@ -218,12 +217,10 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
                 Cluster(
                     range(123),
                     dimensionality=0,
-                    classification=Classification.Class0D,
                 ),
                 Cluster(
                     range(123, 178),
                     dimensionality=0,
-                    classification=Classification.Class0D,
                 ),
             ],
             False,
@@ -235,7 +232,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
         #         Cluster(
         #             range(1, 17),
         #             dimensionality=2,
-        #             classification=Classification.Surface,
         #         )
         #     ],
         #     True,

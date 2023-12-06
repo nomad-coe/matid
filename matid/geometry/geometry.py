@@ -70,20 +70,8 @@ def get_dimensionality(
     # When calculating the displacement tensor we can ignore neighbouring
     # copies that are farther away than the clustering cutoff. The maximum mic
     # distance to allow is cluster_threshold + 2*max_radii
-    if isinstance(radii, str):
-        if radii == "covalent":
-            radii = covalent_radii
-        elif radii == "vdw":
-            radii = vdw_radii
-        elif radii == "vdw_covalent":
-            radii = np.array(
-                [
-                    vdw_radii[i] if vdw_radii[i] != np.nan else covalent_radii[i]
-                    for i in range(len(vdw_radii))
-                ]
-            )
-    system_radii = radii[num_1x]
-    max_radii = system_radii.max()
+    radii_1x = get_radii(radii, num_1x)
+    max_radii = radii_1x.max()
     cutoff = cluster_threshold + 2 * max_radii
 
     # 1x1x1 system
@@ -97,7 +85,6 @@ def get_dimensionality(
             cutoff=cutoff,
             return_distances=True,
         )
-        radii_1x = radii[num_1x]
         radii_matrix_1x = radii_1x[:, None] + radii_1x[None, :]
         dist_matrix_radii_mic_1x = dist_matrix_mic_1x - radii_matrix_1x
 
@@ -121,7 +108,6 @@ def get_dimensionality(
             system_2x = system.repeat(repeats)
             pos_2x = system_2x.get_positions()
             cell_2x = system_2x.get_cell()
-            num_2x = system_2x.get_atomic_numbers()
             _, dist_matrix_mic_2x = get_displacement_tensor(
                 pos_2x,
                 cell_2x,
@@ -130,7 +116,7 @@ def get_dimensionality(
                 cutoff=cutoff,
                 return_distances=True,
             )
-            radii_2x = radii[num_2x]
+            radii_2x = np.tile(radii_1x, repeats.prod())
             radii_matrix_2x = radii_2x[:, None] + radii_2x[None, :]
             dist_matrix_radii_mic_2x = dist_matrix_mic_2x - radii_matrix_2x
 
@@ -1576,7 +1562,7 @@ def get_crystallinity(symmetry_analyser):
     return ratio
 
 
-def get_distances(system: Atoms) -> Distances:
+def get_distances(system: Atoms, radii="covalent") -> Distances:
     """Returns complete distance information.
 
     Args:
@@ -1587,6 +1573,8 @@ def get_distances(system: Atoms) -> Distances:
     pos = system.get_positions()
     cell = system.get_cell()
     pbc = system.get_pbc()
+    atomic_numbers = system.get_atomic_numbers()
+    radii = get_radii(radii, atomic_numbers)
     disp_tensor_finite, cell_list = get_displacement_tensor(pos, return_cell_list=True)
     if pbc.any():
         disp_tensor_mic, disp_factors, cell_list = get_displacement_tensor(
@@ -1600,8 +1588,6 @@ def get_distances(system: Atoms) -> Distances:
     # Calculate the distance matrix where the periodicity and the covalent
     # radii have been taken into account
     dist_matrix_radii_mic = np.array(dist_matrix_mic)
-    num = system.get_atomic_numbers()
-    radii = covalent_radii[num]
     radii_matrix = radii[:, None] + radii[None, :]
     dist_matrix_radii_mic -= radii_matrix
 
@@ -1613,6 +1599,24 @@ def get_distances(system: Atoms) -> Distances:
         dist_matrix_radii_mic,
         cell_list,
     )
+
+
+def get_radii(radii, atomic_numbers=None) -> np.ndarray:
+    """Returns an array of atomic radii for each atom."""
+    if isinstance(radii, str):
+        if radii == "covalent":
+            radii = covalent_radii
+        elif radii == "vdw":
+            radii = vdw_radii
+        elif radii == "vdw_covalent":
+            radii = np.array(
+                [
+                    vdw_radii[i] if vdw_radii[i] != np.nan else covalent_radii[i]
+                    for i in range(len(vdw_radii))
+                ]
+            )
+        radii = radii[atomic_numbers]
+    return radii
 
 
 def swap_basis(atoms: Atoms, a: int, b: int):

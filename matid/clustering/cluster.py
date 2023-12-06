@@ -1,19 +1,7 @@
-from enum import Enum
-from functools import lru_cache
 import numpy as np
+from ase import Atoms
 
 import matid.geometry
-
-
-class Classification(Enum):
-    Unknown = "Unknown"
-    Class0D = "0D Generic"
-    Class1D = "1D Generic"
-    Class2D = "2D Generic"
-    Class3D = "3D Generic"
-    Atom = "0D Atom"
-    Material2D = "2D Material"
-    Surface = "2D Surface"
 
 
 class Cluster:
@@ -27,10 +15,10 @@ class Cluster:
         species=None,
         region=None,
         dimensionality=None,
-        classification=None,
         cell=None,
         system=None,
         distances=None,
+        radii=None,
         bond_threshold=None,
     ):
         if isinstance(indices, list):
@@ -38,84 +26,47 @@ class Cluster:
         else:
             self.indices = list(indices)
         self.species = species
-        self.region = region
+
+        self._region = region
         self._dimensionality = dimensionality
-        self._classification = classification
         self._cell = cell
-        self.system = system
-        self.distances = distances
-        self.merged = False
-        self.bond_threshold = bond_threshold
+        self._system = system
+        self._distances = distances
+        self._radii = radii
+        self._merged = False
+        self._bond_threshold = bond_threshold
+        self._distance_matrix_radii_mic = None
 
     def __len__(self):
         return len(self.indices)
 
-    def _distance_matrix_radii_mic(self) -> int:
+    def _get_distance_matrix_radii_mic(self) -> np.ndarray:
         """Retrieves the distance matrix with subtracted radii for this cluster."""
-        return self.distances.dist_matrix_radii_mic[np.ix_(self.indices, self.indices)]
+        if self._distance_matrix_radii_mic is None:
+            self._distance_matrix_radii_mic = self._distances.dist_matrix_radii_mic[np.ix_(self.indices, self.indices)]
+        return self._distance_matrix_radii_mic
 
-    @lru_cache(maxsize=1)
-    def cell(self) -> int:
+    def get_cell(self) -> Atoms:
         """Used to fetch the prototypical cell for this cluster if one exists."""
         if self._cell:
             return self._cell
-        if self.region:
-            return self.region.cell
+        if self._region:
+            return self._region.cell
         return None
 
-    @lru_cache(maxsize=1)
-    def dimensionality(self) -> int:
-        """Used to fetch the dimensionality of the cluster."""
-        if self._dimensionality is not None:
-            return self._dimensionality
+    def get_atoms(self) -> Atoms:
+        """Returns the ase.Atoms object for this cluster."""
+        return self._system[self.indices]
 
-        return matid.geometry.get_dimensionality(
-            self.system[self.indices],
-            self.bond_threshold,
-            dist_matrix_radii_mic_1x=self._distance_matrix_radii_mic(),
-        )
-
-    @lru_cache(maxsize=1)
-    def classification(self) -> str:
-        """Used to classify this cluster."""
-        if self._classification:
-            return self._classification
-
-        # Check in how many directions the region is connected to itself.
-        n_connected_directions = None
-        if self.region is not None:
-            region_conn = self.region.get_connected_directions()
-            n_connected_directions = np.sum(region_conn)
-
-        # Get the system dimensionality
-        dimensionality = self.dimensionality()
-
-        # 0D structures
-        cls = Classification.Unknown
-        if dimensionality == 0:
-            cls = Classification.Class0D
-
-            # Systems with one atom have their own classification.
-            n_atoms = len(self.indices)
-            if n_atoms == 1:
-                cls = Classification.Atom
-
-        # 1D structures
-        elif dimensionality == 1:
-            cls = Classification.Class1D
-
-        # 2D structures
-        elif dimensionality == 2:
-            if n_connected_directions == 2:
-                if self.region.is_2d:
-                    cls = Classification.Material2D
-                else:
-                    cls = Classification.Surface
-            else:
-                cls = Classification.Class2D
-
-        # 3D structures
-        elif dimensionality == 3:
-            cls = Classification.Class3D
-
-        return cls
+    def get_dimensionality(self) -> int:
+        """Shortcut for fetching the dimensionality of the cluster using
+        matid.geometry.get_dimensionality and the radii + bond thresholds that
+        were used during the clustering.
+        """
+        if self._dimensionality is None:
+            self._dimensionality = matid.geometry.get_dimensionality(
+                self.get_atoms(),
+                self._bond_threshold,
+                dist_matrix_radii_mic_1x=self._get_distance_matrix_radii_mic(),
+            )
+        return self._dimensionality

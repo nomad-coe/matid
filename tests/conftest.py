@@ -105,5 +105,4 @@ def assert_topology(results, expected):
     cluster_map = {tuple(sorted(x.indices)): x for x in results}
     for cluster_expected in expected:
         cluster = cluster_map[tuple(sorted(cluster_expected.indices))]
-        assert cluster.dimensionality() == cluster_expected.dimensionality()
-        assert cluster.classification() == cluster_expected.classification()
+        assert cluster.get_dimensionality() == cluster_expected.get_dimensionality()

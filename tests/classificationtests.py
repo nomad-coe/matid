@@ -19,8 +19,8 @@ import ase.io
 from networkx import draw_networkx
 import matplotlib.pyplot as mpl
 
-from matid import Classifier, SymmetryAnalyzer, PeriodicFinder
-from matid.classifications import (
+from matid.classification import (
+    Classifier,
     Class0D,
     Class1D,
     Class2D,
@@ -30,6 +30,8 @@ from matid.classifications import (
     Unknown,
     Surface,
 )
+from matid.symmetry import SymmetryAnalyzer
+from matid.core import PeriodicFinder
 import matid.geometry
 
 from conftest import create_graphene
