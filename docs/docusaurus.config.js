@@ -120,11 +120,11 @@ const config = {
               },
               {
                 label: 'Symmetry-based Clustering',
-                to: '/docs/symmetry-based-clustering',
+                to: '/docs/learn/symmetry-based-clustering',
               },
               {
                 label: 'Symmetry Analysis',
-                to: '/docs/symmetry/symmetry-basics',
+                to: '/docs/learn/symmetry-analysis/symmetry-analyzer',
               },
             ],
           },
