@@ -1,0 +1,75 @@
+---
+sidebar_position: 3
+---
+
+import Image from '@theme/IdealImage'
+import tsa from '@site/static/img/tsa.jpg'
+import CodeBlock from '@theme/CodeBlock'
+import DimensionalitySource from '!!raw-loader!@site/static/snippets/dimensionality.py';
+
+# Dimensionality Analysis
+MatID can be used to find out the dimensionality of an atomistic geometry.  It
+should be noted that MatID does not consider the shape or size of a structure
+when assigning dimensionality, but instead looks at  __the number of dimensions
+in which the structure is connected to itself through periodic boundary
+conditions__. This definition is often relevant for atomistic simulations with
+periodic boundary conditions, but may not be useful in other contexts where e.g.
+the shape is the deciding factor.
+
+<Image img={tsa} style={{maxWidth: "28rem", marginRight: "auto", marginLeft: "auto"}}/>
+
+To determine the dimensionality of a system, MatID uses a modified version of the
+topological scaling algorithm (TSA)[^1]. The algorithm is based on analyzing
+the size scaling of atomic clusters when going from the original system to a
+bigger supercell of the same system. With TSA, the dimensionality $D$ is
+given by
+
+$$
+	D=\begin{cases}
+		n_\text{pbc}-\log_n (N_{n}) \text{, when}~n_\text{pbc} \neq 0  \\
+		0\text{, when}~n_\text{pbc} = 0
+	\end{cases}
+$$
+
+where $N_n$ is the number of clusters in a supercell that is repeated
+$n$ times in each periodic direction and $n_\mathrm{pbc}$ is the
+number of periodic dimensions. For the clustering we use the Density-Based
+Spatial Clustering of Applications with Noise (DBSCAN)[^2] data clustering algorithm.
+The advantage of this algorithm is that it does not require an initial guess
+for the number of clusters and it can find arbitrarily shaped clusters. The
+clustering requires that we define a metric for the distance between atoms. We
+use the following metric:
+
+$$
+   d_{ij} = \lvert \vec{r}_i - \vec{r}_j \rvert^{\text{MIC}} - r_i - r_j
+$$
+
+where $\vec{r}_i$ and $\vec{r}_i$ are the cartesian positions of atom $i$ and
+$j$, respectively, and $r_i$ and $r_j$ are their radii. The radii definition can
+be changed and defaults to covalent radii[^3]. It is important to notice that in
+this metric the distances always follow the minimum image convention (MIC), i.e.
+the distance is calculated between two closest periodic neighbours. By using the
+distance to the closest periodic neighbour we obtain the correct clusters
+regardless of what shape of cell is used in the original simulation.
+
+The clustering uses two parameters: the minimum cluster size
+$n_\mathrm{min}$ and the neighbourhood radius $\epsilon$. We set
+$n_\mathrm{min}$ to 1 to allow clusters consisting of even single atoms
+and $\epsilon$ defaults to 3.5 Å. At present, a system, in which there is
+more than one cluster in the original non-repeated system ($N_1 \gt 1$),
+is classified as unknown. Such a case corresponds to systems with multiple
+components that are spatially separated, such as a molecule far above a
+surface, low density gases, widely spaced clusters in vacuum, etc.
+
+The following code illustrates how dimensionality detection can be performed for
+any atomistic structure with MatID.
+
+<CodeBlock language="python">{DimensionalitySource}</CodeBlock>
+
+If you wish to get the dimensionality of a `Cluster` object, then you can
+directly use the `Cluster.get_dimensionality()` method, which is essentially a
+shortcut to the `matid.geometry.get_dimensionality()` function.
+
+[^1]: Ashton, M., Paul, J., Sinnott, S. B. & Hennig, R. G. Topology-scaling identification of layered solids and stable exfoliated 2d materials. Phys. Rev. Lett. 118, 106101 (2017)
+[^2]: Ester, M., Kriegel, H.-P., Sander, J. & Xu, X. A density-based algorithm for discovering clusters in large spatial databases with noise. KDD’96 Proceedings of the Second International Conference on Knowledge Discovery and Data Mining 226–231 (1996).
+[^3]: Cordero, B. et al. Covalent radii revisited. Dalton Trans. 2832–2838 (2008)

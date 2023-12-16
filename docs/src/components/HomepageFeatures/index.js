@@ -6,7 +6,7 @@ import styles from './styles.module.css';
 const FeatureList = [
   {
     title: 'Symmetry-based Clustering',
-    link: '/docs/symmetry-based-clustering',
+    link: '/docs/learn/symmetry-based-clustering',
     description: (
       <>
         MatID contains a novel clustering approach called Symmetry-based
@@ -17,7 +17,7 @@ const FeatureList = [
   },
   {
     title: 'Symmetry Analysis',
-    link: '/docs/symmetry/symmetry-basics',
+    link: '/docs/learn/symmetry-analysis/symmetry-analyzer',
     description: (
       <>
         MatID contains several symmetry routines for analyzing structures. The
@@ -30,6 +30,7 @@ const FeatureList = [
   {
     title: 'Powering identification in NOMAD',
     link: 'https://nomad-lab.eu/nomad-lab/',
+    linktext: 'Visit NOMAD',
     description: (
       <>
         MatID is being developed at FAIRmat and is powering the automated
@@ -39,7 +40,7 @@ const FeatureList = [
   },
 ];
 
-function Feature({Svg, title, description, link}) {
+function Feature({title, description, link, linktext}) {
   return (
     <div className={clsx([styles.feature, 'col col--4'])}>
       <div className="text--center padding-horiz--md">
@@ -48,7 +49,7 @@ function Feature({Svg, title, description, link}) {
         <Link
           className="button button--secondary button--md"
           to={link}>
-          Learn more
+            {linktext || 'Learn more'}
         </Link>
       </div>
     </div>

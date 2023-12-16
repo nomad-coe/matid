@@ -1,0 +1,25 @@
+---
+sidebar_position: 1
+---
+
+import CodeBlock from '@theme/CodeBlock'
+import ReadmeSource from '!!raw-loader!@site/static/snippets/readme.py';
+
+# Introduction
+MatID is a Python package for identifying and analyzing atomistic systems based on their structure. MatID is designed to help researchers in the automated analysis and labeling of atomistic data.
+
+The package comes with different tools that can be connected together to form a
+workflow for analyzing structures. Here is a brief list of the different tools
+and their functionality, you can get more details in the **Learn** section of
+the docs.
+
+- [Symmetry-based Clustering](../learn/symmetry-based-clustering): Used to identify and report repeating structures in
+the given atomistic system. Works both with finite and periodic systems.
+- [Symmetry Analysis](../learn/symmetry-analysis/symmetry-analyzer): Routines for analyzing the symmetry of structures. Can be used to return a highly unique conventional cell, detailed Wyckoff position information etc.
+- [Dimensionality Analysis](../learn/dimensionality): Used to determine the intended dimensionality of a system taking periodic boundary conditions into account.
+
+As a user, you are free to choose one or many of these tools for your analysis
+purposes. A small example that combines several of the provided tools for
+analysing an existing structure file is shown below
+
+<CodeBlock language="python">{ReadmeSource}</CodeBlock>
