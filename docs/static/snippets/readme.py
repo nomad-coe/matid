@@ -1,23 +1,3 @@
-<img src="https://raw.githubusercontent.com/nomad-coe/matid/main/docs/static/img/logo.png" width="300">
-
-![Build status](https://github.com/nomad-coe/matid/actions/workflows/test.yml/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/nomad-coe/matid/badge.svg?branch=main)](https://coveralls.io/github/nomad-coe/matid?branch=main)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-MatID is a Python package for identifying and analyzing atomistic systems based
-on their structure.
-
-# Documentation
-For more details and tutorials, visit the documentation at:
-[https://nomad-coe.github.io/matid/](https://nomad-coe.github.io/matid/)
-
-You can find even more details in the following articles:
-
-- [Materials structure genealogy and high-throughput topological classification of surfaces and 2D materials](<https://doi.org/10.1038/s41524-018-0107-6>)
-
-## Example: Surface detection and analysis
-
-```python
 import ase.io
 from ase.visualize import view
 
@@ -56,19 +36,3 @@ for cluster in clusters:
     analyzer = SymmetryAnalyzer(cell, symmetry_tol=0.5)
     conv_sys = analyzer.get_conventional_system()
     view(conv_sys)
-```
-
-# Installation
-
-## pip
-```sh
-pip install matid
-```
-
-## From source
-```sh
-git clone https://github.com/nomad-coe/matid.git
-cd matid
-pip install .
-```
-

@@ -22,6 +22,19 @@ const config = {
     },
   ],
 
+  plugins: [
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 70,
+        max: 1030, // max resized image's size.
+        min: 640, // min resized image's size. if original is lower, use that size.
+        steps: 2, // the max number of images generated between min and max (inclusive)
+        disableInDev: false,
+      },
+    ],
+  ],
+
   // Set the production url of your site here
   url: 'https://nomad-coe.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
@@ -50,14 +63,11 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          //routeBasePath: '/', // Serve the docs at the site's root
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           sidebarPath: require.resolve('./sidebars.js'),
           sidebarCollapsible: false,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
         blog: false,
         theme: {
@@ -80,7 +90,7 @@ const config = {
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            sidebarId: 'docsSidebar',
             position: 'left',
             label: 'Docs',
           },
@@ -102,16 +112,16 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Introduction',
-                to: '/docs/introduction',
+                label: 'Getting started',
+                to: '/docs/getting-started',
               },
               {
                 label: 'Symmetry-based Clustering',
-                to: '/docs/symmetry-based-clustering',
+                to: '/docs/learn/symmetry-based-clustering',
               },
               {
                 label: 'Symmetry Analysis',
-                to: '/docs/symmetry/symmetry-basics',
+                to: '/docs/learn/symmetry-analysis',
               },
             ],
           },

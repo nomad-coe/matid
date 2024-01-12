@@ -7,8 +7,8 @@ import spglib
 import numpy as np
 
 from matid.utils.segfault_protect import segfault_protect
+from matid.utils.exceptions import CellNormalizationError, MatIDError
 from matid.data.symmetry_data import CHIRALITY_PRESERVING_EUCLIDEAN_NORMALIZERS
-from matid.exceptions import CellNormalizationError, MatIDError
 from matid.data.symmetry_data import SPACE_GROUP_INFO, WYCKOFF_SETS
 from matid.data import constants
 from matid.core.system import System

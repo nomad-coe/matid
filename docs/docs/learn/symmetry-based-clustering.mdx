@@ -1,0 +1,44 @@
+---
+sidebar_position: 3
+---
+
+import Image from '@theme/IdealImage'
+import sbc from '@site/static/img/sbc.png'
+
+# Symmetry-based Clustering (SBC)
+
+There are several tools for building atomistic systems from components, but the
+reverse process of identifying these components from an existing system is much
+harder. MatID utilizes a custom clustering algorithm, called Symmetry-based
+Clustering (SBC), which can cluster atoms based on local translational symmetry.
+Essentially this means that atoms which are built from the same underlying unit
+cell, will get clustered together.
+
+<Image img={sbc} style={{maxWidth: "35rem", marginRight: "auto", marginLeft: "auto"}}/>
+
+Unlike clustering methods that work solely on the basis of atomic distances or
+chemical identities, SBC can produce meaningful clustering results even for
+structures like grain boundaries and defected structures, where other tools
+would struggle. SBC works for both finite and periodic structures, and can deal
+with noise and curvature in the structures. SBC currently returns clusters where
+the underlying unit cell is repeated either in two or three distinct directions
+(one-dimensional clusters, such as polymers are currently not handled).
+
+Clustering is performed using the [`SBC`](/docs/reference/sbc) class. The basic syntax is relatively
+simple: you have to initialize the SBC class with parameters that are suitable
+for your use case (sensible defaults are provided), and then call the
+[`get_clusters`](/docs/reference/sbc#get_clusters)-method. The following demonstrates this on a existing structure
+file:
+
+import CodeBlock from '@theme/CodeBlock'
+import SBCSource from '!!raw-loader!@site/static/snippets/sbc.py';
+
+<CodeBlock language="python">{`${SBCSource.split('\n').slice(0, 7).join('\n')}`}</CodeBlock>
+
+The return value is a list of the found [`Cluster`](/docs/reference/cluster) instances. You can perform
+further analysis on these found clusters by using methods and attributes of this
+class. E.g. to visualize all of the found clusters, we could do the following:
+
+<CodeBlock language="python">{`${SBCSource.split('\n').slice(8, 9).join('\n')}`}</CodeBlock>
+
+The resulting image is as follows:

@@ -6,7 +6,11 @@ import Layout from '@theme/Layout'
 import HomepageFeatures from '@site/src/components/HomepageFeatures'
 
 import styles from './index.module.css'
-import Logo from '@site/static/img/logo.png'
+import logo from '@site/static/img/logo.png'
+import all from '@site/static/img/all_cropped.png'
+import cu from '@site/static/img/cu_cropped.png'
+import graphene from '@site/static/img/graphene_cropped.png'
+import mos2 from '@site/static/img/mos2_cropped.png'
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext()
@@ -27,18 +31,18 @@ function HomepageHeader() {
 }
 
 /**
- * Displays logo, motivational message and get started link.
+ * Displays logo, motivational message and ed link.
  */
 function GetStarted() {
   const {siteConfig} = useDocusaurusContext()
 
   return <div className={styles.column}>
-    <img src={Logo} className={styles.logo}/>
+    <img src={logo.src} className={styles.logo} />
     <p className="hero__subtitle">{siteConfig.tagline}</p>
     <div className={styles.buttons}>
       <Link
         className="button button--secondary button--lg"
-        to="/docs/introduction">
+        to="/docs/getting-started">
         Get started
       </Link>
     </div>
@@ -74,24 +78,24 @@ function Stack() {
     className={styles.stackContainer}
   >
     <img
-      src={require('@site/static/img/all_cropped.png').default}
+      src={all.src}
       className={styles.stack}
-      style={{visibility: stack === 'all' ? 'visible' : 'hidden'}}
+      style={{visibility: stack === 'all' ? 'visible' : 'hidden', position: 'absolute'}}
     />
     <img
-      src={require('@site/static/img/cu_cropped.png').default}
+      src={cu.src}
       className={styles.stack}
-      style={{visibility: stack === 'cu' ? 'visible' : 'hidden'}}
+      style={{visibility: stack === 'cu' ? 'visible' : 'hidden', position: 'absolute'}}
     />
     <img
-      src={require('@site/static/img/mos2_cropped.png').default}
+      src={mos2.src}
       className={styles.stack}
-      style={{visibility: stack === 'mos2' ? 'visible' : 'hidden'}}
+      style={{visibility: stack === 'mos2' ? 'visible' : 'hidden', position: 'absolute'}}
     />
     <img
-      src={require('@site/static/img/graphene_cropped.png').default}
+      src={graphene.src}
       className={styles.stack}
-      style={{visibility: stack === 'graphene' ? 'visible' : 'hidden'}}
+      style={{visibility: stack === 'graphene' ? 'visible' : 'hidden', position: 'absolute'}}
     />
   </div>
 }
