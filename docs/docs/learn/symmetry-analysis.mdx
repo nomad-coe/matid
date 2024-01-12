@@ -1,0 +1,78 @@
+---
+sidebar_position: 4
+---
+
+# Symmetry Analysis
+
+The [`SymmetryAnalyzer`](/docs/reference/symmetryanalyzer) class in MatID contains several symmetry routines for
+analyzing 3D structures. The basic features are based on the excellent `spglib`
+library, but with an extended feature set that makes MatID unique. The following
+subsections showcase some of its most interesting features and you can learn
+more in the API reference.
+
+## Conventional Cell
+
+For each space group there is a conventional cell that has been standardized by
+the ITA. `spglib` can report such cells, but MatID adds an additional step of
+normalization upon it to make the structure even more standardized.
+
+Although the shape and symmetries of the cell are already well-defined for a
+conventional cell reported by `spglib`, the exact location of atoms in the cell
+can vary. The same structure can have multiple representations, which all look
+different. If you are only interested in the symmetry properties of the system,
+this may not be relevant. But if instead you wish to generate a more unique
+structure for the conventional cell for visualization or identification
+purposes, then additional processing is required.
+
+(Image of different representations for NaCl)
+
+The only difference in these two structures is the way the Wyckoff positions
+have been filled: the first one has X and the second one has Y. The conventional
+cell reported by MatID makes an additional step of searching for the most unique
+representation based on chirality-preserving Euclidean Normalizers. These are
+reported e.g. by the [Bilbao Crystal database](https://www.cryst.ehu.es/). Each
+normalizer is essentially a transform that can be applied to to the structure to
+gain a new for of the conventinoal cell without modifying the underlying
+material. MatID iterates over these different representations and selects one
+based on the population of different Wyckoff sites which differs among these
+representations.
+
+(Image of how MatID resolves all of them into the same conventional cell)
+
+It should be noted that certain Wyckoff sites in certain space groups are
+parametrized. MatID does not perform any selection between these parameters, so
+in these cases the exact visual representation will still differ. By calling X
+you can query whether the structure contains parametrized wyckoff positions.
+
+## Wyckoff positions
+
+MatID can report a detailed breakdown of the Wyckoff positions, including
+
+## Material ID
+
+[`SymmetryAnalyzer`](/docs/reference/symmetryanalyzer) can report a 28-digit character sequence for a given
+structure. This is essentially a hash-digest which is seeded using information
+about the space group, dimensionality and the Wyckoff sites occupied in the
+conventional cell. Due to the way MatID generates the conventional cell, this
+identifier is fairly unique and can be used in many cases to identify structures
+3D and 2D materials with "enough" symmetry.
+
+The material id can act as a convenient handle for finding materials with very
+specific structure. As a simple example one could imagine trying to find the
+forsterite structure. The filters required for this would include:
+
+ - Space group number
+ - Wyckoff position occupation (assuming a normalized one is available)
+
+Often this information is not directly reported and if it is, it can be a
+daunting task for the user to formulate the queries precisely. This is where the
+material id can offer a shortcut: one can retrieve it using matid for any
+structure and the
+
+This identifier is not guaranteed to be unique, but can be highly useful in
+practise. In some sense it has a similar value proposal to SMILES for molecules.
+There are cases in which it will fail:
+
+ - Parametrized Wyckoff sites
+ - If isotropic scaling is a problem
+ - If variable angles for the conventional cell are a problem

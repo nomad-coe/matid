@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import clsx from 'clsx'
 import Link from '@docusaurus/Link'
-import Image from '@theme/IdealImage'
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import Layout from '@theme/Layout'
 import HomepageFeatures from '@site/src/components/HomepageFeatures'
@@ -32,7 +31,7 @@ function HomepageHeader() {
 }
 
 /**
- * Displays logo, motivational message and get started link.
+ * Displays logo, motivational message and ed link.
  */
 function GetStarted() {
   const {siteConfig} = useDocusaurusContext()
@@ -43,7 +42,7 @@ function GetStarted() {
     <div className={styles.buttons}>
       <Link
         className="button button--secondary button--lg"
-        to="/docs/introduction">
+        to="/docs/getting-started">
         Get started
       </Link>
     </div>
@@ -78,23 +77,23 @@ function Stack() {
     onMouseLeave={handleMouseLeave}
     className={styles.stackContainer}
   >
-    <Image
-      img={all}
+    <img
+      src={all.src}
       className={styles.stack}
       style={{visibility: stack === 'all' ? 'visible' : 'hidden', position: 'absolute'}}
     />
-    <Image
-      img={cu}
+    <img
+      src={cu.src}
       className={styles.stack}
       style={{visibility: stack === 'cu' ? 'visible' : 'hidden', position: 'absolute'}}
     />
-    <Image
-      img={mos2}
+    <img
+      src={mos2.src}
       className={styles.stack}
       style={{visibility: stack === 'mos2' ? 'visible' : 'hidden', position: 'absolute'}}
     />
-    <Image
-      img={graphene}
+    <img
+      src={graphene.src}
       className={styles.stack}
       style={{visibility: stack === 'graphene' ? 'visible' : 'hidden', position: 'absolute'}}
     />

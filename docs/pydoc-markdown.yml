@@ -1,0 +1,21 @@
+loaders:
+  - type: python
+processors:
+  - type: filter
+    skip_empty_modules: true
+  - type: google
+  - type: crossref
+renderer:
+  type: markdown
+  render_page_title: false
+  render_module_header: false
+  use_fixed_header_levels: true
+  insert_header_anchors: false
+  header_level_by_type:
+    Module: 1
+    Class: 1
+    Method: 2
+    Function: 2
+    Data: 4
+  descriptive_class_title: '$ Class'
+  classdef_code_block: false

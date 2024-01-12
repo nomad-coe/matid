@@ -17,7 +17,7 @@ const FeatureList = [
   },
   {
     title: 'Symmetry Analysis',
-    link: '/docs/learn/symmetry-analysis/symmetry-analyzer',
+    link: '/docs/learn/symmetry-analysis',
     description: (
       <>
         MatID contains several symmetry routines for analyzing structures. The

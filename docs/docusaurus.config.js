@@ -63,14 +63,11 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          //routeBasePath: '/', // Serve the docs at the site's root
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           sidebarPath: require.resolve('./sidebars.js'),
           sidebarCollapsible: false,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
         blog: false,
         theme: {
@@ -93,7 +90,7 @@ const config = {
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            sidebarId: 'docsSidebar',
             position: 'left',
             label: 'Docs',
           },
@@ -115,8 +112,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Introduction',
-                to: '/docs/introduction',
+                label: 'Getting started',
+                to: '/docs/getting-started',
               },
               {
                 label: 'Symmetry-based Clustering',
@@ -124,7 +121,7 @@ const config = {
               },
               {
                 label: 'Symmetry Analysis',
-                to: '/docs/learn/symmetry-analysis/symmetry-analyzer',
+                to: '/docs/learn/symmetry-analysis',
               },
             ],
           },
