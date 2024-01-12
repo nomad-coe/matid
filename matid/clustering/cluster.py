@@ -24,7 +24,7 @@ class Cluster:
         system=None,
         distances=None,
         radii=None,
-        bond_threshold=None
+        bond_threshold=None,
     ):
         """
         Args:
@@ -60,7 +60,6 @@ class Cluster:
         self._merged = False
         self._bond_threshold = bond_threshold
         self._distance_matrix_radii_mic = None
-
 
     def __len__(self):
         return len(self.indices)
