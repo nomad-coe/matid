@@ -32,8 +32,8 @@ class get_pybind_include(object):
 
 cpp_extra_link_args = []
 cpp_extra_compile_args = [
-    "-std=c++11",  # C++11
-    "-O3",  # O3 optimizations
+    "-std=c++11", # C++11
+    "-O3",        # O3 optimizations
 ]
 
 # Needed to specify C++ runtime library on OSX. This solution is replicated
