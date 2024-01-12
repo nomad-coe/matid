@@ -2,9 +2,6 @@ name: wheels
 
 on: [workflow_dispatch]
 
-env:
-  CIBW_SKIP: cp36-*
-
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
@@ -15,21 +12,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      # Used to host cibuildwheel
       - uses: actions/setup-python@v3
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
-        # env:
-        #   CIBW_SOME_OPTION: value
-        #    ...
-        # with:
-        #   package-dir: .
-        #   output-dir: wheelhouse
-        #   config-file: "{package}/pyproject.toml"
+        env:
+          CIBW_SKIP: cp36-*
 
       - uses: actions/upload-artifact@v3
         with:

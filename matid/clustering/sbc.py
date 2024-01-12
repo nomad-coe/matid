@@ -228,14 +228,28 @@ class SBC:
         Returns:
             A list of Clusters.
         """
-        # Copy the system and wrap coordinates.
+        # Copy the system to avoid mutating the original
         system_copy = system.copy()
-        try:
-            system_copy.wrap()
-        except Exception:
-            raise ValueError(
-                "Cannot process system with zero-volume cell and periodic boundaries."
-            )
+
+        # If cell has not been set, or it has zero volume AND periodic boundary
+        # conditions are not used, a dummy cell is created so that the rest of
+        # the code that uses scaled positions works correctly.
+        cell = system_copy.get_cell()
+        if (not cell or cell.volume == 0) and not any(system_copy.get_pbc()):
+            positions = system_copy.get_positions()
+            max_pos = positions.max(axis=0) + 1
+            min_pos = positions.min(axis=0) - 1
+            dummy_cell = max_pos - min_pos
+            system_copy.set_cell(dummy_cell)
+            system_copy.center()
+        # Positions are wrapped
+        else:
+            try:
+                system_copy.wrap()
+            except Exception:
+                raise ValueError(
+                    "Cannot process system with zero-volume cell and periodic boundaries."
+                )
 
         atomic_numbers = system.get_atomic_numbers()
         radii = matid.geometry.get_radii(radii, atomic_numbers)

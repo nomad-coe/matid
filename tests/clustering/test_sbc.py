@@ -12,6 +12,12 @@ from matid.clustering import SBC, Cluster
 
 
 surface_fcc = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
+zero_volume_cell = surface_fcc.copy()
+zero_volume_cell.set_cell([0, 0, 0])
+zero_volume_cell.set_pbc(False)
+no_cell = surface_fcc.copy()
+no_cell.set_cell(None)
+no_cell.set_pbc(False)
 surface_rocksalt = surface(
     bulk("NaCl", "rocksalt", a=5.64, cubic=True), [1, 0, 0], vacuum=10
 )
@@ -128,6 +134,28 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
             id="fluorite surface",
         ),
         # Finite systems
+        pytest.param(
+            zero_volume_cell,
+            [
+                Cluster(
+                    range(len(surface_fcc)),
+                    dimensionality=0,
+                )
+            ],
+            False,
+            id="finite, zero volume cell",
+        ),
+        pytest.param(
+            no_cell,
+            [
+                Cluster(
+                    range(len(surface_fcc)),
+                    dimensionality=0,
+                )
+            ],
+            False,
+            id="finite, no cell",
+        ),
         pytest.param(
             surface_fcc,
             [
