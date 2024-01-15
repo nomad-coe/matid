@@ -1116,9 +1116,7 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
-    for i, (position, atomic_number) in enumerate(
-        zip(positions, numbers)
-    ):
+    for i, (position, atomic_number) in enumerate(zip(positions, numbers)):
         match = None
         substitution = None
         copy_index = None
@@ -1140,7 +1138,12 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
                     match = closest_index
                     substitution = None
                 else:
-                    substitution = Substitution(closest_index, system_positions[closest_index], atomic_number, closest_atomic_number)
+                    substitution = Substitution(
+                        closest_index,
+                        system_positions[closest_index],
+                        atomic_number,
+                        closest_atomic_number,
+                    )
         matches.append(match)
         substitutions.append(substitution)
         if match is None and substitution is None:

@@ -234,7 +234,6 @@ class PeriodicFinder:
         neighbour_nodes = list(zip(neighbour_indices, neighbour_factors))
 
         for i_span, span in enumerate(possible_spans):
-
             i_adj_list = defaultdict(list)
             i_adj_list_add = defaultdict(list)
             i_adj_list_sub = defaultdict(list)
@@ -1427,11 +1426,7 @@ class PeriodicFinder:
 
         # Find the atoms that match the positions in the original basis
         matches, substitutions, vacancies, _ = matid.geometry.get_matches(
-            system,
-            self.cell_list,
-            test_pos,
-            cell_num,
-            self.pos_tol
+            system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell
@@ -1605,7 +1600,7 @@ class PeriodicFinder:
                 self.cell_list,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
-                self.pos_tol
+                self.pos_tol,
             )
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,
