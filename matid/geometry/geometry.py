@@ -81,7 +81,6 @@ def get_dimensionality(
             pos_1x,
             cell_1x,
             pbc,
-            mic=True,
             cutoff=cutoff,
             return_distances=True,
         )
@@ -112,7 +111,6 @@ def get_dimensionality(
                 pos_2x,
                 cell_2x,
                 pbc,
-                mic=True,
                 cutoff=cutoff,
                 return_distances=True,
             )
@@ -632,7 +630,6 @@ def get_displacement_tensor(
     positions,
     cell=None,
     pbc=False,
-    mic=False,
     cutoff=float("inf"),
     return_factors=False,
     return_distances=False,
@@ -653,7 +650,6 @@ def get_displacement_tensor(
         positions,
         cell,
         expand_pbc(pbc),
-        mic,
         cutoff,
         return_factors,
         return_distances,
@@ -985,114 +981,114 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-# def get_matches_old(system, positions, numbers, tolerances, mic=True):
-#     """Given a system and a list of cartesian positions and atomic numbers,
-#     returns a list of indices for the atoms corresponding to the given
-#     positions with some tolerance.
+def get_matches_old(system, positions, numbers, tolerances, mic=True):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
 
-#     Args:
-#         system(ASE.Atoms): System where to search the positions
-#         positions(np.ndarray): Positions to match in the system.
-#         tolerances(np.ndarray): Maximum allowed distance for each vector that
-#             is allowed for a match in position.
-#         mic(boolean): Whether to find the minimum image copy.
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        positions(np.ndarray): Positions to match in the system.
+        tolerances(np.ndarray): Maximum allowed distance for each vector that
+            is allowed for a match in position.
+        mic(boolean): Whether to find the minimum image copy.
 
-#     Returns:
-#         np.ndarray: indices of matched atoms
-#         list: list of substitutions
-#         list: list of vacancies
-#         np.ndarray: for each searched position, an integer array representing
-#             the number of the periodic copy where the match was found.
-#     """
-#     orig_num = system.get_atomic_numbers()
-#     orig_pos = system.get_positions()
-#     cell = system.get_cell()
-#     pbc = system.get_pbc()
-#     pbc = expand_pbc(pbc)
-#     scaled_pos2 = to_scaled(cell, positions, wrap=False)
+    Returns:
+        np.ndarray: indices of matched atoms
+        list: list of substitutions
+        list: list of vacancies
+        np.ndarray: for each searched position, an integer array representing
+            the number of the periodic copy where the match was found.
+    """
+    orig_num = system.get_atomic_numbers()
+    orig_pos = system.get_positions()
+    cell = system.get_cell()
+    pbc = system.get_pbc()
+    pbc = expand_pbc(pbc)
+    scaled_pos2 = to_scaled(cell, positions, wrap=False)
 
-#     _, factors, dist_matrix = get_displacement_tensor_old(
-#         positions,
-#         orig_pos,
-#         cell,
-#         pbc,
-#         mic=mic,
-#         cutoff=tolerances.max(),
-#         return_factors=True,
-#         return_distances=True,
-#     )
+    _, factors, dist_matrix = get_displacement_tensor_old(
+        positions,
+        orig_pos,
+        cell,
+        pbc,
+        mic=mic,
+        cutoff=tolerances.max(),
+        return_factors=True,
+        return_distances=True,
+    )
 
-#     # Find the closest atom within the tolerance and with the required atomic
-#     # number, or if not found, get the closest atom that is within the
-#     # tolerance
-#     best_matches = []
-#     best_substitutions = []
-#     for i_atom, i in enumerate(dist_matrix):
-#         near_mask = i <= tolerances[i_atom]
-#         element_mask = orig_num == numbers[i_atom]
-#         combined_mask = near_mask & element_mask
-#         possible_indices = np.where(combined_mask)[0]
-#         if len(possible_indices) != 0:
-#             min_dist_index = np.argmin(i[combined_mask])
-#             best_index = possible_indices[min_dist_index]
-#             best_matches.append(best_index)
-#             best_substitutions.append(None)
-#         elif near_mask.any():
-#             best_matches.append(None)
-#             near_indices = np.where(near_mask)[0]
-#             nearest_index = np.argmin(i[near_mask])
-#             best_substitutions.append(near_indices[nearest_index])
-#         else:
-#             best_matches.append(None)
-#             best_substitutions.append(None)
+    # Find the closest atom within the tolerance and with the required atomic
+    # number, or if not found, get the closest atom that is within the
+    # tolerance
+    best_matches = []
+    best_substitutions = []
+    for i_atom, i in enumerate(dist_matrix):
+        near_mask = i <= tolerances[i_atom]
+        element_mask = orig_num == numbers[i_atom]
+        combined_mask = near_mask & element_mask
+        possible_indices = np.where(combined_mask)[0]
+        if len(possible_indices) != 0:
+            min_dist_index = np.argmin(i[combined_mask])
+            best_index = possible_indices[min_dist_index]
+            best_matches.append(best_index)
+            best_substitutions.append(None)
+        elif near_mask.any():
+            best_matches.append(None)
+            near_indices = np.where(near_mask)[0]
+            nearest_index = np.argmin(i[near_mask])
+            best_substitutions.append(near_indices[nearest_index])
+        else:
+            best_matches.append(None)
+            best_substitutions.append(None)
 
-#     # min_ind = np.argmin(dist_matrix, axis=1)
-#     matches = []
-#     substitutions = []
-#     vacancies = []
-#     copy_indices = np.zeros((len(positions), 3), dtype=int)
+    # min_ind = np.argmin(dist_matrix, axis=1)
+    matches = []
+    substitutions = []
+    vacancies = []
+    copy_indices = np.zeros((len(positions), 3), dtype=int)
 
-#     for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
-#         match = None
-#         copy = None
-#         subst = None
-#         b_num = numbers[i]
+    for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
+        match = None
+        copy = None
+        subst = None
+        b_num = numbers[i]
 
-#         if i_match is not None:
-#             ind = i_match
-#             match = ind
+        if i_match is not None:
+            ind = i_match
+            match = ind
 
-#             # If a match was found the factor is reported based on the
-#             # displacement tensor
-#             i_move = factors[i][ind]
-#             copy = i_move
-#         elif i_subst is not None:
-#             ind = i_subst
-#             a_num = orig_num[ind]
+            # If a match was found the factor is reported based on the
+            # displacement tensor
+            i_move = factors[i][ind]
+            copy = i_move
+        elif i_subst is not None:
+            ind = i_subst
+            a_num = orig_num[ind]
 
-#             # Wrap the substitute position
-#             subst_pos_cart = orig_pos[ind]
-#             subst = Substitution(ind, subst_pos_cart, b_num, a_num)
+            # Wrap the substitute position
+            subst_pos_cart = orig_pos[ind]
+            subst = Substitution(ind, subst_pos_cart, b_num, a_num)
 
-#             # If a match was found the factor is reported based on the
-#             # displacement tensor
-#             i_move = factors[i][ind]
-#             copy = i_move
-#         else:
-#             vacancies.append(Atom(b_num, position=positions[i]))
+            # If a match was found the factor is reported based on the
+            # displacement tensor
+            i_move = factors[i][ind]
+            copy = i_move
+        else:
+            vacancies.append(Atom(b_num, position=positions[i]))
 
-#             # If no match was found, the factor is reported from the scaled
-#             # positions
-#             copy = np.floor(scaled_pos2[i])
+            # If no match was found, the factor is reported from the scaled
+            # positions
+            copy = np.floor(scaled_pos2[i])
 
-#         substitutions.append(subst)
-#         matches.append(match)
-#         copy_indices[i] = copy
+        substitutions.append(subst)
+        matches.append(match)
+        copy_indices[i] = copy
 
-#     return matches, substitutions, vacancies, copy_indices
+    return matches, substitutions, vacancies, copy_indices
 
 
-def get_matches_new(system, cell_list, positions, numbers, tolerances):
+def get_matches(system, cell_list, positions, numbers, tolerances):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1580,7 +1576,7 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     disp_tensor_finite, cell_list = get_displacement_tensor(pos, return_cell_list=True)
     if pbc.any():
         disp_tensor_mic, disp_factors, cell_list = get_displacement_tensor(
-            pos, cell, pbc, mic=True, return_factors=True, return_cell_list=True
+            pos, cell, pbc, return_factors=True, return_cell_list=True
         )
     else:
         disp_tensor_mic = disp_tensor_finite

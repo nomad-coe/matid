@@ -248,10 +248,10 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches_new(
+            add_indices, _, _, add_factors = matid.geometry.get_matches(
                 system, self.cell_list, add_pos, neighbour_num, i_pos_tol
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches_new(
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system, self.cell_list, sub_pos, neighbour_num, i_pos_tol
             )
 
@@ -1436,7 +1436,7 @@ class PeriodicFinder:
         disps = unit_cell.get_positions() - seed_offset
         pos_tolerances = self.get_scaled_position_tolerance(disps)
 
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches_new(
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
             system,
             self.cell_list,
             test_pos,
@@ -1623,7 +1623,7 @@ class PeriodicFinder:
             # system
             seed_guesses = seed_pos + dislocations
             pos_tolerances = self.get_scaled_position_tolerance(dislocations)
-            matches, _, _, factors = matid.geometry.get_matches_new(
+            matches, _, _, factors = matid.geometry.get_matches(
                 system,
                 self.cell_list,
                 seed_guesses,
