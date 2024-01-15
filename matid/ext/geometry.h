@@ -59,6 +59,18 @@ ExtendedSystem extend_system(
  * Calculates a pairwise displacement tensor (distance vectors) with a given
  * cutoff.
  */
+CellList get_cell_list(
+    py::array_t<double> positions,
+    py::array_t<double> cell,
+    py::array_t<bool> pbc,
+    bool mic,
+    double cutoff
+);
+
+/**
+ * Calculates a pairwise displacement tensor (distance vectors) with a given
+ * cutoff.
+ */
 CellList get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,

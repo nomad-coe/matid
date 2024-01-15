@@ -106,7 +106,19 @@ class PeriodicFinder:
         self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
-        self.cell_list = distances.cell_list
+
+        # Create new cell list that is used for performing the matching. We
+        # cannot use the cell list that is created during the distance matrix
+        # calculation, as it's radial cutoff is way too large and each
+        # individual query becomes too slow.
+        self.cell_list = matid.geometry.get_cell_list(
+            system.get_positions(),
+            system.get_cell(),
+            system.get_pbc(),
+            True,
+            max(pos_tol, 1)
+        )
+
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
         region = None
@@ -237,11 +249,11 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches(
-                system, add_pos, neighbour_num, i_pos_tol
+            add_indices, _, _, add_factors = matid.geometry.get_matches_new(
+                system, self.cell_list, add_pos, neighbour_num, i_pos_tol
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
-                system, sub_pos, neighbour_num, i_pos_tol
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches_new(
+                system, self.cell_list, sub_pos, neighbour_num, i_pos_tol
             )
 
             n_metric = 0
@@ -1425,8 +1437,9 @@ class PeriodicFinder:
         disps = unit_cell.get_positions() - seed_offset
         pos_tolerances = self.get_scaled_position_tolerance(disps)
 
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches_new(
             system,
+            self.cell_list,
             test_pos,
             cell_num,
             pos_tolerances,
@@ -1611,12 +1624,13 @@ class PeriodicFinder:
             # system
             seed_guesses = seed_pos + dislocations
             pos_tolerances = self.get_scaled_position_tolerance(dislocations)
-            matches, _, _, factors = matid.geometry.get_matches(
+            matches, _, _, factors = matid.geometry.get_matches_new(
                 system,
+                self.cell_list,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 pos_tolerances,
-                mic=True,
+                # mic=True,
             )
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,

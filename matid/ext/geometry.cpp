@@ -147,17 +147,12 @@ ExtendedSystem extend_system(
     return ExtendedSystem{ext_pos, ext_atomic_numbers, ext_indices, factors};
 }
 
-CellList get_displacement_tensor(
-    py::array_t<double> displacements,
-    py::array_t<double> distances,
-    py::array_t<double> factors,
+CellList get_cell_list(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
     bool mic,
-    double cutoff,
-    bool return_factors,
-    bool return_distances
+    double cutoff
 ) {
     // Create dummy atomic indices: we don't really need them for the
     // displacements
@@ -193,9 +188,25 @@ CellList get_displacement_tensor(
 
     // Create cell list for positions of the extended system
     CellList cell_list = CellList(system.positions, system.indices, system.factors, cutoff);
+    return cell_list;
+}
+
+CellList get_displacement_tensor(
+    py::array_t<double> displacements,
+    py::array_t<double> distances,
+    py::array_t<double> factors,
+    py::array_t<double> positions,
+    py::array_t<double> cell,
+    py::array_t<bool> pbc,
+    bool mic,
+    double cutoff,
+    bool return_factors,
+    bool return_distances
+) {
+    CellList cell_list = get_cell_list(positions, cell, pbc, mic, cutoff);
 
     // Calculate distances information
-    cell_list.get_displacement_tensor(displacements, distances, factors, system.indices, n_atoms);
-
+    int n_atoms = positions.shape(0);
+    cell_list.get_displacement_tensor(displacements, distances, factors, cell_list.indices_py, n_atoms);
     return cell_list;
 }

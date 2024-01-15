@@ -36,6 +36,7 @@ PYBIND11_MODULE(ext, m) {
         .def_readonly("atomic_numbers", &ExtendedSystem::atomic_numbers)
         .def_readonly("indices", &ExtendedSystem::indices)
         .def_readonly("factors", &ExtendedSystem::factors);
+    m.def("get_cell_list", &get_cell_list, "Get cell list for system.");
     m.def("get_displacement_tensor", &get_displacement_tensor, "Get displacement vectors respecting minimum image convention.");
 
     // CellList

@@ -542,7 +542,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     system.set_pbc(pbc)
 
     # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches(
+    matches, _, _, factors = matid.geometry.get_matches_old(
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
