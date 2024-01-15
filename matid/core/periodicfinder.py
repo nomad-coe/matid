@@ -112,10 +112,7 @@ class PeriodicFinder:
         # calculation, as it's radial cutoff is way too large and each
         # individual query becomes too slow.
         self.cell_list = matid.geometry.get_cell_list(
-            system.get_positions(),
-            system.get_cell(),
-            system.get_pbc(),
-            max(pos_tol, 1)
+            system.get_positions(), system.get_cell(), system.get_pbc(), max(pos_tol, 1)
         )
 
         self.pos_tol = pos_tol

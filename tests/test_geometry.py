@@ -551,10 +551,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     # New CPP implementation
     # extended_system = matid.geometry.get_extended_system(system, tolerance)
     cell_list = matid.geometry.get_cell_list(
-        system.get_positions(),
-        system.get_cell(),
-        system.get_pbc(),
-        tolerance
+        system.get_positions(), system.get_cell(), system.get_pbc(), tolerance
     )
     matches_ext, _, _, factors_ext = matid.geometry.get_matches(
         system,

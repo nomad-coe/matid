@@ -1141,7 +1141,12 @@ def get_matches(system, cell_list, positions, numbers, tolerances):
                     match = closest_index
                     substitutions.append(None)
                 else:
-                    subst = Substitution(closest_index, system_positions[closest_index], atomic_number, closest_atomic_number)
+                    subst = Substitution(
+                        closest_index,
+                        system_positions[closest_index],
+                        atomic_number,
+                        closest_atomic_number,
+                    )
                     substitutions.append(subst)
         matches.append(match)
         substitutions.append(substitution)
