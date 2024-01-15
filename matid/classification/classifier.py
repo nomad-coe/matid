@@ -30,7 +30,6 @@ class Classifier:
         max_cell_size=constants.MAX_CELL_SIZE,
         pos_tol=None,
         pos_tol_mode="relative",
-        pos_tol_scaling=constants.POS_TOL_SCALING,
         angle_tol=constants.ANGLE_TOL,
         cluster_threshold=constants.CLUSTER_THRESHOLD,
         radii="covalent",
@@ -60,8 +59,6 @@ class Classifier:
                     - "relative": Tolerance relative to the average nearest
                       neighbour distance.
                     - "absolute": Absolute tolerance in angstroms.
-            pos_tol_scaling(float): The distance dependent scaling factor for
-                the positions tolerance.
             angle_tol(float): The angle below which vectors in the cell basis are
                 considered to be parallel.
             cluster_threshold(float): A parameter that controls which atoms are
@@ -116,7 +113,6 @@ class Classifier:
         if isinstance(pos_tol, (int, float)):
             pos_tol = [pos_tol]
         self.pos_tol = pos_tol
-        self.pos_tol_scaling = pos_tol_scaling
         self.abs_pos_tol = None
         self.pos_tol_mode = pos_tol_mode
         self.angle_tol = angle_tol
@@ -128,7 +124,6 @@ class Classifier:
         self.delaunay_threshold_mode = delaunay_threshold_mode
         self.bond_threshold = bond_threshold
         self.chem_similarity_threshold = chem_similarity_threshold
-        self.pos_tol_scaling = pos_tol_scaling
         self.cell_size_tol = cell_size_tol
         self.max_n_atoms = max_n_atoms
         self.max_2d_cell_height = max_2d_cell_height
@@ -345,7 +340,6 @@ class Classifier:
                     # Run the region detection on the whole system.
                     periodicfinder = PeriodicFinder(
                         angle_tol=self.angle_tol,
-                        pos_tol_scaling=self.pos_tol_scaling,
                         cell_size_tol=self.cell_size_tol,
                         max_2d_cell_height=self.max_2d_cell_height,
                         max_2d_single_cell_size=self.max_2d_single_cell_size,

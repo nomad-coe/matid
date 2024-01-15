@@ -281,7 +281,6 @@ class PeriodicFinderTests(unittest.TestCase):
     delaunay_threshold = classifier.delaunay_threshold
     bond_threshold = classifier.bond_threshold
     pos_tol = classifier.pos_tol
-    pos_tol_scaling = classifier.pos_tol_scaling
     cell_size_tol = classifier.cell_size_tol
 
     def test_cell_selection(self):

@@ -1088,7 +1088,7 @@ def get_matches_old(system, positions, numbers, tolerances, mic=True):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_matches(system, cell_list, positions, numbers, tolerances):
+def get_matches(system, cell_list, positions, numbers, tolerance):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1098,8 +1098,7 @@ def get_matches(system, cell_list, positions, numbers, tolerances):
         cell_list(CellList): The cell list for an appropriately extended version
             of the system.
         positions(np.ndarray): Positions to match in the system.
-        tolerances(np.ndarray): Maximum allowed distance for each vector that
-            is allowed for a match in position.
+        tolerance(float): Maximum allowed distance for matching.
 
     Returns:
         np.ndarray: indices of matched atoms
@@ -1117,8 +1116,8 @@ def get_matches(system, cell_list, positions, numbers, tolerances):
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
-    for i, (position, atomic_number, tolerance) in enumerate(
-        zip(positions, numbers, tolerances)
+    for i, (position, atomic_number) in enumerate(
+        zip(positions, numbers)
     ):
         match = None
         substitution = None
@@ -1139,15 +1138,9 @@ def get_matches(system, cell_list, positions, numbers, tolerances):
                 copy_index = closest_factor
                 if closest_atomic_number == atomic_number:
                     match = closest_index
-                    substitutions.append(None)
+                    substitution = None
                 else:
-                    subst = Substitution(
-                        closest_index,
-                        system_positions[closest_index],
-                        atomic_number,
-                        closest_atomic_number,
-                    )
-                    substitutions.append(subst)
+                    substitution = Substitution(closest_index, system_positions[closest_index], atomic_number, closest_atomic_number)
         matches.append(match)
         substitutions.append(substitution)
         if match is None and substitution is None:
