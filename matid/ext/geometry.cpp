@@ -151,7 +151,6 @@ CellList get_cell_list(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
-    bool mic,
     double cutoff
 ) {
     // Create dummy atomic indices: we don't really need them for the
@@ -198,12 +197,11 @@ CellList get_displacement_tensor(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
-    bool mic,
     double cutoff,
     bool return_factors,
     bool return_distances
 ) {
-    CellList cell_list = get_cell_list(positions, cell, pbc, mic, cutoff);
+    CellList cell_list = get_cell_list(positions, cell, pbc, cutoff);
 
     // Calculate distances information
     int n_atoms = positions.shape(0);

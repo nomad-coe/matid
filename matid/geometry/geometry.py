@@ -1157,7 +1157,7 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_cell_list(positions, cell, pbc, mic, cutoff):
+def get_cell_list(positions, cell, pbc, cutoff):
     """Given a system and a cutoff value, returns a cell list object.
 
     Args:
@@ -1167,7 +1167,7 @@ def get_cell_list(positions, cell, pbc, mic, cutoff):
     Returns:
         CellList object.
     """
-    return matid.ext.get_cell_list(positions, cell, pbc, mic, cutoff)
+    return matid.ext.get_cell_list(positions, cell, pbc, cutoff)
 
 
 def to_scaled(cell, positions, wrap=False, pbc=False):

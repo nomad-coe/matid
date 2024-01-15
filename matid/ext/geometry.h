@@ -63,7 +63,6 @@ CellList get_cell_list(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
-    bool mic,
     double cutoff
 );
 
@@ -78,7 +77,6 @@ CellList get_displacement_tensor(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
-    bool mic,
     double cutoff,
     bool return_factors,
     bool return_distances

@@ -115,7 +115,6 @@ class PeriodicFinder:
             system.get_positions(),
             system.get_cell(),
             system.get_pbc(),
-            True,
             max(pos_tol, 1)
         )
 
@@ -1630,7 +1629,6 @@ class PeriodicFinder:
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 pos_tolerances,
-                # mic=True,
             )
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,
