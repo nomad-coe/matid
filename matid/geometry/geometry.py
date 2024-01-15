@@ -633,7 +633,6 @@ def get_displacement_tensor(
     cutoff=float("inf"),
     return_factors=False,
     return_distances=False,
-    return_cell_list=False,
 ):
     if cutoff is None:
         cutoff = float("inf")
@@ -643,7 +642,7 @@ def get_displacement_tensor(
     disp_tensor = np.full((n_atoms, n_atoms, 3), float("inf"))
     dist_mat = np.full((n_atoms, n_atoms), float("inf"))
     factors = np.full((n_atoms, n_atoms, 3), float("inf"))
-    cell_list = matid.ext.get_displacement_tensor(
+    matid.ext.get_displacement_tensor(
         disp_tensor,
         dist_mat,
         factors,
@@ -660,8 +659,6 @@ def get_displacement_tensor(
         result.append(factors)
     if return_distances:
         result.append(dist_mat)
-    if return_cell_list:
-        result.append(cell_list)
 
     if len(result) == 1:
         return result[0]
@@ -981,7 +978,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches_old(system, positions, numbers, tolerances, mic=True):
+def get_matches_old(system, positions, numbers, tolerance, mic=True):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -989,7 +986,7 @@ def get_matches_old(system, positions, numbers, tolerances, mic=True):
     Args:
         system(ASE.Atoms): System where to search the positions
         positions(np.ndarray): Positions to match in the system.
-        tolerances(np.ndarray): Maximum allowed distance for each vector that
+        tolerance(float): Maximum allowed distance for each vector that
             is allowed for a match in position.
         mic(boolean): Whether to find the minimum image copy.
 
@@ -1013,7 +1010,7 @@ def get_matches_old(system, positions, numbers, tolerances, mic=True):
         cell,
         pbc,
         mic=mic,
-        cutoff=tolerances.max(),
+        cutoff=tolerance,
         return_factors=True,
         return_distances=True,
     )
@@ -1024,7 +1021,7 @@ def get_matches_old(system, positions, numbers, tolerances, mic=True):
     best_matches = []
     best_substitutions = []
     for i_atom, i in enumerate(dist_matrix):
-        near_mask = i <= tolerances[i_atom]
+        near_mask = i <= tolerance
         element_mask = orig_num == numbers[i_atom]
         combined_mask = near_mask & element_mask
         possible_indices = np.where(combined_mask)[0]
@@ -1042,7 +1039,6 @@ def get_matches_old(system, positions, numbers, tolerances, mic=True):
             best_matches.append(None)
             best_substitutions.append(None)
 
-    # min_ind = np.argmin(dist_matrix, axis=1)
     matches = []
     substitutions = []
     vacancies = []
@@ -1158,7 +1154,9 @@ def get_cell_list(positions, cell, pbc, cutoff):
     """Given a system and a cutoff value, returns a cell list object.
 
     Args:
-        system(ASE.Atoms): System to extend
+        positions(np.ndarray): Cartesian positions
+        cell(np.ndarray): Cell as 3x3 array
+        pbc(np.ndarray): Periodic boundary conditions as array of three booleans
         cutoff(float): Radial cutoff
 
     Returns:
@@ -1574,10 +1572,10 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
-    disp_tensor_finite, cell_list = get_displacement_tensor(pos, return_cell_list=True)
+    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
-        disp_tensor_mic, disp_factors, cell_list = get_displacement_tensor(
-            pos, cell, pbc, return_factors=True, return_cell_list=True
+        disp_tensor_mic, disp_factors = get_displacement_tensor(
+            pos, cell, pbc, return_factors=True
         )
     else:
         disp_tensor_mic = disp_tensor_finite
@@ -1596,7 +1594,6 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
         disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
-        cell_list,
     )
 
 

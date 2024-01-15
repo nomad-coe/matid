@@ -70,7 +70,7 @@ CellList get_cell_list(
  * Calculates a pairwise displacement tensor (distance vectors) with a given
  * cutoff.
  */
-CellList get_displacement_tensor(
+void get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
     py::array_t<double> factors,

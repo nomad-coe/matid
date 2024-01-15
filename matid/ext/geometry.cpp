@@ -190,7 +190,7 @@ CellList get_cell_list(
     return cell_list;
 }
 
-CellList get_displacement_tensor(
+void get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
     py::array_t<double> factors,
@@ -206,5 +206,4 @@ CellList get_displacement_tensor(
     // Calculate distances information
     int n_atoms = positions.shape(0);
     cell_list.get_displacement_tensor(displacements, distances, factors, cell_list.indices_py, n_atoms);
-    return cell_list;
 }

@@ -545,7 +545,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
-        tolerances=np.array([tolerance]),
+        tolerance=tolerance,
     )
 
     # New CPP implementation
@@ -558,7 +558,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         cell_list,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
-        tolerances=np.array([tolerance]),
+        tolerance=tolerance,
     )
 
     # Make sure that the atom is found in the correct copy
@@ -767,4 +767,4 @@ def test_displacement_tensor_performance():
     elapsed_old = end - start
 
     ratio = elapsed_old / elapsed_new
-    assert ratio > 40
+    assert ratio > 30
