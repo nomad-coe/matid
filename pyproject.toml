@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "pybind11~=2.6.1"]
+requires = ["setuptools", "wheel", "pybind11~=2.11.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,11 +32,15 @@ classifiers = [
 keywords = ['atoms', 'structure', 'materials', 'science', 'crystal', 'symmetry']
 
 [project.urls]
-homepage = "https://singroup.github.io/matid/"
+homepage = "https://github.com/nomad-coe/matid"
 
 [project.optional-dependencies]
-tests = ['coverage']
-docs = ['sphinx', 'sphinx_rtd_theme']
+dev = [
+    "coverage",
+    "pytest",
+    "black",
+    "pydoc-markdown"
+]
 
 [tool.setuptools.packages.find]
 include = ["matid*"]
