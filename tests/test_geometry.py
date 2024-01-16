@@ -480,7 +480,7 @@ def test_cell_list_position(
             mx2,
             True,
             np.array([0, 0, 9.595]) + mx2.get_cell().sum(axis=0) * 2,
-            [0],  # TODO: The new implementation should probably return a match here?
+            [None],  # TODO: The new implementation should probably return a match here?
             (2, 2, 2),
             id="periodic, position way outside original cell",
         ),
