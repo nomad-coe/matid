@@ -39,7 +39,6 @@ class Classifier:
         delaunay_threshold_mode="relative",
         chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
         cell_size_tol=constants.CELL_SIZE_TOL,
-        max_n_atoms=constants.MAX_N_ATOMS,
         max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
         max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
         symmetry_tol=constants.SYMMETRY_TOL,
@@ -75,9 +74,6 @@ class Classifier:
             crystallinity_threshold(float): The threshold of number of symmetry
                 operations per atoms in primitive cell that is required for
                 crystals.
-            max_n_atoms(int): The maximum number of atoms in the system. If the
-                system has more atoms than this, a ValueError is raised. If
-                undefined, there is no maximum.
             bond_threshold(float): The clustering threshold when determining
                 the connectivity of atoms in a surface or 2D-material.
             delaunay_threshold(str): The maximum length of an edge in the
@@ -125,7 +121,6 @@ class Classifier:
         self.bond_threshold = bond_threshold
         self.chem_similarity_threshold = chem_similarity_threshold
         self.cell_size_tol = cell_size_tol
-        self.max_n_atoms = max_n_atoms
         self.max_2d_cell_height = max_2d_cell_height
         self.max_2d_single_cell_size = max_2d_single_cell_size
         self.symmetry_tol = symmetry_tol
@@ -168,9 +163,6 @@ class Classifier:
         Returns:
             Classification: One of the subclasses of the Classification base
             class that represents a classification.
-
-        Raises:
-            ValueError: If the system has more atoms than self.max_n_atoms
         """
         # We wrap the positions to to be inside the cell.
         system = input_system.copy()
@@ -184,12 +176,6 @@ class Classifier:
         classification = None
 
         n_atoms = len(system)
-        if n_atoms > self.max_n_atoms:
-            raise ValueError(
-                "The system contains more atoms ({}) than the current allowed "
-                "limit of {}. If you wish you can increase this limit with the "
-                "max_n_atoms attribute.".format(n_atoms, self.max_n_atoms)
-            )
 
         # Calculate the displacement tensor for the original system. It will be
         # reused in multiple sections.

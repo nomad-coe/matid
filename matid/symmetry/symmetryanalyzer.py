@@ -537,7 +537,7 @@ class SymmetryAnalyzer(object):
             space_group,
             wyckoff_letters,
             equivalent_atoms,
-            precision=0.5 * self.symmetry_tol,
+            precision=self.symmetry_tol,
             return_parameters=return_parameters,
         )
 

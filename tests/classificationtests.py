@@ -37,17 +37,6 @@ import matid.geometry
 from conftest import create_graphene
 
 
-class ExceptionTests(unittest.TestCase):
-    """Tests for exceptions that arise from invalid arguments."""
-
-    def test_too_many_atoms(self):
-        system = bcc100("Fe", size=(11, 10, 10), vacuum=8)
-
-        classifier = Classifier()
-        with self.assertRaises(ValueError):
-            classifier.classify(system)
-
-
 class RadiiTests(unittest.TestCase):
     """Tests that all available radii options are supported correctly."""
 

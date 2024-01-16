@@ -1,7 +1,6 @@
-# The variable SYMMETRY_TOL controls the precision used by spglib in order
-# to find symmetries. The atoms are allowed to move 1/2*SYMMETRY_TOL from
-# their symmetry positions in order for spglib to still detect symmetries.
-SYMMETRY_TOL = 2 * 0.2  # unit: angstrom
+# The variable SYMMETRY_TOL controls the precision used by spglib in order to
+# find symmetries
+SYMMETRY_TOL = 0.4  # unit: angstrom
 
 # The threshold for a system to be considered "flat". Used e.g. when
 # determining if a 2D structure is purely 2-dimensional to allow extra rigid
