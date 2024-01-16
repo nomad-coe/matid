@@ -2333,7 +2333,7 @@ class SearchGraphTests(unittest.TestCase):
             ],
             cell=[4, 4, 20],
             symbols=["Sr", "Sr"],
-            pbc=True
+            pbc=True,
         )
         # view(system)
 
@@ -2347,7 +2347,9 @@ class SearchGraphTests(unittest.TestCase):
 
         # Check that the correct graph is created
         self.assertEqual(len(G.nodes), 2)
-        self.assertEqual(len(G.edges), 8+8+9+9-1)  # 8+8 horizontally, 9+9 vertically, minus 1 shared edge
+        self.assertEqual(
+            len(G.edges), 8 + 8 + 9 + 9 - 1
+        )  # 8+8 horizontally, 9+9 vertically, minus 1 shared edge
 
         # Check graph periodicity
         periodicity = region.get_connected_directions()
@@ -2439,7 +2441,6 @@ class SearchGraphTests(unittest.TestCase):
         # Check graph periodicity
         periodicity = region.get_connected_directions()
         self.assertTrue(np.array_equal(periodicity, [False, True, True]))
-
 
     def test_surface_adsorbate(self):
         """Test graph search in the presence of adsorbates."""
