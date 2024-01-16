@@ -112,13 +112,13 @@ class PeriodicFinder:
         # system is extended using the position tolerance and the celllist
         # cutoff is at most the size of the position tolerance, but not too
         # small to not take too much time/memory to create.
-        self.cell_list = matid.geometry.get_cell_list(
-            system.get_positions(),
-            system.get_cell(),
-            system.get_pbc(),
-            pos_tol,
-            max(pos_tol, 1),
-        )
+        # self.cell_list = matid.geometry.get_cell_list(
+        #     system.get_positions(),
+        #     system.get_cell(),
+        #     system.get_pbc(),
+        #     max_cell_size,
+        #     max(pos_tol, 1),
+        # )
 
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
@@ -247,11 +247,11 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches(
-                system, self.cell_list, add_pos, neighbour_num, self.pos_tol
+            add_indices, _, _, add_factors = matid.geometry.get_matches_old(
+                system, add_pos, neighbour_num, self.pos_tol
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
-                system, self.cell_list, sub_pos, neighbour_num, self.pos_tol
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches_old(
+                system, sub_pos, neighbour_num, self.pos_tol
             )
 
             n_metric = 0
@@ -1432,8 +1432,8 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
-            system, self.cell_list, test_pos, cell_num, self.pos_tol
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches_old(
+            system, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell
@@ -1602,24 +1602,12 @@ class PeriodicFinder:
             # Find out the atoms that match the seed_guesses in the original
             # system
             seed_guesses = seed_pos + dislocations
-            matches, _, _, factors = matid.geometry.get_matches(
+            matches, _, _, factors = matid.geometry.get_matches_old(
                 system,
-                self.cell_list,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 self.pos_tol,
             )
-            # matches, _, _, factors = matid.geometry.get_matches_old(
-            #     system,
-            #     seed_guesses,
-            #     len(dislocations) * [seed_atomic_number],
-            #     self.pos_tol,
-            # )
-            # if (matches_new != matches):
-            #     for i, (a, b) in enumerate(zip(matches_new, matches)):
-            #         if a != b:
-            #             print(a, b, seed_guesses[i])
-            #     raise ValueError()
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,
                 factors,
