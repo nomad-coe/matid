@@ -118,7 +118,7 @@ class PeriodicFinder:
             system.get_pbc(),
             # max_cell_size,
             max(pos_tol, 1),
-            max(pos_tol, 1)
+            max(pos_tol, 1),
         )
 
         self.pos_tol = pos_tol
