@@ -109,15 +109,14 @@ class PeriodicFinder:
         # cannot use the cell list that is created during the distance matrix
         # calculation, as it's radial cutoff is way too large (search becomes
         # slow), and it is not extended with the correct search size. Here the
-        # system is extended using the maximum search length and the celllist
+        # system is extended using the position tolerance and the celllist
         # cutoff is at most the size of the position tolerance, but not too
         # small to not take too much time/memory to create.
         self.cell_list = matid.geometry.get_cell_list(
             system.get_positions(),
             system.get_cell(),
             system.get_pbc(),
-            # max_cell_size,
-            max(pos_tol, 1),
+            pos_tol,
             max(pos_tol, 1),
         )
 
