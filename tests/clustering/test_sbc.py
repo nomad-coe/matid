@@ -5,19 +5,12 @@ import pytest
 import ase.io
 from ase import Atoms
 from ase.build import bulk
-from ase.visualize import view
 
 from conftest import surface, stack, rattle, assert_topology
 from matid.clustering import SBC, Cluster
 
 
 surface_fcc = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
-zero_volume_cell = surface_fcc.copy()
-zero_volume_cell.set_cell([0, 0, 0])
-zero_volume_cell.set_pbc(False)
-no_cell = surface_fcc.copy()
-no_cell.set_cell(None)
-no_cell.set_pbc(False)
 surface_rocksalt = surface(
     bulk("NaCl", "rocksalt", a=5.64, cubic=True), [1, 0, 0], vacuum=10
 )
@@ -134,28 +127,6 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
             id="fluorite surface",
         ),
         # Finite systems
-        pytest.param(
-            zero_volume_cell,
-            [
-                Cluster(
-                    range(len(surface_fcc)),
-                    dimensionality=0,
-                )
-            ],
-            False,
-            id="finite, zero volume cell",
-        ),
-        pytest.param(
-            no_cell,
-            [
-                Cluster(
-                    range(len(surface_fcc)),
-                    dimensionality=0,
-                )
-            ],
-            False,
-            id="finite, no cell",
-        ),
         pytest.param(
             surface_fcc,
             [
@@ -277,3 +248,36 @@ def test_clustering(system, clusters_expected, pbc, noise):
     system.set_pbc(pbc)
     results = SBC().get_clusters(system)
     assert_topology(results, clusters_expected)
+
+
+@pytest.mark.parametrize(
+    "cell, pbc, error",
+    [
+        pytest.param(None, False, False, id="three bases missing"),
+        pytest.param([0, 0, 25.4], False, False, id="two bases missing"),
+        pytest.param([0, 10.8, 25.4], False, False, id="one basis missing"),
+        pytest.param([1, 1, 1], False, False, id="too small cell"),
+        pytest.param([0, 1, 1], True, True, id="cannot complete with pbc=True"),
+    ],
+)
+def test_completion(cell, pbc, error):
+    """Tests that finite systems where the cell does not contain all of the
+    atoms are correctly handled.
+    """
+    system = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
+    system.set_cell(cell)
+    system.set_pbc(pbc)
+    if error:
+        with pytest.raises(ValueError):
+            SBC().get_clusters(system)
+    else:
+        results = SBC().get_clusters(system)
+        assert_topology(
+            results,
+            [
+                Cluster(
+                    range(len(surface_fcc)),
+                    dimensionality=0,
+                )
+            ],
+        )
