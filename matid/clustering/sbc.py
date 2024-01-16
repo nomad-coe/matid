@@ -232,9 +232,9 @@ class SBC:
         # Copy the system to avoid mutating the original
         system_copy = system.copy()
 
-        # For each lattice basis vector that has a zero length, and which is not
-        # periodic, we extend the basis vectors to fully contain all the atoms.
-        # This is to ensure that the code that requires scaled positions works
+        # Here we ensure that the system has three valid basis vectors which
+        # when forming a unit cell contain all of the atoms in the system. This
+        # is to ensure that the code that requires scaled positions works
         # correctly.
         pbc = system_copy.get_pbc()
         basis = system_copy.get_cell()
