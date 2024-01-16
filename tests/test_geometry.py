@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import ase.lattice.hexagonal
 import ase.lattice.cubic
+import ase.io
 from ase.build import molecule, nanotube, bcc100, bulk
 from ase import Atoms
 from ase.visualize import view
@@ -334,6 +335,31 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
             cluster_threshold=cluster_threshold,
         )
         assert dimensionality == expected_dimensionality
+
+
+@pytest.mark.parametrize(
+    "cell, pbc, n_atoms",
+    [
+        pytest.param([0, 1, 1], [False, True, True], 9, id="a empty"),
+        pytest.param([1, 0, 1], [True, False, True], 9, id="b empty"),
+        pytest.param([1, 1, 0], [True, True, False], 9, id="c empty"),
+        pytest.param([1, 0, 0], [True, False, False], 3, id="b, c empty"),
+        pytest.param([0, 1, 0], [False, True, False], 3, id="a, c empty"),
+        pytest.param([0, 0, 1], [False, False, True], 3, id="a, b empty"),
+        pytest.param([0, 0, 0], [False, False, False], 1, id="a, b, c empty"),
+    ]
+)
+def test_cell_completion(cell, pbc, n_atoms):
+    """Tests that cell completion during the calculation of an extended system
+    is performed correctly."""
+    system = Atoms(
+        positions=[[0.5, 0.5, 0.5]],
+        symbols=["H"],
+        cell=cell,
+        pbc=pbc,
+    )
+    ext_system = matid.geometry.get_extended_system(system, cutoff=0.1)
+    assert n_atoms == len(ext_system.indices)
 
 
 @pytest.mark.parametrize(

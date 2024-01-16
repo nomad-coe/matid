@@ -58,45 +58,67 @@ ExtendedSystem extend_system(
     vector<double> a = {cell_u(0, 0), cell_u(0, 1), cell_u(0, 2)};
     vector<double> b = {cell_u(1, 0), cell_u(1, 1), cell_u(1, 2)};
     vector<double> c = {cell_u(2, 0), cell_u(2, 1), cell_u(2, 2)};
+    vector<double> lengths = {norm(a), norm(b), norm(c)};
+    int n_empty = int(lengths[0] == 0) + int(lengths[1] == 0) + int(lengths[2] == 0);
+    vector<int> n_copies_axis(3, 0);
 
-    vector<double> p1 = cross(b, c);
-    vector<double> p2 = cross(c, a);
-    vector<double> p3 = cross(a, b);
+    // If one basis vectors is missing, we need to create a dummy third vector
+    if (n_empty <= 1) {
+        if (lengths[0] == 0 && lengths[1] != 0 && lengths[2] != 0) {
+            a = cross(b, c);
+        } else if (lengths[1] == 0 && lengths[0] != 0 && lengths[2] != 0) {
+            b = cross(a, c);
+        } else if (lengths[2] == 0 && lengths[0] != 0 && lengths[1] != 0) {
+            c = cross(a, b);
+        }
+        vector<double> p1 = cross(b, c);
+        vector<double> p2 = cross(c, a);
+        vector<double> p3 = cross(a, b);
 
-    // Projections of basis vectors onto perpendicular vectors.
-    double p1_coeff = dot(a, p1) / dot(p1, p1);
-    double p2_coeff = dot(b, p2) / dot(p2, p2);
-    double p3_coeff = dot(c, p3) / dot(p3, p3);
-    for(double &x : p1) { x *= p1_coeff; }
-    for(double &x : p2) { x *= p2_coeff; }
-    for(double &x : p3) { x *= p3_coeff; }
-    vector<vector<double>> vectors = {p1, p2, p3};
+        // Projections of basis vectors onto perpendicular vectors.
+        double p1_coeff = dot(a, p1) / dot(p1, p1);
+        double p2_coeff = dot(b, p2) / dot(p2, p2);
+        double p3_coeff = dot(c, p3) / dot(p3, p3);
+        for(double &x : p1) { x *= p1_coeff; }
+        for(double &x : p2) { x *= p2_coeff; }
+        for(double &x : p3) { x *= p3_coeff; }
+        vector<vector<double>> vectors = {p1, p2, p3};
 
-    // Figure out how many copies to take per basis vector. Determined by how
-    // many perpendicular projections fit into the cutoff distance.
-    vector<int> n_copies_axis(3);
+        // Figure out how many copies to take per basis vector. Determined by how
+        // many perpendicular projections fit into the cutoff distance.
+        for (int i=0; i < 3; ++i) {
+            if (pbc_u(i) && lengths[i]) {
+                double length = norm(vectors[i]);
+                double factor = cutoff/length;
+                int multiplier = (int)ceil(factor);
+                n_copies_axis[i] = multiplier;
+            }
+        }
+    // When two basis vectors are missing, only the remaining non-zero direction
+    // needs to be extended.
+    } else if (n_empty == 2) {
+        for (int i=0; i < 3; ++i) {
+            if (pbc_u(i) && lengths[i]) {
+                double factor = cutoff / lengths[i];
+                int multiplier = (int)ceil(factor);
+                n_copies_axis[i] = multiplier;
+            }
+        }
+    }
+
+    // Store multipliers explicitly into a list in an order that keeps the
+    // original system in the same place both in space and in index.
     vector<vector<int>> multipliers;
     for (int i=0; i < 3; ++i) {
-        if (pbc_u(i)) {
-            double length = norm(vectors[i]);
-            double factor = cutoff/length;
-            int multiplier = (int)ceil(factor);
-            n_copies_axis[i] = multiplier;
-
-            // Store multipliers explicitly into a list in an order that keeps the
-            // original system in the same place both in space and in index.
-            vector<int> multiples;
-            for (int j=0; j < multiplier + 1; ++j) {
-                multiples.push_back(j);
-            }
-            for (int j=-multiplier; j < 0; ++j) {
-                multiples.push_back(j);
-            }
-            multipliers.push_back(multiples);
-        } else {
-            n_copies_axis[i] = 0;
-            multipliers.push_back(vector<int>{0});
+        int multiplier = n_copies_axis[i];
+        vector<int> multiples;
+        for (int j=0; j < multiplier + 1; ++j) {
+            multiples.push_back(j);
         }
+        for (int j=-multiplier; j < 0; ++j) {
+            multiples.push_back(j);
+        }
+        multipliers.push_back(multiples);
     }
 
     // Calculate the extended system positions.

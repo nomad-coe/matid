@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
+import ase.geometry
 
 import matid.geometry
 from matid.clustering.cluster import Cluster
@@ -231,25 +232,35 @@ class SBC:
         # Copy the system to avoid mutating the original
         system_copy = system.copy()
 
-        # If cell has not been set, or it has zero volume AND periodic boundary
-        # conditions are not used, a dummy cell is created so that the rest of
-        # the code that uses scaled positions works correctly.
-        cell = system_copy.get_cell()
-        if (not cell or cell.volume == 0) and not any(system_copy.get_pbc()):
-            positions = system_copy.get_positions()
-            max_pos = positions.max(axis=0) + 1
-            min_pos = positions.min(axis=0) - 1
-            dummy_cell = max_pos - min_pos
-            system_copy.set_cell(dummy_cell)
+        # For each lattice basis vector that has a zero length, and which is not
+        # periodic, we extend the basis vectors to fully contain all the atoms.
+        # This is to ensure that the code that requires scaled positions works
+        # correctly.
+        pbc = system_copy.get_pbc()
+        basis = system_copy.get_cell()
+        requires_completion = False
+        for i in range(3):
+            if not basis[i, :].any():
+                if not pbc[i]:
+                    requires_completion = True
+                else:
+                    raise ValueError(
+                        "Cannot process system with zero-volume cell and periodic boundaries."
+                    )
+        if requires_completion:
+            system_copy.set_cell(ase.geometry.complete_cell(basis))
+            scaled_positions = system_copy.get_scaled_positions()
+            new_cell = system_copy.get_cell()
+            for i in range(3):
+                if not pbc[i]:
+                    max_pos = scaled_positions[:, i].max()
+                    min_pos = scaled_positions[:, i].min()
+                    new_cell[i, :] *= (max_pos - min_pos) + 1
+            system_copy.set_cell(new_cell)
             system_copy.center()
+
         # Positions are wrapped
-        else:
-            try:
-                system_copy.wrap()
-            except Exception:
-                raise ValueError(
-                    "Cannot process system with zero-volume cell and periodic boundaries."
-                )
+        system_copy.wrap()
 
         atomic_numbers = system.get_atomic_numbers()
         radii = matid.geometry.get_radii(radii, atomic_numbers)
