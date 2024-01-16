@@ -71,6 +71,7 @@ class CellList {
             py::array_t<int> original_indices,
             int n_atoms
         );
+        py::array_t<int> indices_py;
 
     private:
         /**

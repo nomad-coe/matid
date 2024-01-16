@@ -56,17 +56,31 @@ ExtendedSystem extend_system(
 );
 
 /**
+ * Returns a CellList instance for the given atomic system.
+ *
+ * Note that you should control how large extension should be performed to take
+ * into account the periodic boundary conditions, as the CellList internally
+ * works with plain cartesian coordinates.
+ */
+CellList get_cell_list(
+    py::array_t<double> positions,
+    py::array_t<double> cell,
+    py::array_t<bool> pbc,
+    double extension,
+    double cutoff
+);
+
+/**
  * Calculates a pairwise displacement tensor (distance vectors) with a given
  * cutoff.
  */
-CellList get_displacement_tensor(
+void get_displacement_tensor(
     py::array_t<double> displacements,
     py::array_t<double> distances,
     py::array_t<double> factors,
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
-    bool mic,
     double cutoff,
     bool return_factors,
     bool return_distances

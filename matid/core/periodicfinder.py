@@ -36,7 +36,6 @@ class PeriodicFinder:
     def __init__(
         self,
         angle_tol=constants.ANGLE_TOL,
-        pos_tol_scaling=constants.POS_TOL_SCALING,
         cell_size_tol=constants.CELL_SIZE_TOL,
         max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
         max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
@@ -52,7 +51,6 @@ class PeriodicFinder:
                 equal. Given relative to the smallest cell size.
         """
         self.angle_tol = angle_tol
-        self.pos_tol_scaling = pos_tol_scaling
         self.cell_size_tol = cell_size_tol
         self.max_2d_cell_height = max_2d_cell_height
         self.max_2d_single_cell_size = (max_2d_single_cell_size,)
@@ -106,7 +104,22 @@ class PeriodicFinder:
         self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
-        self.cell_list = distances.cell_list
+
+        # Create new cell list that is used for performing the matching. We
+        # cannot use the cell list that is created during the distance matrix
+        # calculation, as it's radial cutoff is way too large (search becomes
+        # slow), and it is not extended with the correct search size. Here the
+        # system is extended using the position tolerance and the celllist
+        # cutoff is at most the size of the position tolerance, but not too
+        # small to not take too much time/memory to create.
+        # self.cell_list = matid.geometry.get_cell_list(
+        #     system.get_positions(),
+        #     system.get_cell(),
+        #     system.get_pbc(),
+        #     max_cell_size,
+        #     max(pos_tol, 1),
+        # )
+
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
         region = None
@@ -228,20 +241,17 @@ class PeriodicFinder:
         neighbour_nodes = list(zip(neighbour_indices, neighbour_factors))
 
         for i_span, span in enumerate(possible_spans):
-            # Calculate the scaled position tolerance
-            i_pos_tol = np.full(n_neighbours, self.get_scaled_position_tolerance(span))
-
             i_adj_list = defaultdict(list)
             i_adj_list_add = defaultdict(list)
             i_adj_list_sub = defaultdict(list)
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches(
-                system, add_pos, neighbour_num, i_pos_tol
+            add_indices, _, _, add_factors = matid.geometry.get_matches_old(
+                system, add_pos, neighbour_num, self.pos_tol
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
-                system, sub_pos, neighbour_num, i_pos_tol
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches_old(
+                system, sub_pos, neighbour_num, self.pos_tol
             )
 
             n_metric = 0
@@ -1422,14 +1432,8 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        disps = unit_cell.get_positions() - seed_offset
-        pos_tolerances = self.get_scaled_position_tolerance(disps)
-
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
-            system,
-            test_pos,
-            cell_num,
-            pos_tolerances,
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches_old(
+            system, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell
@@ -1520,18 +1524,6 @@ class PeriodicFinder:
         # Add the found neighbours to a queue
         queue.extend(list(zip(new_seed_indices, new_seed_pos, new_cell_indices, cells)))
 
-    def get_scaled_position_tolerance(self, displacements):
-        """Used to calculate the position tolerance that is scaled by the
-        search distance.
-        """
-        # Add new axis to sigle vector displacements
-        if len(displacements.shape) == 1:
-            displacements = displacements[None, :]
-        distance = np.linalg.norm(displacements, axis=1)
-        scaled_tol = (1 + self.pos_tol_scaling * distance) * self.pos_tol
-
-        return scaled_tol
-
     def _find_new_seeds_and_cell(
         self,
         system,
@@ -1610,13 +1602,11 @@ class PeriodicFinder:
             # Find out the atoms that match the seed_guesses in the original
             # system
             seed_guesses = seed_pos + dislocations
-            pos_tolerances = self.get_scaled_position_tolerance(dislocations)
-            matches, _, _, factors = matid.geometry.get_matches(
+            matches, _, _, factors = matid.geometry.get_matches_old(
                 system,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
-                pos_tolerances,
-                mic=True,
+                self.pos_tol,
             )
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,

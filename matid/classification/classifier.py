@@ -30,7 +30,6 @@ class Classifier:
         max_cell_size=constants.MAX_CELL_SIZE,
         pos_tol=None,
         pos_tol_mode="relative",
-        pos_tol_scaling=constants.POS_TOL_SCALING,
         angle_tol=constants.ANGLE_TOL,
         cluster_threshold=constants.CLUSTER_THRESHOLD,
         radii="covalent",
@@ -40,7 +39,6 @@ class Classifier:
         delaunay_threshold_mode="relative",
         chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
         cell_size_tol=constants.CELL_SIZE_TOL,
-        max_n_atoms=constants.MAX_N_ATOMS,
         max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
         max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
         symmetry_tol=constants.SYMMETRY_TOL,
@@ -60,8 +58,6 @@ class Classifier:
                     - "relative": Tolerance relative to the average nearest
                       neighbour distance.
                     - "absolute": Absolute tolerance in angstroms.
-            pos_tol_scaling(float): The distance dependent scaling factor for
-                the positions tolerance.
             angle_tol(float): The angle below which vectors in the cell basis are
                 considered to be parallel.
             cluster_threshold(float): A parameter that controls which atoms are
@@ -78,9 +74,6 @@ class Classifier:
             crystallinity_threshold(float): The threshold of number of symmetry
                 operations per atoms in primitive cell that is required for
                 crystals.
-            max_n_atoms(int): The maximum number of atoms in the system. If the
-                system has more atoms than this, a ValueError is raised. If
-                undefined, there is no maximum.
             bond_threshold(float): The clustering threshold when determining
                 the connectivity of atoms in a surface or 2D-material.
             delaunay_threshold(str): The maximum length of an edge in the
@@ -116,7 +109,6 @@ class Classifier:
         if isinstance(pos_tol, (int, float)):
             pos_tol = [pos_tol]
         self.pos_tol = pos_tol
-        self.pos_tol_scaling = pos_tol_scaling
         self.abs_pos_tol = None
         self.pos_tol_mode = pos_tol_mode
         self.angle_tol = angle_tol
@@ -128,9 +120,7 @@ class Classifier:
         self.delaunay_threshold_mode = delaunay_threshold_mode
         self.bond_threshold = bond_threshold
         self.chem_similarity_threshold = chem_similarity_threshold
-        self.pos_tol_scaling = pos_tol_scaling
         self.cell_size_tol = cell_size_tol
-        self.max_n_atoms = max_n_atoms
         self.max_2d_cell_height = max_2d_cell_height
         self.max_2d_single_cell_size = max_2d_single_cell_size
         self.symmetry_tol = symmetry_tol
@@ -173,9 +163,6 @@ class Classifier:
         Returns:
             Classification: One of the subclasses of the Classification base
             class that represents a classification.
-
-        Raises:
-            ValueError: If the system has more atoms than self.max_n_atoms
         """
         # We wrap the positions to to be inside the cell.
         system = input_system.copy()
@@ -189,12 +176,6 @@ class Classifier:
         classification = None
 
         n_atoms = len(system)
-        if n_atoms > self.max_n_atoms:
-            raise ValueError(
-                "The system contains more atoms ({}) than the current allowed "
-                "limit of {}. If you wish you can increase this limit with the "
-                "max_n_atoms attribute.".format(n_atoms, self.max_n_atoms)
-            )
 
         # Calculate the displacement tensor for the original system. It will be
         # reused in multiple sections.
@@ -345,7 +326,6 @@ class Classifier:
                     # Run the region detection on the whole system.
                     periodicfinder = PeriodicFinder(
                         angle_tol=self.angle_tol,
-                        pos_tol_scaling=self.pos_tol_scaling,
                         cell_size_tol=self.cell_size_tol,
                         max_2d_cell_height=self.max_2d_cell_height,
                         max_2d_single_cell_size=self.max_2d_single_cell_size,

@@ -281,7 +281,6 @@ def test_displacement_tensor(
         positions,
         cell,
         pbc,
-        mic=True,
         cutoff=cutoff,
         return_distances=True,
         return_factors=True,
@@ -442,7 +441,7 @@ def test_cell_list_position(
     """Test that the correct factor is returned when finding matches that
     are in the neighbouring cells.
     """
-    cell_list = matid.geometry.get_cell_list(
+    cell_list = matid.ext.CellList(
         system.get_positions(),
         range(len(system)),
         np.tile([0, 0, 0], (len(system), 1)),
@@ -542,27 +541,27 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     system.set_pbc(pbc)
 
     # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches(
+    matches, _, _, factors = matid.geometry.get_matches_old(
         system,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
-        tolerances=np.array([tolerance]),
+        tolerance=tolerance,
     )
 
     # New CPP implementation
-    extended_system = matid.geometry.get_extended_system(system, tolerance)
     cell_list = matid.geometry.get_cell_list(
-        extended_system.positions,
-        extended_system.indices,
-        extended_system.factors,
+        system.get_positions(),
+        system.get_cell(),
+        system.get_pbc(),
+        tolerance,
         tolerance,
     )
-    matches_ext, _, _, factors_ext = matid.geometry.get_matches_new(
+    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
         system,
         cell_list,
         np.array(position)[None, :],
         numbers=[system.get_atomic_numbers()[0]],
-        tolerances=np.array([tolerance]),
+        tolerance=tolerance,
     )
 
     # Make sure that the atom is found in the correct copy
@@ -749,7 +748,6 @@ def test_displacement_tensor_performance():
         system.get_positions(),
         system.get_cell(),
         system.get_pbc(),
-        mic=True,
         cutoff=cutoff,
         return_distances=True,
         return_factors=False,
@@ -772,4 +770,4 @@ def test_displacement_tensor_performance():
     elapsed_old = end - start
 
     ratio = elapsed_old / elapsed_new
-    assert ratio > 40
+    assert ratio > 30

@@ -30,7 +30,8 @@ using namespace std;
  * build full connectivity.
  */
 CellList::CellList(py::array_t<double> positions, py::array_t<int> indices, py::array_t<double> factors, double cutoff)
-    : cutoff(cutoff)
+    : indices_py(indices)
+    , cutoff(cutoff)
     , cutoffSquared(cutoff*cutoff)
 {
     if (cutoff <= 0) {

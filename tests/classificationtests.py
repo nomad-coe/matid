@@ -37,17 +37,6 @@ import matid.geometry
 from conftest import create_graphene
 
 
-class ExceptionTests(unittest.TestCase):
-    """Tests for exceptions that arise from invalid arguments."""
-
-    def test_too_many_atoms(self):
-        system = bcc100("Fe", size=(11, 10, 10), vacuum=8)
-
-        classifier = Classifier()
-        with self.assertRaises(ValueError):
-            classifier.classify(system)
-
-
 class RadiiTests(unittest.TestCase):
     """Tests that all available radii options are supported correctly."""
 
@@ -281,7 +270,6 @@ class PeriodicFinderTests(unittest.TestCase):
     delaunay_threshold = classifier.delaunay_threshold
     bond_threshold = classifier.bond_threshold
     pos_tol = classifier.pos_tol
-    pos_tol_scaling = classifier.pos_tol_scaling
     cell_size_tol = classifier.cell_size_tol
 
     def test_cell_selection(self):
@@ -2436,7 +2424,6 @@ class SearchGraphTests(unittest.TestCase):
 
 if __name__ == "__main__":
     suites = []
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(RadiiTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(DimensionalityTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(PeriodicFinderTests))

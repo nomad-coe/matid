@@ -537,7 +537,7 @@ class SymmetryAnalyzer(object):
             space_group,
             wyckoff_letters,
             equivalent_atoms,
-            precision=0.5 * self.symmetry_tol,
+            precision=self.symmetry_tol,
             return_parameters=return_parameters,
         )
 
@@ -1207,7 +1207,7 @@ class SymmetryAnalyzer(object):
     ):
         """Used to get detailed information about about the sets of equivalent
         atoms. The detected Wyckoff set variables (x, y, z) are reported
-        consistenly by selecting the ariable sets that has lowest x value, then
+        consistenly by selecting the variable sets that has lowest x value, then
         lowest y and finally lowest z.
 
         If return_parameters is set to True, the possible variables for the
@@ -1238,8 +1238,8 @@ class SymmetryAnalyzer(object):
             precision (float): The precision for matching atoms to Wyckoff
                 positions.
             return_parameters (bool): Whether to return the value of possible
-                free Wyckoff parameters. Set to false if the are needed, as
-                their determination can take time.
+                free Wyckoff parameters. Set to False if not needed, as their
+                determination can take time.
 
         Returns:
             list of WyckoffSets: A list of :class:`.WyckoffSet` objects for this

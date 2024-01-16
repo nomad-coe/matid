@@ -81,7 +81,6 @@ def get_dimensionality(
             pos_1x,
             cell_1x,
             pbc,
-            mic=True,
             cutoff=cutoff,
             return_distances=True,
         )
@@ -112,7 +111,6 @@ def get_dimensionality(
                 pos_2x,
                 cell_2x,
                 pbc,
-                mic=True,
                 cutoff=cutoff,
                 return_distances=True,
             )
@@ -632,11 +630,9 @@ def get_displacement_tensor(
     positions,
     cell=None,
     pbc=False,
-    mic=False,
     cutoff=float("inf"),
     return_factors=False,
     return_distances=False,
-    return_cell_list=False,
 ):
     if cutoff is None:
         cutoff = float("inf")
@@ -646,14 +642,13 @@ def get_displacement_tensor(
     disp_tensor = np.full((n_atoms, n_atoms, 3), float("inf"))
     dist_mat = np.full((n_atoms, n_atoms), float("inf"))
     factors = np.full((n_atoms, n_atoms, 3), float("inf"))
-    cell_list = matid.ext.get_displacement_tensor(
+    matid.ext.get_displacement_tensor(
         disp_tensor,
         dist_mat,
         factors,
         positions,
         cell,
         expand_pbc(pbc),
-        mic,
         cutoff,
         return_factors,
         return_distances,
@@ -664,8 +659,6 @@ def get_displacement_tensor(
         result.append(factors)
     if return_distances:
         result.append(dist_mat)
-    if return_cell_list:
-        result.append(cell_list)
 
     if len(result) == 1:
         return result[0]
@@ -985,7 +978,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(system, positions, numbers, tolerances, mic=True):
+def get_matches_old(system, positions, numbers, tolerance, mic=True):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -993,7 +986,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     Args:
         system(ASE.Atoms): System where to search the positions
         positions(np.ndarray): Positions to match in the system.
-        tolerances(np.ndarray): Maximum allowed distance for each vector that
+        tolerance(float): Maximum allowed distance for each vector that
             is allowed for a match in position.
         mic(boolean): Whether to find the minimum image copy.
 
@@ -1017,7 +1010,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
         cell,
         pbc,
         mic=mic,
-        cutoff=tolerances.max(),
+        cutoff=tolerance,
         return_factors=True,
         return_distances=True,
     )
@@ -1028,7 +1021,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     best_matches = []
     best_substitutions = []
     for i_atom, i in enumerate(dist_matrix):
-        near_mask = i <= tolerances[i_atom]
+        near_mask = i <= tolerance
         element_mask = orig_num == numbers[i_atom]
         combined_mask = near_mask & element_mask
         possible_indices = np.where(combined_mask)[0]
@@ -1046,7 +1039,6 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
             best_matches.append(None)
             best_substitutions.append(None)
 
-    # min_ind = np.argmin(dist_matrix, axis=1)
     matches = []
     substitutions = []
     vacancies = []
@@ -1092,7 +1084,7 @@ def get_matches(system, positions, numbers, tolerances, mic=True):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_matches_new(system, cell_list, positions, numbers, tolerances):
+def get_matches(system, cell_list, positions, numbers, tolerance):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1102,8 +1094,7 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
         cell_list(CellList): The cell list for an appropriately extended version
             of the system.
         positions(np.ndarray): Positions to match in the system.
-        tolerances(np.ndarray): Maximum allowed distance for each vector that
-            is allowed for a match in position.
+        tolerance(float): Maximum allowed distance for matching.
 
     Returns:
         np.ndarray: indices of matched atoms
@@ -1113,6 +1104,7 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
             the number of the periodic copy where the match was found.
     """
     atomic_numbers = system.get_atomic_numbers()
+    system_positions = system.get_positions()
     matches = []
     substitutions = []
     copy_indices = np.zeros((len(positions), 3))
@@ -1120,9 +1112,7 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
-    for i, (position, atomic_number, tolerance) in enumerate(
-        zip(positions, numbers, tolerances)
-    ):
+    for i, (position, atomic_number) in enumerate(zip(positions, numbers)):
         match = None
         substitution = None
         copy_index = None
@@ -1142,9 +1132,14 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
                 copy_index = closest_factor
                 if closest_atomic_number == atomic_number:
                     match = closest_index
-                    substitutions.append(None)
+                    substitution = None
                 else:
-                    substitutions.append(closest_index)
+                    substitution = Substitution(
+                        closest_index,
+                        system_positions[closest_index],
+                        atomic_number,
+                        closest_atomic_number,
+                    )
         matches.append(match)
         substitutions.append(substitution)
         if match is None and substitution is None:
@@ -1155,17 +1150,20 @@ def get_matches_new(system, cell_list, positions, numbers, tolerances):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_cell_list(positions, indices, factors, cutoff=0):
+def get_cell_list(positions, cell, pbc, extension, cutoff):
     """Given a system and a cutoff value, returns a cell list object.
 
     Args:
-        system(ASE.Atoms): System to extend
+        positions(np.ndarray): Cartesian positions
+        cell(np.ndarray): Cell as 3x3 array
+        pbc(np.ndarray): Periodic boundary conditions as array of three booleans
+        extension(float): How much the system should be extended for the search.
         cutoff(float): Radial cutoff
 
     Returns:
         CellList object.
     """
-    return matid.ext.CellList(positions, indices, factors, cutoff)
+    return matid.ext.get_cell_list(positions, cell, pbc, extension, cutoff)
 
 
 def to_scaled(cell, positions, wrap=False, pbc=False):
@@ -1575,10 +1573,10 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
-    disp_tensor_finite, cell_list = get_displacement_tensor(pos, return_cell_list=True)
+    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
-        disp_tensor_mic, disp_factors, cell_list = get_displacement_tensor(
-            pos, cell, pbc, mic=True, return_factors=True, return_cell_list=True
+        disp_tensor_mic, disp_factors = get_displacement_tensor(
+            pos, cell, pbc, return_factors=True
         )
     else:
         disp_tensor_mic = disp_tensor_finite
@@ -1597,7 +1595,6 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
         disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
-        cell_list,
     )
 
 
