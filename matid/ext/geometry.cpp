@@ -151,6 +151,7 @@ CellList get_cell_list(
     py::array_t<double> positions,
     py::array_t<double> cell,
     py::array_t<bool> pbc,
+    double extension,
     double cutoff
 ) {
     // Create dummy atomic indices: we don't really need them for the
@@ -160,26 +161,6 @@ CellList get_cell_list(
     auto atomic_numbers_mu = atomic_numbers.mutable_unchecked<1>();
     for (py::ssize_t i = 0; i < atomic_numbers_mu.shape(0); i++) {
         atomic_numbers_mu(i) = 0;
-    }
-
-    // If an infinite cutoff is requested, we essentially want to calculate all
-    // distances. This is done by extending in all directions by maximum basis
-    // size.
-    double extension = cutoff;
-    if (cutoff == std::numeric_limits<double>::infinity()) {
-        auto cell_u = cell.unchecked<2>();
-        auto pbc_u = pbc.unchecked<1>();
-        double max_length = 0;
-        for (int i = 0; i < 3; ++i) {
-            if (pbc_u(i)) {
-                vector<double> basis = {cell_u(i, 0), cell_u(i, 1), cell_u(i, 2)};
-                double length = norm(basis);
-                if (length > max_length) {
-                    max_length = length;
-                }
-            }
-        }
-        extension = max_length;
     }
 
     // Extend system
@@ -201,7 +182,27 @@ void get_displacement_tensor(
     bool return_factors,
     bool return_distances
 ) {
-    CellList cell_list = get_cell_list(positions, cell, pbc, cutoff);
+    // If an infinite cutoff is requested, we essentially want to calculate all
+    // distances. This is done by extending in all directions by maximum basis
+    // size.
+    double extension = cutoff;
+    if (cutoff == std::numeric_limits<double>::infinity()) {
+        auto cell_u = cell.unchecked<2>();
+        auto pbc_u = pbc.unchecked<1>();
+        double max_length = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (pbc_u(i)) {
+                vector<double> basis = {cell_u(i, 0), cell_u(i, 1), cell_u(i, 2)};
+                double length = norm(basis);
+                if (length > max_length) {
+                    max_length = length;
+                }
+            }
+        }
+        extension = max_length;
+    }
+
+    CellList cell_list = get_cell_list(positions, cell, pbc, extension, cutoff);
 
     // Calculate distances information
     int n_atoms = positions.shape(0);

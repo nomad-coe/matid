@@ -1150,19 +1150,20 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_cell_list(positions, cell, pbc, cutoff):
+def get_cell_list(positions, cell, pbc, extension, cutoff):
     """Given a system and a cutoff value, returns a cell list object.
 
     Args:
         positions(np.ndarray): Cartesian positions
         cell(np.ndarray): Cell as 3x3 array
         pbc(np.ndarray): Periodic boundary conditions as array of three booleans
+        extension(float): How much the system should be extended for the search.
         cutoff(float): Radial cutoff
 
     Returns:
         CellList object.
     """
-    return matid.ext.get_cell_list(positions, cell, pbc, cutoff)
+    return matid.ext.get_cell_list(positions, cell, pbc, extension, cutoff)
 
 
 def to_scaled(cell, positions, wrap=False, pbc=False):

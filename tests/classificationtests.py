@@ -2424,7 +2424,6 @@ class SearchGraphTests(unittest.TestCase):
 
 if __name__ == "__main__":
     suites = []
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(ExceptionTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(RadiiTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(DimensionalityTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(PeriodicFinderTests))

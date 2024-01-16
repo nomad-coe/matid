@@ -107,10 +107,18 @@ class PeriodicFinder:
 
         # Create new cell list that is used for performing the matching. We
         # cannot use the cell list that is created during the distance matrix
-        # calculation, as it's radial cutoff is way too large and each
-        # individual query becomes too slow.
+        # calculation, as it's radial cutoff is way too large (search becomes
+        # slow), and it is not extended with the correct search size. Here the
+        # system is extended using the maximum search length and the celllist
+        # cutoff is at most the size of the position tolerance, but not too
+        # small to not take too much time/memory to create.
         self.cell_list = matid.geometry.get_cell_list(
-            system.get_positions(), system.get_cell(), system.get_pbc(), max(pos_tol, 1)
+            system.get_positions(),
+            system.get_cell(),
+            system.get_pbc(),
+            # max_cell_size,
+            max(pos_tol, 1),
+            max(pos_tol, 1)
         )
 
         self.pos_tol = pos_tol
@@ -1602,6 +1610,17 @@ class PeriodicFinder:
                 len(dislocations) * [seed_atomic_number],
                 self.pos_tol,
             )
+            # matches, _, _, factors = matid.geometry.get_matches_old(
+            #     system,
+            #     seed_guesses,
+            #     len(dislocations) * [seed_atomic_number],
+            #     self.pos_tol,
+            # )
+            # if (matches_new != matches):
+            #     for i, (a, b) in enumerate(zip(matches_new, matches)):
+            #         if a != b:
+            #             print(a, b, seed_guesses[i])
+            #     raise ValueError()
             for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
                 matches,
                 factors,
