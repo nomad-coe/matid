@@ -347,7 +347,7 @@ def test_dimensionality(system, cell, pbc, expected_dimensionality):
         pytest.param([0, 1, 0], [False, True, False], 3, id="a, c empty"),
         pytest.param([0, 0, 1], [False, False, True], 3, id="a, b empty"),
         pytest.param([0, 0, 0], [False, False, False], 1, id="a, b, c empty"),
-    ]
+    ],
 )
 def test_cell_completion(cell, pbc, n_atoms):
     """Tests that cell completion during the calculation of an extended system

@@ -249,15 +249,21 @@ class SBC:
                     )
         if requires_completion:
             system_copy.set_cell(ase.geometry.complete_cell(basis))
+        if not all(pbc):
             scaled_positions = system_copy.get_scaled_positions()
             new_cell = system_copy.get_cell()
+            scale_cell = False
             for i in range(3):
                 if not pbc[i]:
-                    max_pos = scaled_positions[:, i].max()
-                    min_pos = scaled_positions[:, i].min()
-                    new_cell[i, :] *= (max_pos - min_pos) + 1
-            system_copy.set_cell(new_cell)
-            system_copy.center()
+                    i_pos = scaled_positions[:, i]
+                    max_pos = i_pos.max()
+                    min_pos = i_pos.min()
+                    if max_pos > 1 or min_pos < 0:
+                        scale_cell = True
+                        new_cell[i, :] *= (max_pos - min_pos) + 1
+            if scale_cell:
+                system_copy.set_cell(new_cell)
+                system_copy.center()
 
         # Positions are wrapped
         system_copy.wrap()
