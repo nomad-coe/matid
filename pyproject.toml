@@ -32,7 +32,8 @@ classifiers = [
 keywords = ['atoms', 'structure', 'materials', 'science', 'crystal', 'symmetry']
 
 [project.urls]
-homepage = "https://github.com/nomad-coe/matid"
+Documentation = 'https://nomad-coe.github.io/matid/'
+Source = "https://github.com/nomad-coe/matid"
 
 [project.optional-dependencies]
 dev = [
