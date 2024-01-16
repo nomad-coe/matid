@@ -1195,9 +1195,6 @@ class Material2DTests(unittest.TestCase):
             substitutions = classification.substitutions
             vacancies = classification.vacancies
             unknowns = classification.unknowns
-            if len(vacancies) != 0:
-                view(system)
-                view(classification.region.cell)
             self.assertEqual(len(interstitials), 0)
             self.assertEqual(len(substitutions), 0)
             self.assertEqual(len(vacancies), 0)
@@ -2328,6 +2325,34 @@ class SearchGraphTests(unittest.TestCase):
         periodicity = region.get_connected_directions()
         self.assertTrue(np.array_equal(periodicity, [True, True, False]))
 
+    def test_surface(self):
+        system = Atoms(
+            positions=[
+                [0, 0, 8],
+                [2, 0, 12],
+            ],
+            cell=[4, 4, 20],
+            symbols=["Sr", "Sr"],
+            pbc=True
+        )
+        # view(system)
+
+        finder = PeriodicFinder()
+        region = finder.get_region(system, 0, 5, 0.7)
+        # view(region.cell)
+
+        G = region._search_graph
+        # for node1, node2, data in G.edges(data=True):
+        #     print(node1, node2, data)
+
+        # Check that the correct graph is created
+        self.assertEqual(len(G.nodes), 2)
+        self.assertEqual(len(G.edges), 8+8+9+9-1)  # 8+8 horizontally, 9+9 vertically, minus 1 shared edge
+
+        # Check graph periodicity
+        periodicity = region.get_connected_directions()
+        self.assertTrue(np.array_equal(periodicity, [False, True, True]))
+
     def test_non_orthogonal_cell_2(self):
         """Non-orthogonal cell with two atoms."""
         cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
@@ -2347,12 +2372,14 @@ class SearchGraphTests(unittest.TestCase):
         # view(region.cell)
 
         G = region._search_graph
+        # for node1, node2, data in G.edges(data=True):
+        #     print(node1, node2, data)
         # draw_networkx(G)
         # mpl.show()
 
         # Check that the correct graph is created
         self.assertEqual(len(G.nodes), 2)
-        self.assertEqual(len(G.edges), 11)
+        self.assertEqual(len(G.edges), 15)  # 8+8-1
 
         # Check graph periodicity
         periodicity = region.get_connected_directions()
@@ -2393,14 +2420,26 @@ class SearchGraphTests(unittest.TestCase):
         system = ase.io.read(
             "./data/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
         )
+        # system.translate([0, 0, 20])
+        # system.wrap()
         # view(system)
 
         finder = PeriodicFinder()
         region = finder.get_region(system, 42, 12, 1.05146337551)
+        # view(region.cell)
+
+        # G = region._search_graph
+        # for node1, node2, data in G.edges(data=True):
+        #     print(node1, node2, data)
+        # draw_networkx(G)
+        # mpl.show()
+        # self.assertEqual(len(G.nodes), 4)
+        # self.assertEqual(len(G.edges), 22)
 
         # Check graph periodicity
         periodicity = region.get_connected_directions()
         self.assertTrue(np.array_equal(periodicity, [False, True, True]))
+
 
     def test_surface_adsorbate(self):
         """Test graph search in the presence of adsorbates."""
