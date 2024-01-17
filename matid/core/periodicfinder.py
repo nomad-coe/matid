@@ -219,6 +219,14 @@ class PeriodicFinder:
         generate a periodic region in the structure.
 
         Args:
+            system(ase.Atoms):
+            seed_index(int):
+            possible_spans(np.ndarray):
+            neighbour_mask(np.ndarray):
+            neighbour_factors(np.ndarray):
+            bond_threshold(float):
+            overlap_threshold(float):
+            pos_tol(float):
 
         Returns:
             ase.Atoms: A system representing the best cell that was found
@@ -288,9 +296,9 @@ class PeriodicFinder:
             adjacency_lists_add.append(i_adj_list_add)
             adjacency_lists_sub.append(i_adj_list_sub)
 
-        # Get the spans that come from the original cell basis if they are
-        # smaller than the maximum cell size.
-        periodic_spans = system.get_cell()
+        # The lattice vectors are added as possible spans if they are set as
+        # periodic and they are shorter than the maximum cell size
+        periodic_spans = system.get_cell()[system.get_pbc()]
         periodic_span_lengths = np.linalg.norm(periodic_spans, axis=1)
         periodic_filter = periodic_span_lengths <= self.max_cell_size
         n_periodic_spans = periodic_filter.sum()
@@ -369,9 +377,7 @@ class PeriodicFinder:
         seed_nodes, seed_group_index, group_data_pbc = self._find_graphs(
             seed_index,
             numbers,
-            dim,
             best_adjacency_lists,
-            neighbour_nodes,
             neighbour_indices,
             neighbour_factors,
         )
@@ -525,9 +531,7 @@ class PeriodicFinder:
         self,
         seed_index,
         numbers,
-        dim,
         best_adjacency_lists,
-        neighbour_nodes,
         neighbour_indices,
         neighbour_factors,
     ):
@@ -1275,7 +1279,6 @@ class PeriodicFinder:
 
         searched_cell_indices = set()
         used_indices = set()
-        used_seed_indices = set()
         searched_vacancy_positions = []
         queue = deque()
         collection = LinkedUnitCollection(
@@ -1294,8 +1297,6 @@ class PeriodicFinder:
         self._find_region_rec(
             system,
             collection,
-            number_to_index_map,
-            number_to_pos_map,
             seed_index,
             seed_pos,
             seed_number,
@@ -1305,10 +1306,8 @@ class PeriodicFinder:
             (0, 0, 0),
             used_indices,
             searched_vacancy_positions,
-            periodic_indices,
             queue,
             multipliers,
-            used_seed_indices,
         )
 
         # Keep searching while new cells are found
@@ -1327,8 +1326,6 @@ class PeriodicFinder:
                 self._find_region_rec(
                     system,
                     collection,
-                    number_to_index_map,
-                    number_to_pos_map,
                     queue_seed_index,
                     queue_seed_pos,
                     seed_number,
@@ -1338,10 +1335,8 @@ class PeriodicFinder:
                     queue_index,
                     used_indices,
                     searched_vacancy_positions,
-                    periodic_indices,
                     queue,
                     multipliers,
-                    used_seed_indices,
                 )
 
         return collection
@@ -1363,8 +1358,6 @@ class PeriodicFinder:
         self,
         system,
         collection,
-        number_to_index_map,
-        number_to_pos_map,
         seed_index,
         seed_pos,
         seed_atomic_number,
@@ -1374,10 +1367,8 @@ class PeriodicFinder:
         cell_index,
         used_indices,
         searched_vacancy_positions,
-        periodic_indices,
         queue,
         multipliers,
-        used_seed_indices,
     ):
         """
         Args:
