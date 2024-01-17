@@ -253,14 +253,25 @@ def test_clustering(system, clusters_expected, pbc, noise):
 fcc_clusters = [Cluster(range(len(surface_fcc)), dimensionality=0)]
 single_atom_clusters = []
 
+
 @pytest.mark.parametrize(
     "system, cell, pbc, expected_clusters",
     [
         pytest.param(surface_fcc, None, False, fcc_clusters, id="three bases missing"),
-        pytest.param(surface_fcc, [0, 0, 25.4], False, fcc_clusters, id="two bases missing"),
-        pytest.param(surface_fcc, [0, 10.8, 25.4], False, fcc_clusters, id="one basis missing"),
+        pytest.param(
+            surface_fcc, [0, 0, 25.4], False, fcc_clusters, id="two bases missing"
+        ),
+        pytest.param(
+            surface_fcc, [0, 10.8, 25.4], False, fcc_clusters, id="one basis missing"
+        ),
         pytest.param(surface_fcc, [1, 1, 1], False, fcc_clusters, id="too small cell"),
-        pytest.param(bulk_one_atom, [0, 0, 0], False, single_atom_clusters, id="single atom completion"),
+        pytest.param(
+            bulk_one_atom,
+            [0, 0, 0],
+            False,
+            single_atom_clusters,
+            id="single atom completion",
+        ),
     ],
 )
 def test_completion(system, cell, pbc, expected_clusters):
@@ -271,6 +282,7 @@ def test_completion(system, cell, pbc, expected_clusters):
     system.set_pbc(pbc)
     clusters = SBC().get_clusters(system)
     assert_topology(clusters, expected_clusters)
+
 
 @pytest.mark.parametrize(
     "cell, pbc",
