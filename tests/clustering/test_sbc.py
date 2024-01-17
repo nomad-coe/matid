@@ -250,34 +250,55 @@ def test_clustering(system, clusters_expected, pbc, noise):
     assert_topology(results, clusters_expected)
 
 
+fcc_clusters = [Cluster(range(len(surface_fcc)), dimensionality=0)]
+single_atom_clusters = []
+
+
 @pytest.mark.parametrize(
-    "cell, pbc, error",
+    "system, cell, pbc, expected_clusters",
     [
-        pytest.param(None, False, False, id="three bases missing"),
-        pytest.param([0, 0, 25.4], False, False, id="two bases missing"),
-        pytest.param([0, 10.8, 25.4], False, False, id="one basis missing"),
-        pytest.param([1, 1, 1], False, False, id="too small cell"),
-        pytest.param([0, 1, 1], True, True, id="cannot complete with pbc=True"),
+        pytest.param(surface_fcc, None, False, fcc_clusters, id="three bases missing"),
+        pytest.param(
+            surface_fcc, [0, 0, 25.4], False, fcc_clusters, id="two bases missing"
+        ),
+        pytest.param(
+            surface_fcc, [0, 10.8, 25.4], False, fcc_clusters, id="one basis missing"
+        ),
+        pytest.param(surface_fcc, [1, 1, 1], False, fcc_clusters, id="too small cell"),
+        pytest.param(
+            bulk_one_atom,
+            [0, 0, 0],
+            False,
+            single_atom_clusters,
+            id="single atom completion",
+        ),
     ],
 )
-def test_completion(cell, pbc, error):
+def test_completion(system, cell, pbc, expected_clusters):
     """Tests that finite systems where the cell does not contain all of the
     atoms are correctly handled.
     """
-    system = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
     system.set_cell(cell)
     system.set_pbc(pbc)
-    if error:
-        with pytest.raises(ValueError):
-            SBC().get_clusters(system)
-    else:
-        results = SBC().get_clusters(system)
-        assert_topology(
-            results,
-            [
-                Cluster(
-                    range(len(surface_fcc)),
-                    dimensionality=0,
-                )
-            ],
-        )
+    clusters = SBC().get_clusters(system)
+    assert_topology(clusters, expected_clusters)
+
+
+@pytest.mark.parametrize(
+    "cell, pbc",
+    [
+        pytest.param([0, 1, 1], True, id="|a| = 0"),
+        pytest.param([1, 0, 1], True, id="|b| = 0"),
+        pytest.param([1, 0, 1], True, id="|c| = 0"),
+        pytest.param([0, 0, 0], True, id="|a| = |b| = |c| = 0"),
+    ],
+)
+def test_completion_error(cell, pbc):
+    """Tests that exception is raise when trying to process systems with
+    zero-length basis with pbc=True.
+    """
+    system = surface_fcc
+    system.set_cell(cell)
+    system.set_pbc(pbc)
+    with pytest.raises(ValueError):
+        SBC().get_clusters(system)
