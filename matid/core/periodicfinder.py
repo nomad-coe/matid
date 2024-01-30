@@ -346,7 +346,10 @@ class PeriodicFinder:
         # that are caused by pure chance, or represent directions where there is
         # a periodic substructure that can only explain the structure partially.
         # OLD: valid_span_indices = np.where(metric >= 0.75 * n_neighbours)[0]
-        valid_span_indices = np.where((metric >= 0.5 * (0 if len(metric) == 0 else metric.max())) | (metric >= 0.75 * n_neighbours))[0]
+        valid_span_indices = np.where(
+            (metric >= 0.5 * (0 if len(metric) == 0 else metric.max()))
+            | (metric >= 0.75 * n_neighbours)
+        )[0]
 
         if len(valid_span_indices) == 0:
             return None, None, None

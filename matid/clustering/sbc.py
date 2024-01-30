@@ -18,6 +18,7 @@ class SBC:
     finding molecules. Any atoms that do not have enough periodic repetitions
     will be returned as isolated clusters.
     """
+
     def get_clusters(
         self,
         system,
@@ -177,7 +178,6 @@ class SBC:
         clusters = self._clean_clusters(clusters, bond_threshold)
 
         return clusters
-
 
     def _merge_clusters(
         self, system, clusters, merge_threshold, distances, bond_threshold
