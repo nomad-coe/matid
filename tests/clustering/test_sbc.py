@@ -255,7 +255,9 @@ def test_clustering_default(system, clusters_expected, pbc, noise):
     "system, clusters_expected",
     [
         pytest.param(
-            ase.io.read(Path(__file__).parent.parent / "data/system-AlOPbSeSiC_PbSe.xyz"),
+            ase.io.read(
+                Path(__file__).parent.parent / "data/system-AlOPbSeSiC_PbSe.xyz"
+            ),
             [
                 Cluster(
                     range(0, 86),
