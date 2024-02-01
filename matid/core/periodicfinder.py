@@ -347,7 +347,7 @@ class PeriodicFinder:
         # a periodic substructure that can only explain the structure partially.
         # OLD: valid_span_indices = np.where(metric >= 0.75 * n_neighbours)[0]
         valid_span_indices = np.where(
-            (metric >= 0.5 * (0 if len(metric) == 0 else metric.max()))
+            (metric >= 0.4 * (0 if len(metric) == 0 else metric.max()))
             | (metric >= 0.75 * n_neighbours)
         )[0]
 
@@ -1064,6 +1064,7 @@ class PeriodicFinder:
             symbols=averaged_rel_num,
             pbc=[True, True, False],
         )
+
         offset = proto_cell.get_positions()[seed_group_index]
 
         return proto_cell, offset, seed_group_index

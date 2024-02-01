@@ -243,10 +243,60 @@ sparse = Atoms(symbols=["C"], scaled_positions=[[0, 0, 0]], cell=[4, 4, 4], pbc=
     ],
 )
 @pytest.mark.parametrize("noise", [0, 0.08])
-def test_clustering(system, clusters_expected, pbc, noise):
+def test_clustering_default(system, clusters_expected, pbc, noise):
+    """Tests that the clustering performs correctly with default settings."""
     system = rattle(system, noise)
     system.set_pbc(pbc)
     results = SBC().get_clusters(system)
+    assert_topology(results, clusters_expected)
+
+
+@pytest.mark.parametrize(
+    "system, clusters_expected",
+    [
+        pytest.param(
+            ase.io.read(Path(__file__).parent.parent / "data/system-AlOPbSeSiC_PbSe.xyz"),
+            [
+                Cluster(
+                    range(0, 86),
+                    dimensionality=0,
+                ),
+                Cluster(
+                    range(86, 122),
+                    dimensionality=0,
+                ),
+                Cluster(
+                    range(122, 230),
+                    dimensionality=0,
+                ),
+            ],
+            id="layers share a pattern that complicates the choice of basis vectors 1",
+        ),
+        pytest.param(
+            ase.io.read(Path(__file__).parent.parent / "data/system-BNPbSeBN.xyz"),
+            [
+                Cluster(
+                    range(0, 60),
+                    dimensionality=0,
+                ),
+                Cluster(
+                    range(96, 156),
+                    dimensionality=0,
+                ),
+                Cluster(
+                    range(60, 96),
+                    dimensionality=0,
+                ),
+            ],
+            id="layers share a pattern that complicates the choice of basis vectors 2",
+        ),
+    ],
+)
+def test_clustering_coincidental_patterns(system, clusters_expected):
+    """Tests that clustering works correctly in cases where the environment
+    contains coindidental patterns that bump up the selection of some basis
+    directions."""
+    results = SBC().get_clusters(system, pos_tol=0.1)
     assert_topology(results, clusters_expected)
 
 
