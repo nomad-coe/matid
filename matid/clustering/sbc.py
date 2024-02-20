@@ -19,12 +19,165 @@ class SBC:
     will be returned as isolated clusters.
     """
 
-    def __init__(self, seed=7):
+    def get_clusters(
+        self,
+        system,
+        angle_tol=20,
+        max_cell_size=6,
+        pos_tol=0.7,
+        merge_threshold=0.5,
+        merge_radius=1,
+        bond_threshold=0.65,
+        overlap_threshold=-0.1,
+        radii="covalent",
+        seed=7,
+    ):
         """
+        Used to detect and return structurally separate clusters within the
+        given system.
+
         Args:
+            system (ase.Atoms): The structure to partition.
+            angle_tol (float): angle_tol parameter for PeriodicFinder
+            max_cell_size (float): max_cell_size parameter for PeriodicFinder.get_region
+            pos_tol (float): pos_tol parameter for PeriodicFinder.get_region
+            merge_threshold (float): A threshold for merging two clusters
+                together. Give as a fraction of shared atoms. Value of 1 would
+                mean that clusters are never merged, value of 0 means that they
+                are merged always when at least one atom is shared.
+            merge_radius (float): Radius for finding nearby atoms when deciding
+                which cluster is closest. The atomic radii are subtracted from
+                distances. Given in angstroms.
+            bond_threshold(float): Used to control the connectivity threshold
+                for defining a chemical connection between atoms. Controls e.g.
+                what types of unit cells are accepted and how outliers are
+                removed from clusters.
+            overlap_threshold(float): Used to exclude non-physical cells by
+                checking overlap of atoms. Overlap between two atoms is
+                calculated by subtracting atomic radii from the distance between
+                the atoms.
+            radii(str|np.ndarray): The radii to use for atoms. Use either a preset
+                or a custom list of atomic radii for each atom. The available presets are:
+
+                    - covalent: Covalent radii from DOI:10.1039/B801115J
+                    - vdw: van Der Waals radii from DOI:10.1039/C3DT50599E
+                    - vdw_covalent: preferably van Der Waals radii, covalent if vdw
+                    not defined.
             seed(int): The seed that is used for random number generation.
+
+        Returns:
+            A list of Clusters.
         """
+        # Create a random number gen with custom seed
         self.rng = np.random.default_rng(seed)
+
+        # Copy the system to avoid mutating the original
+        system_copy = system.copy()
+
+        # Here we ensure that the system has three valid basis vectors which
+        # when forming a unit cell contain all of the atoms in the system. This
+        # is to ensure that the code that requires scaled positions works
+        # correctly.
+        pbc = system_copy.get_pbc()
+        basis = system_copy.get_cell()
+        requires_completion = False
+        for i in range(3):
+            if not basis[i, :].any():
+                if not pbc[i]:
+                    requires_completion = True
+                else:
+                    raise ValueError(
+                        "Cannot process system with zero-volume cell and periodic boundaries."
+                    )
+        if requires_completion:
+            system_copy.set_cell(ase.geometry.complete_cell(basis))
+        if not all(pbc):
+            scaled_positions = system_copy.get_scaled_positions()
+            new_cell = system_copy.get_cell()
+            scale_cell = False
+            for i in range(3):
+                if not pbc[i]:
+                    i_pos = scaled_positions[:, i]
+                    max_pos = i_pos.max()
+                    min_pos = i_pos.min()
+                    if max_pos > 1 or min_pos < 0:
+                        scale_cell = True
+                        new_cell[i, :] *= (max_pos - min_pos) + 1
+            if scale_cell:
+                system_copy.set_cell(new_cell)
+                system_copy.center()
+
+        # Positions are wrapped
+        system_copy.wrap()
+
+        atomic_numbers = system.get_atomic_numbers()
+        radii = matid.geometry.get_radii(radii, atomic_numbers)
+
+        # Calculate the distances here once if they have not been provided.
+        distances = matid.geometry.get_distances(system_copy, radii)
+
+        # Iteratively search for new clusters until whole system is covered
+        periodic_finder = PeriodicFinder(
+            angle_tol=angle_tol, chem_similarity_threshold=0
+        )
+        indices = set(list(range(len(system_copy))))
+        clusters = []
+        while len(indices) != 0:
+            i_seed = self.rng.choice(list(indices), 1)[0]
+            i_grain, mask = periodic_finder.get_region(
+                system_copy,
+                seed_index=i_seed,
+                max_cell_size=max_cell_size,
+                pos_tol=pos_tol,
+                bond_threshold=bond_threshold,
+                overlap_threshold=overlap_threshold,
+                distances=distances,
+                return_mask=True,
+            )
+
+            # All neighbours that the periodic finder has tested are removed
+            # from the search. This significantly helps with the scaling of the
+            # clustering.
+            tested_indices = set(np.arange(len(mask))[mask])
+            indices -= tested_indices
+
+            # If a grain is found, it is added as a single cluster and removed
+            # from the search
+            if i_grain is not None:
+                i_indices = {i_seed}
+                i_indices.update(i_grain.get_basis_indices())
+                i_species = set(atomic_numbers[list(i_indices)])
+                clusters.append(
+                    Cluster(
+                        i_indices,
+                        i_species,
+                        i_grain,
+                        system=system_copy,
+                        distances=distances,
+                        radii=radii,
+                        bond_threshold=bond_threshold,
+                    )
+                )
+                indices -= i_indices
+
+        # Check overlaps of the regions. For large overlaps the grains are
+        # merged (the real region was probably cut into pieces by unfortunate
+        # selection of the seed atom)
+        clusters = self._merge_clusters(
+            system_copy, clusters, merge_threshold, distances, bond_threshold
+        )
+
+        # Any remaining overlaps are resolved by assigning atoms to the
+        # "nearest" cluster
+        clusters = self._localize_clusters(
+            system_copy, clusters, merge_radius, distances
+        )
+
+        # Any atoms that are not chemically connected to the region will be
+        # excluded.
+        clusters = self._clean_clusters(clusters, bond_threshold)
+
+        return clusters
 
     def _merge_clusters(
         self, system, clusters, merge_threshold, distances, bond_threshold
@@ -180,159 +333,4 @@ class SBC:
             )
             largest_indices = max(dbscan_clusters, key=lambda x: len(x))
             cluster.indices = np.array(cluster.indices)[largest_indices].tolist()
-        return clusters
-
-    def get_clusters(
-        self,
-        system,
-        angle_tol=20,
-        max_cell_size=6,
-        pos_tol=0.7,
-        merge_threshold=0.5,
-        merge_radius=1,
-        bond_threshold=0.65,
-        overlap_threshold=-0.1,
-        radii="covalent",
-    ):
-        """
-        Used to detect and return structurally separate clusters within the
-        given system.
-
-        Args:
-            system (ase.Atoms): The structure to partition.
-            angle_tol (float): angle_tol parameter for PeriodicFinder
-            max_cell_size (float): max_cell_size parameter for PeriodicFinder.get_region
-            pos_tol (float): pos_tol parameter for PeriodicFinder.get_region
-            merge_threshold (float): A threshold for merging two clusters
-                together. Give as a fraction of shared atoms. Value of 1 would
-                mean that clusters are never merged, value of 0 means that they
-                are merged always when at least one atom is shared.
-            merge_radius (float): Radius for finding nearby atoms when deciding
-                which cluster is closest. The atomic radii are subtracted from
-                distances. Given in angstroms.
-            bond_threshold(float): Used to control the connectivity threshold
-                for defining a chemical connection between atoms. Controls e.g.
-                what types of unit cells are accepted and how outliers are
-                removed from clusters.
-            overlap_threshold(float): Used to exclude non-physical cells by
-                checking overlap of atoms. Overlap between two atoms is
-                calculated by subtracting atomic radii from the distance between
-                the atoms.
-            radii(str|np.ndarray): The radii to use for atoms. Use either a preset
-                or a custom list of atomic radii for each atom. The available presets are:
-
-                    - covalent: Covalent radii from DOI:10.1039/B801115J
-                    - vdw: van Der Waals radii from DOI:10.1039/C3DT50599E
-                    - vdw_covalent: preferably van Der Waals radii, covalent if vdw
-                    not defined.
-
-        Returns:
-            A list of Clusters.
-        """
-        # Copy the system to avoid mutating the original
-        system_copy = system.copy()
-
-        # Here we ensure that the system has three valid basis vectors which
-        # when forming a unit cell contain all of the atoms in the system. This
-        # is to ensure that the code that requires scaled positions works
-        # correctly.
-        pbc = system_copy.get_pbc()
-        basis = system_copy.get_cell()
-        requires_completion = False
-        for i in range(3):
-            if not basis[i, :].any():
-                if not pbc[i]:
-                    requires_completion = True
-                else:
-                    raise ValueError(
-                        "Cannot process system with zero-volume cell and periodic boundaries."
-                    )
-        if requires_completion:
-            system_copy.set_cell(ase.geometry.complete_cell(basis))
-        if not all(pbc):
-            scaled_positions = system_copy.get_scaled_positions()
-            new_cell = system_copy.get_cell()
-            scale_cell = False
-            for i in range(3):
-                if not pbc[i]:
-                    i_pos = scaled_positions[:, i]
-                    max_pos = i_pos.max()
-                    min_pos = i_pos.min()
-                    if max_pos > 1 or min_pos < 0:
-                        scale_cell = True
-                        new_cell[i, :] *= (max_pos - min_pos) + 1
-            if scale_cell:
-                system_copy.set_cell(new_cell)
-                system_copy.center()
-
-        # Positions are wrapped
-        system_copy.wrap()
-
-        atomic_numbers = system.get_atomic_numbers()
-        radii = matid.geometry.get_radii(radii, atomic_numbers)
-
-        # Calculate the distances here once if they have not been provided.
-        distances = matid.geometry.get_distances(system_copy, radii)
-
-        # Iteratively search for new clusters until whole system is covered
-        periodic_finder = PeriodicFinder(
-            angle_tol=angle_tol, chem_similarity_threshold=0
-        )
-        indices = set(list(range(len(system_copy))))
-        clusters = []
-        while len(indices) != 0:
-            i_seed = self.rng.choice(list(indices), 1)[0]
-            i_grain, mask = periodic_finder.get_region(
-                system_copy,
-                seed_index=i_seed,
-                max_cell_size=max_cell_size,
-                pos_tol=pos_tol,
-                bond_threshold=bond_threshold,
-                overlap_threshold=overlap_threshold,
-                distances=distances,
-                return_mask=True,
-            )
-
-            # All neighbours that the periodic finder has tested are removed
-            # from the search. This significantly helps with the scaling of the
-            # clustering.
-            tested_indices = set(np.arange(len(mask))[mask])
-            indices -= tested_indices
-
-            # If a grain is found, it is added as a single cluster and removed
-            # from the search
-            if i_grain is not None:
-                i_indices = {i_seed}
-                i_indices.update(i_grain.get_basis_indices())
-                i_species = set(atomic_numbers[list(i_indices)])
-                clusters.append(
-                    Cluster(
-                        i_indices,
-                        i_species,
-                        i_grain,
-                        system=system_copy,
-                        distances=distances,
-                        radii=radii,
-                        bond_threshold=bond_threshold,
-                    )
-                )
-                indices -= i_indices
-
-        # Check overlaps of the regions. For large overlaps the grains are
-        # merged (the real region was probably cut into pieces by unfortunate
-        # selection of the seed atom)
-        clusters = self._merge_clusters(
-            system_copy, clusters, merge_threshold, distances, bond_threshold
-        )
-
-        # Any remaining overlaps are resolved by assigning atoms to the
-        # "nearest" cluster
-        clusters = self._localize_clusters(
-            system_copy, clusters, merge_radius, distances
-        )
-
-        # Any atoms that are not chemically connected to the region will be
-        # excluded.
-        clusters = self._clean_clusters(clusters, bond_threshold)
-
         return clusters

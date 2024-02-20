@@ -338,12 +338,19 @@ class PeriodicFinder:
                     adjacency_lists_add.append(per_adjacency_list_add)
                     adjacency_lists_sub.append(per_adjacency_list_sub)
 
-        # Find the directions that repeat the neighbours above some preset
-        # threshold. This is used to eliminate directions that are caused by
-        # pure chance. The maximum score that a direction can get is
-        # 2*n_neighbours. We specify that the score must be above 75% percent
-        # of this maximum score to be considered a valid direction.
-        valid_span_indices = np.where(metric >= 0.75 * n_neighbours)[0]
+        # Filter the spans based on how well they explain the repeated patterns
+        # around the neighbourhood of the seed atom. Spans are accepted if they
+        # produce more than 0.75 % of the possible repetitions in the seed
+        # neighbourhood OR they explain at least 50% of the maximum repetition
+        # that was found. These criteria are important to eliminate directions
+        # that are caused by pure chance, or represent directions where there is
+        # a periodic substructure that can only explain the structure partially.
+        # OLD: valid_span_indices = np.where(metric >= 0.75 * n_neighbours)[0]
+        valid_span_indices = np.where(
+            (metric >= 0.4 * (0 if len(metric) == 0 else metric.max()))
+            | (metric >= 0.75 * n_neighbours)
+        )[0]
+
         if len(valid_span_indices) == 0:
             return None, None, None
 
@@ -840,7 +847,7 @@ class PeriodicFinder:
                 min_dist_pos = scaled_pos[min_dist_index]
 
                 # All the other copies are moved periodically to be near the
-                # position that is closest to origin.
+                # position that is closest to origin
                 distances = scaled_pos - min_dist_pos
                 displacement = np.rint(distances)
                 final_pos = scaled_pos - displacement
@@ -866,6 +873,7 @@ class PeriodicFinder:
             cell=best_spans,
             pbc=[True, True, True],
         )
+
         offset = proto_cell.get_positions()[seed_group_index]
 
         return proto_cell, offset, seed_group_index
@@ -1056,6 +1064,7 @@ class PeriodicFinder:
             symbols=averaged_rel_num,
             pbc=[True, True, False],
         )
+
         offset = proto_cell.get_positions()[seed_group_index]
 
         return proto_cell, offset, seed_group_index
