@@ -42,7 +42,7 @@ function GetStarted() {
     <div className={styles.buttons}>
       <Link
         className="button button--secondary button--lg"
-        to="/docs/getting-started">
+        to="/docs/get-started/quick-start">
         Get started
       </Link>
     </div>

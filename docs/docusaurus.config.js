@@ -112,8 +112,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Getting started',
-                to: '/docs/getting-started',
+                label: 'Quick Start',
+                to: '/docs/get-started/quick-start',
               },
               {
                 label: 'Symmetry-based Clustering',

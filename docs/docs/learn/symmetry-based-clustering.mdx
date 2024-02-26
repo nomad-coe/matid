@@ -33,12 +33,11 @@ file:
 import CodeBlock from '@theme/CodeBlock'
 import SBCSource from '!!raw-loader!@site/static/snippets/sbc.py';
 
-<CodeBlock language="python">{`${SBCSource.split('\n').slice(0, 7).join('\n')}`}</CodeBlock>
+<CodeBlock language="python">{`${SBCSource.split('\n').slice(0, 8).join('\n')}`}</CodeBlock>
 
 The return value is a list of the found [`Cluster`](/docs/reference/cluster) instances. You can perform
 further analysis on these found clusters by using methods and attributes of this
-class. E.g. to visualize all of the found clusters, we could do the following:
+class. E.g. to print out the indices of atoms belonging to the cluster and to
+visualize the units cells of the found clusters, we could do the following:
 
-<CodeBlock language="python">{`${SBCSource.split('\n').slice(8, 9).join('\n')}`}</CodeBlock>
-
-The resulting image is as follows:
+<CodeBlock language="python">{`${SBCSource.split('\n').slice(9, 12).join('\n')}`}</CodeBlock>
