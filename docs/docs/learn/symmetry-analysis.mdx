@@ -2,6 +2,10 @@
 sidebar_position: 4
 ---
 
+import Figure from '@site/src/components/Figure'
+import CodeBlock from '@theme/CodeBlock'
+import ConventionalCellSource from '!!raw-loader!@site/static/snippets/get_conventional_cell.py';
+
 # Symmetry Analysis
 
 The [`SymmetryAnalyzer`](/docs/reference/symmetryanalyzer) class in MatID contains several symmetry routines for
@@ -13,8 +17,14 @@ more in the API reference.
 ## Conventional Cell
 
 For each space group there is a conventional cell that has been standardized by
-the ITA. `spglib` can report such cells, but MatID adds an additional step of
-normalization upon it to make the structure even more standardized.
+in [Volume A of International Tables for Crystallography
+(ITA)](https://it.iucr.org/A/). `spglib` can report such cells, but MatID adds
+an additional step of normalization upon it to make the structure even more
+standardized. This conventional cell can be queried through the
+[`get_conventional_system()`](/docs/reference/symmetryanalyzer#get_conventional_system)-function,
+for example:
+
+<CodeBlock language="python">{ConventionalCellSource}</CodeBlock>
 
 Although the shape and symmetries of the cell are already well-defined for a
 conventional cell reported by `spglib`, the exact location of atoms in the cell
@@ -24,15 +34,21 @@ this may not be relevant. But if instead you wish to generate a more unique
 structure for the conventional cell for visualization or identification
 purposes, then additional processing is required.
 
-(Image of different representations for NaCl)
+Below is an example of the same rock salt structure (space group 225) in two
+different configurations:
+
+<div style={{display: 'flex'}}>
+  <Figure src="/img/NaCl1.svg" caption="Na in Wyckoff position A"/>
+  <Figure src="/img/NaCl1.svg" caption="Na in Wyckoff position B"/>
+</div>
 
 The only difference in these two structures is the way the Wyckoff positions
 have been filled: the first one has X and the second one has Y. The conventional
 cell reported by MatID makes an additional step of searching for the most unique
 representation based on chirality-preserving Euclidean Normalizers. These are
 reported e.g. by the [Bilbao Crystal database](https://www.cryst.ehu.es/). Each
-normalizer is essentially a transform that can be applied to to the structure to
-gain a new for of the conventinoal cell without modifying the underlying
+normalizer is essentially a transform that can be applied to the structure to
+gain a new form of the conventional cell without modifying the underlying
 material. MatID iterates over these different representations and selects one
 based on the population of different Wyckoff sites which differs among these
 representations.
@@ -74,5 +90,5 @@ practise. In some sense it has a similar value proposal to SMILES for molecules.
 There are cases in which it will fail:
 
  - Parametrized Wyckoff sites
- - If isotropic scaling is a problem
+ - If isotropic scaling of cell should affect the material identification
  - If variable angles for the conventional cell are a problem

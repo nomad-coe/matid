@@ -64,11 +64,11 @@ rotations = [
 ]
 
 for i, cluster in enumerate(clusters):
-    write(f"cluster{i}.eps", system[cluster.indices], rotation="30z,-60x,0y", show_unit_cell=0, maxwidth=5000)
+    write(f"cluster{i}.eps", system[cluster.indices], rotation="30z,-60x,0y", show_unit_cell=0, maxwidth=3000)
     unit_cell = cluster.get_cell()
     analyzer = SymmetryAnalyzer(unit_cell)
     conv_system = analyzer.get_conventional_system()
     cell = conv_system.get_cell()
     cell[~conv_system.get_pbc(), :] = 0
     conv_system.set_cell(cell)
-    write(f"cluster{i}_unit_cell.eps", conv_system, rotation=rotations[i], show_unit_cell=2, maxwidth=5000)
+    write(f"cluster{i}_unit_cell.eps", conv_system, rotation=rotations[i], show_unit_cell=2, maxwidth=3000)
