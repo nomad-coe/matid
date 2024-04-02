@@ -1151,7 +1151,7 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     return matches, substitutions, vacancies, copy_indices
 
 
-def get_matches_test(system, cell_list, positions, numbers, tolerance):
+def get_matches_simple(system, cell_list, positions, numbers, tolerance):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -1162,7 +1162,7 @@ def get_matches_test(system, cell_list, positions, numbers, tolerance):
         positions(np.ndarray): Positions to match in the system.
         tolerance(float): Maximum allowed distance for matching.
     Returns:
-        np.ndarray: indices of matched atoms
+        list: list of matched atoms or None is nothing was matched.
     """
     atomic_numbers = system.get_atomic_numbers()
     cell = system.get_cell()
@@ -1188,7 +1188,6 @@ def get_matches_test(system, cell_list, positions, numbers, tolerance):
         matches.append(match)
 
     return matches
-
 
 
 def get_cell_list(positions, cell, pbc, extension, cutoff):

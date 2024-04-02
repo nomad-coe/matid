@@ -1600,7 +1600,7 @@ class PeriodicFinder:
             # Find out the atoms that match the seed_guesses in the original
             # system
             seed_guesses = seed_pos + dislocations
-            matches = matid.geometry.get_matches_test(
+            matches = matid.geometry.get_matches_simple(
                 system,
                 self.cell_list,
                 seed_guesses,
