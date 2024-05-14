@@ -1168,10 +1168,12 @@ def get_matches_simple(system, cell_list, positions, numbers, tolerance):
     cell = system.get_cell()
     pbc = system.get_pbc()
     matches = []
+    displacements = []
     wrapped_positions = ase.geometry.wrap_positions(positions, cell, pbc)
 
     for wrapped_position, atomic_number in zip(wrapped_positions, numbers):
         match = None
+        displacement = None
         cell_list_result = cell_list.get_neighbours_for_position(
             wrapped_position[0], wrapped_position[1], wrapped_position[2]
         )
@@ -1185,9 +1187,11 @@ def get_matches_simple(system, cell_list, positions, numbers, tolerance):
                 closest_atomic_number = atomic_numbers[closest_index]
                 if closest_atomic_number == atomic_number:
                     match = closest_index
+                    displacement = cell_list_result.displacements[min_distance_index]
         matches.append(match)
+        displacements.append(displacement)
 
-    return matches
+    return matches, displacements
 
 
 def get_cell_list(positions, cell, pbc, extension, cutoff):

@@ -6,7 +6,7 @@ name: test
 
 on:
   push:
-    branches: [ "main", "v2.0.0"]
+    branches: [ "main", "improved_matching"]
   pull_request:
     branches: [ "main"]
 

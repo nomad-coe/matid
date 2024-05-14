@@ -495,7 +495,7 @@ class LinkedUnitCollection(dict):
         G = self._search_graph
         dir_vectors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         directions = set([0, 1, 2])
-        for node in G.nodes():
+        for node, ndata in G.nodes(data=True):
             node_edges = G.in_edges(node, data=True)
             dir_to_remove = set()
             for direction in directions:
@@ -510,6 +510,7 @@ class LinkedUnitCollection(dict):
                     if positive and negative:
                         break
                 if positive and negative:
+                    print(direction, ndata)
                     dir_to_remove.add(direction)
             directions -= dir_to_remove
 

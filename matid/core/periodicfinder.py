@@ -1600,19 +1600,22 @@ class PeriodicFinder:
             # Find out the atoms that match the seed_guesses in the original
             # system
             seed_guesses = seed_pos + dislocations
-            matches = matid.geometry.get_matches_simple(
+            matches, displacements = matid.geometry.get_matches_simple(
                 system,
                 self.cell_list,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 self.pos_tol,
             )
-            for match, seed_guess, multiplier, disloc, test_cell_index in zip(
+            # print(matches)
+            # print(seed_guesses)
+            for match, seed_guess, multiplier, disloc, test_cell_index, displacement in zip(
                 matches,
                 seed_guesses,
                 multipliers,
                 dislocations,
                 test_cell_indices,
+                displacements
             ):
                 multiplier_tuple = tuple(multiplier)
 
@@ -1659,19 +1662,17 @@ class PeriodicFinder:
                     if match is not None:
                         used_indices.add(match)
 
-                # Update the cell basis vector
+                # Update the cell basis vector based on the found match. TODO:
+                # This displacement correction may have unwanted effects in
+                # noisy systems.
                 for i in range(3):
                     basis_mult = [0, 0, 0]
                     basis_mult[i] = 1
                     basis_mult = tuple(basis_mult)
                     if multiplier_tuple == basis_mult:
                         i_basis = disloc
-                        # TODO: The displacement correction here seems to have a
-                        # negative impact..? For systems with lot of noise,
-                        # adding this change seems to easily break the
-                        # robustness of the matching.
-                        # if match:
-                        #     i_basis -= displacement
+                        if match:
+                            i_basis -= np.array(displacement)
                         new_cell[i, :] = i_basis
 
         return new_cell, new_seed_indices, new_seed_pos, new_cell_indices
@@ -1760,6 +1761,7 @@ class PeriodicFinder:
     #             len(dislocations) * [seed_atomic_number],
     #             self.pos_tol,
     #         )
+    #         print(matches)
     #         for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
     #             matches,
     #             factors,

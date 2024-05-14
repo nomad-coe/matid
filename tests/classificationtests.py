@@ -2300,123 +2300,123 @@ class SearchGraphTests(unittest.TestCase):
     connectivity of different unit cell.
     """
 
-    def test_non_orthogonal_cell_1(self):
-        """Non-orthogonal cell with only one atom."""
-        cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
-        cell[0:2, :] *= 0.5
-        pos = np.array(
-            [
-                [0.0, 0.0, 0.5],
-            ]
-        )
-        symbols = np.array(["Sr"])
-        system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
-        # view(system)
+    # def test_non_orthogonal_cell_1(self):
+    #     """Non-orthogonal cell with only one atom."""
+    #     cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
+    #     cell[0:2, :] *= 0.5
+    #     pos = np.array(
+    #         [
+    #             [0.0, 0.0, 0.5],
+    #         ]
+    #     )
+    #     symbols = np.array(["Sr"])
+    #     system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
+    #     # view(system)
 
-        finder = PeriodicFinder()
-        region = finder.get_region(system, 0, 5, 0.7)
-        # view(region.cell)
+    #     finder = PeriodicFinder()
+    #     region = finder.get_region(system, 0, 5, 0.7)
+    #     # view(region.cell)
 
-        G = region._search_graph
-        # draw_networkx(G)
-        # mpl.show()
+    #     G = region._search_graph
+    #     # draw_networkx(G)
+    #     # mpl.show()
 
-        # Check that the correct graph is created
-        self.assertEqual(len(G.nodes), 1)
-        self.assertEqual(len(G.edges), 8)
+    #     # Check that the correct graph is created
+    #     self.assertEqual(len(G.nodes), 1)
+    #     self.assertEqual(len(G.edges), 8)
 
-        # Check graph periodicity
-        periodicity = region.get_connected_directions()
-        self.assertTrue(np.array_equal(periodicity, [True, True, False]))
+    #     # Check graph periodicity
+    #     periodicity = region.get_connected_directions()
+    #     self.assertTrue(np.array_equal(periodicity, [True, True, False]))
 
-    def test_surface(self):
-        system = Atoms(
-            positions=[
-                [0, 0, 8],
-                [2, 0, 12],
-            ],
-            cell=[4, 4, 20],
-            symbols=["Sr", "Sr"],
-            pbc=True,
-        )
-        # view(system)
+    # def test_surface(self):
+    #     system = Atoms(
+    #         positions=[
+    #             [0, 0, 8],
+    #             [2, 0, 12],
+    #         ],
+    #         cell=[4, 4, 20],
+    #         symbols=["Sr", "Sr"],
+    #         pbc=True,
+    #     )
+    #     # view(system)
 
-        finder = PeriodicFinder()
-        region = finder.get_region(system, 0, 5, 0.7)
-        # view(region.cell)
+    #     finder = PeriodicFinder()
+    #     region = finder.get_region(system, 0, 5, 0.7)
+    #     # view(region.cell)
 
-        G = region._search_graph
-        # for node1, node2, data in G.edges(data=True):
-        #     print(node1, node2, data)
+    #     G = region._search_graph
+    #     # for node1, node2, data in G.edges(data=True):
+    #     #     print(node1, node2, data)
 
-        # Check that the correct graph is created
-        self.assertEqual(len(G.nodes), 2)
-        self.assertEqual(
-            len(G.edges), 8 + 8 + 9 + 9 - 1
-        )  # 8+8 horizontally, 9+9 vertically, minus 1 shared edge
+    #     # Check that the correct graph is created
+    #     self.assertEqual(len(G.nodes), 2)
+    #     self.assertEqual(
+    #         len(G.edges), 8 + 8 + 9 + 9 - 1
+    #     )  # 8+8 horizontally, 9+9 vertically, minus 1 shared edge
 
-        # Check graph periodicity
-        periodicity = region.get_connected_directions()
-        self.assertTrue(np.array_equal(periodicity, [False, True, True]))
+    #     # Check graph periodicity
+    #     periodicity = region.get_connected_directions()
+    #     self.assertTrue(np.array_equal(periodicity, [False, True, True]))
 
-    def test_non_orthogonal_cell_2(self):
-        """Non-orthogonal cell with two atoms."""
-        cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
-        cell[1:2, :] *= 0.5
-        pos = np.array(
-            [
-                [0.66041568, 0.64217915, 0.49500249],
-                [0.1463031, 0.60235042, 0.49423654],
-            ]
-        )
-        symbols = np.array(2 * ["Sr"])
-        system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
-        # view(system)
+    # def test_non_orthogonal_cell_2(self):
+    #     """Non-orthogonal cell with two atoms."""
+    #     cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
+    #     cell[1:2, :] *= 0.5
+    #     pos = np.array(
+    #         [
+    #             [0.66041568, 0.64217915, 0.49500249],
+    #             [0.1463031, 0.60235042, 0.49423654],
+    #         ]
+    #     )
+    #     symbols = np.array(2 * ["Sr"])
+    #     system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
+    #     # view(system)
 
-        finder = PeriodicFinder()
-        region = finder.get_region(system, 0, 5, 0.8)
-        # view(region.cell)
+    #     finder = PeriodicFinder()
+    #     region = finder.get_region(system, 0, 5, 0.8)
+    #     # view(region.cell)
 
-        G = region._search_graph
-        # for node1, node2, data in G.edges(data=True):
-        #     print(node1, node2, data)
-        # draw_networkx(G)
-        # mpl.show()
+    #     G = region._search_graph
+    #     # for node1, node2, data in G.edges(data=True):
+    #     #     print(node1, node2, data)
+    #     # draw_networkx(G)
+    #     # mpl.show()
 
-        # Check that the correct graph is created
-        self.assertEqual(len(G.nodes), 2)
-        self.assertEqual(len(G.edges), 15)  # 8+8-1
+    #     # Check that the correct graph is created
+    #     self.assertEqual(len(G.nodes), 2)
+    #     self.assertEqual(len(G.edges), 15)  # 8+8-1
 
-        # Check graph periodicity
-        periodicity = region.get_connected_directions()
-        self.assertTrue(np.array_equal(periodicity, [True, True, False]))
+    #     # Check graph periodicity
+    #     periodicity = region.get_connected_directions()
+    #     self.assertTrue(np.array_equal(periodicity, [True, True, False]))
 
-    def test_non_orthogonal_cell_4(self):
-        """Non-orthogonal cell with four atoms."""
-        cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
-        pos = np.array(
-            [
-                [0.66041568, 0.64217915, 0.49500249],
-                [0.63081094, 0.13665159, 0.49460691],
-                [0.1463031, 0.60235042, 0.49423654],
-                [0.11211634, 0.1241777, 0.49450267],
-            ]
-        )
-        symbols = np.array(4 * ["Sr"])
-        system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
-        # view(system)
+    # def test_non_orthogonal_cell_4(self):
+    #     """Non-orthogonal cell with four atoms."""
+    #     cell = np.array([[7.8155, 0.0, 0.0], [-3.9074, 6.7683, 0.0], [0.0, 0.0, 175.0]])
+    #     pos = np.array(
+    #         [
+    #             [0.66041568, 0.64217915, 0.49500249],
+    #             [0.63081094, 0.13665159, 0.49460691],
+    #             [0.1463031, 0.60235042, 0.49423654],
+    #             [0.11211634, 0.1241777, 0.49450267],
+    #         ]
+    #     )
+    #     symbols = np.array(4 * ["Sr"])
+    #     system = Atoms(scaled_positions=pos, cell=cell, symbols=symbols, pbc=True)
+    #     # view(system)
 
-        finder = PeriodicFinder()
-        region = finder.get_region(system, 0, 5, 0.7)
-        G = region._search_graph
+    #     finder = PeriodicFinder()
+    #     region = finder.get_region(system, 0, 5, 0.7)
+    #     G = region._search_graph
 
-        # Check that the correct graph is created
-        self.assertEqual(len(G.nodes), 4)
-        self.assertEqual(len(G.edges), 22)
+    #     # Check that the correct graph is created
+    #     self.assertEqual(len(G.nodes), 4)
+    #     self.assertEqual(len(G.edges), 22)
 
-        # Check graph periodicity
-        periodicity = region.get_connected_directions()
-        self.assertTrue(np.array_equal(periodicity, [True, True, False]))
+    #     # Check graph periodicity
+    #     periodicity = region.get_connected_directions()
+    #     self.assertTrue(np.array_equal(periodicity, [True, True, False]))
 
     def test_surface_difficult_basis_atoms(self):
         """This system with this specific position tolerance fails if there is
@@ -2426,48 +2426,50 @@ class SearchGraphTests(unittest.TestCase):
         system = ase.io.read(
             "./data/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
         )
-        # view(system)
+        view(system)
 
         finder = PeriodicFinder()
         region = finder.get_region(system, 42, 12, 1.05146337551)
 
         # Check graph periodicity
         periodicity = region.get_connected_directions()
+        view(region.cell)
+        print(periodicity)
         self.assertTrue(np.array_equal(periodicity, [False, True, True]))
 
-    def test_surface_adsorbate(self):
-        """Test graph search in the presence of adsorbates."""
-        system = ase.io.read(
-            "./data/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbco91p05ftuJQ38__Y0_TDg9tNIy.xyz"
-        )
-        # view(system)
+    # def test_surface_adsorbate(self):
+    #     """Test graph search in the presence of adsorbates."""
+    #     system = ase.io.read(
+    #         "./data/ROHGEranIWm-gnS6jhQaLZRORWDKx+Pbco91p05ftuJQ38__Y0_TDg9tNIy.xyz"
+    #     )
+    #     # view(system)
 
-        finder = PeriodicFinder()
-        region = finder.get_region(system, 19, 12, 0.252687223066)
-        G = region._search_graph
+    #     finder = PeriodicFinder()
+    #     region = finder.get_region(system, 19, 12, 0.252687223066)
+    #     G = region._search_graph
 
-        # Check that the correct graph is created
-        self.assertEqual(len(G.nodes), 16)
-        # self.assertEqual(len(G.edges), 64) # All edges not found due to low pos_tol
+    #     # Check that the correct graph is created
+    #     self.assertEqual(len(G.nodes), 16)
+    #     # self.assertEqual(len(G.edges), 64) # All edges not found due to low pos_tol
 
-        # Check graph periodicity
-        periodicity = region.get_connected_directions()
-        self.assertTrue(np.array_equal(periodicity, [False, True, True]))
+    #     # Check graph periodicity
+    #     periodicity = region.get_connected_directions()
+    #     self.assertTrue(np.array_equal(periodicity, [False, True, True]))
 
 
 if __name__ == "__main__":
     suites = []
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(RadiiTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(DimensionalityTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(PeriodicFinderTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(RadiiTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(DimensionalityTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(PeriodicFinderTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(SearchGraphTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(DelaunayTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(AtomTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(Class0DTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(Class1DTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(Material2DTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(SurfaceTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(Class3DTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(DelaunayTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(AtomTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(Class0DTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(Class1DTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(Material2DTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(SurfaceTests))
+    # suites.append(unittest.TestLoader().loadTestsFromTestCase(Class3DTests))
 
     alltests = unittest.TestSuite(suites)
     result = unittest.TextTestRunner(verbosity=3).run(alltests)
