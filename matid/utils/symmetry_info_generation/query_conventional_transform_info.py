@@ -7,6 +7,7 @@ This information is needed because the normalizers and Wyckoff positions in
 Bilbao Crystallographic Server are given in the conventional setttings only by
 default.
 """
+
 import spglib
 from collections import defaultdict
 

@@ -2,6 +2,7 @@
 For each spacegroup returns the lattice directions in which all the atoms can
 be moved without breaking the symmetry.
 """
+
 import re
 import json
 import urllib.request

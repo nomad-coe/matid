@@ -1357,7 +1357,7 @@ class SymmetryAnalyzer(object):
                         for trans in translations:
                             test_positions[
                                 i_trans * n_expr : (i_trans + 1) * n_expr, :
-                            ] = (first_test_pos + trans)
+                            ] = first_test_pos + trans
                             i_trans += 1
 
                         # Test if each test positions can be matched to an atom

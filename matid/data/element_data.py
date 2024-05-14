@@ -1,6 +1,7 @@
 """Used to store data related to atomic elements. Also has some conversion
 utilities related to the data.
 """
+
 import numpy as np
 from ase.data import covalent_radii
 

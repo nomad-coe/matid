@@ -8,6 +8,7 @@ Note that there can be connections problems with the server and it is
 recommeneded to do the scraping with some delays and by storing intermediate
 results.
 """
+
 import re
 import pickle
 import numpy as np

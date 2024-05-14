@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 cd ..
-ruff check
+ruff format --check

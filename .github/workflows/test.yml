@@ -27,6 +27,10 @@ jobs:
     - name: Install dependencies
       run: |
         cd ${GITHUB_WORKSPACE}/scripts && ./setup.sh
+    - name: format
+      if: always()
+      run: |
+        cd ${GITHUB_WORKSPACE}/scripts && ./format.sh
     - name: lint
       if: always()
       run: |

@@ -1,6 +1,7 @@
 """This module defines functions for deriving geometry related quantities from
 a atomic system.
 """
+
 import math
 import itertools
 from collections import defaultdict
