@@ -43,7 +43,7 @@ dev = [
     "coverage",
     "pytest",
     "ruff",
-    "pydoc-markdown"
+    "pydoc-markdown",
 ]
 
 [tool.setuptools.packages.find]
