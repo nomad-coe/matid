@@ -127,7 +127,7 @@ class Classifier:
         self.min_coverage = min_coverage
 
         # Check seed position
-        if type(seed_position) == str:
+        if isinstance(seed_position, str):
             if seed_position == "cm":
                 pass
             else:
@@ -251,7 +251,7 @@ class Classifier:
                     if len(elems) == 0:
                         break
             else:
-                if type(self.seed_position) == int:
+                if isinstance(self.seed_position, int):
                     seed_indices = [self.seed_position]
                 elif isinstance(self.seed_position, (tuple, list, np.ndarray)):
                     seed_indices = self.seed_position

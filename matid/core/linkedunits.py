@@ -69,7 +69,7 @@ class LinkedUnitCollection(dict):
         # Transform key to tuple, check length
         try:
             key = tuple(key)
-        except:
+        except Exception:
             raise TypeError(
                 "Could not transform the given key '{}' into tuple.".format(key)
             )
@@ -311,7 +311,6 @@ class LinkedUnitCollection(dict):
         if self._adsorbates is None:
             _, outside_indices = self.get_inside_and_outside_indices()
             basis_elements = set(self.cell.get_atomic_numbers())
-            outside_indices = outside_indices
 
             # The substitutions have to be removed explicitly from the ouside
             # atoms because sometimes they are outside the tesselation.

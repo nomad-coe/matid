@@ -67,6 +67,7 @@ ignore = [
     "E701", # Multiple statements on one line (colon)
     "E731", # Do not assign a lambda expression, use a def
     "E402", # Module level import not at top of file
+    "W605", # Invalid escape sequence
     "PLR0911", # Too many return statements
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments in function definition
