@@ -3,6 +3,7 @@ Goes through the spglib database for different Hall numbers and extracts space
 group specific intormation. The results are then written to a python file for
 later use.
 """
+
 import spglib
 import pickle
 

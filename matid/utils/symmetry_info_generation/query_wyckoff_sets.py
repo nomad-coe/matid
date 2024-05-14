@@ -16,6 +16,7 @@ correponding ITA setting in Bilbao to fetch the Wyckoff positions.
 The mathematical expression for the Wyckoff positions is stored along with the
 necessary matrices for solving the variables from a particular system.
 """
+
 import re
 import parser
 import numpy as np

@@ -1,6 +1,7 @@
 """This module defines functions for deriving geometry related quantities from
 a atomic system.
 """
+
 import math
 import itertools
 from collections import defaultdict
@@ -291,9 +292,9 @@ def get_moments_of_inertia(system, weight=True):
     I13 = np.sum(-weights * x * z)
     I23 = np.sum(-weights * y * z)
 
-    I = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+    inertia_tensor = np.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
 
-    evals, evecs = np.linalg.eigh(I)
+    evals, evecs = np.linalg.eigh(inertia_tensor)
 
     return evals, evecs
 

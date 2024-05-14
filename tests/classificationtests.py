@@ -1,6 +1,7 @@
 """
 Set of regression tests for structure classification.
 """
+
 import unittest
 
 import numpy as np

@@ -2,6 +2,7 @@
 This script combines multiple pickle files into one python source file
 containing the symmetry information.
 """
+
 import os
 import pickle
 import pprint

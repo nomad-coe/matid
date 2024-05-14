@@ -1,4 +1,5 @@
 """Utility functions to protect main process against segfaults"""
+
 import signal
 
 

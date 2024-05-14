@@ -58,7 +58,7 @@ class SymmetryAnalyzer(object):
             self._analyzed_system = system
         elif n_pbc == 2:
             # Get the index of the non-periodic axis
-            i_pbc = np.argwhere(pbc == False)[0]
+            i_pbc = np.argwhere(pbc == False)[0]  # noqa: E712
 
             # Before calculating the conventional system, make sure that there
             # is enough vacuum in the periodic direction to remove any
@@ -355,7 +355,7 @@ class SymmetryAnalyzer(object):
             return ideal_sys
         # 2D materials get a special treatment
         elif n_pbc == 2:
-            i_pbc = np.argwhere(pbc == False)[0]
+            i_pbc = np.argwhere(pbc == False)[0]  # noqa: E712
 
             # Get the full 3D conventional system and it's symmetries. It will
             # include some symmetries that have a translational component
@@ -1357,7 +1357,7 @@ class SymmetryAnalyzer(object):
                         for trans in translations:
                             test_positions[
                                 i_trans * n_expr : (i_trans + 1) * n_expr, :
-                            ] = (first_test_pos + trans)
+                            ] = first_test_pos + trans
                             i_trans += 1
 
                         # Test if each test positions can be matched to an atom
