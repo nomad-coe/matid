@@ -10,4 +10,5 @@ if [ "$unittest" != 0 ] || [ "$pytest" != 0 ]; then
 fi
 cd ../reports/coverage
 export COVERAGE_FILE=".coverage"
-coverage json -o coverage.json
+coverage xml -o coverage.xml
+genbadge coverage -i coverage.xml -o coverage-badge.svg

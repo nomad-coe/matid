@@ -1,7 +1,7 @@
 <img src="https://raw.githubusercontent.com/nomad-coe/matid/main/docs/static/img/logo.png" width="300">
 
 ![Build status](https://github.com/nomad-coe/matid/actions/workflows/test.yml/badge.svg)
-![Coverage Status](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnomad-coe%2Fmatid%2Fv2.0.0%2Freports%2Fcoverage%2Fcoverage.json&query=%24.totals.percent_covered_display)
+![Coverage Status](./reports/coverage//coverage-badge.svg)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 MatID is a Python package for identifying and analyzing atomistic systems based
