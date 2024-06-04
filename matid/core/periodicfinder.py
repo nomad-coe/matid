@@ -1609,13 +1609,20 @@ class PeriodicFinder:
             )
             # print(matches)
             # print(seed_guesses)
-            for match, seed_guess, multiplier, disloc, test_cell_index, displacement in zip(
+            for (
+                match,
+                seed_guess,
+                multiplier,
+                disloc,
+                test_cell_index,
+                displacement,
+            ) in zip(
                 matches,
                 seed_guesses,
                 multipliers,
                 dislocations,
                 test_cell_indices,
-                displacements
+                displacements,
             ):
                 multiplier_tuple = tuple(multiplier)
 
