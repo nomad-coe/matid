@@ -510,7 +510,6 @@ class LinkedUnitCollection(dict):
                     if positive and negative:
                         break
                 if positive and negative:
-                    print(direction, ndata)
                     dir_to_remove.add(direction)
             directions -= dir_to_remove
 
