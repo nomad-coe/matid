@@ -15,7 +15,6 @@ from matid.clustering import SBC
 import matid
 from importlib.metadata import version
 matid_version = version('matid')
-print(matid_version)
 
 np.random.seed(7)
 
@@ -70,8 +69,8 @@ def generate_ordered(n_atoms):
     return system
 
 
-def get_path(system, type):
-    path = f"./results/{system}/{type}/results.json"
+def get_path():
+    path = f"./results/results_{matid_version}.json"
     return path
 
 
@@ -80,7 +79,16 @@ def get_result(path):
         with open(path) as fin:
             results = json.load(fin)
     else:
-        results = {}
+        results = {
+            'ordered': {
+                'memory': {},
+                'cpu': {},
+            },
+            'unordered': {
+                'memory': {},
+                'cpu': {},
+            },
+        }
     return results
 
 
@@ -104,19 +112,16 @@ def benchmark_cpu_single(system, s):
     size_actual = len(atoms)
 
     # Check if this size has already been calculated
-    path = get_path(system, "cpu")
+    path = get_path()
     result = get_result(path)
-    if result.get(str(size_actual)):
+    if result[system]['cpu'].get(str(size_actual)):
         print(f"Results exist for size {size_actual}, skipping...")
         return
 
     elapsed = run_single_cpu(atoms)
 
     # Save result
-    result[size_actual] = {
-        "elapsed_time": [elapsed],
-        "n_atoms": size_actual,
-    }
+    result[system]['cpu'][size_actual] = [elapsed]
     with open(path, 'w') as fout:
         json.dump(result, fout)
 
@@ -130,9 +135,9 @@ def benchmark_memory_single(system, s):
     size_actual = len(atoms)
 
     # Check if this size has already been calculated
-    path = get_path(system, "memory")
+    path = get_path()
     result = get_result(path)
-    if result.get(str(size_actual)):
+    if result[system]['memory'].get(str(size_actual)):
         print(f"Results exist for size {size_actual}, skipping...")
         return
 
@@ -142,10 +147,7 @@ def benchmark_memory_single(system, s):
     memory = mem - start
 
     # Save result
-    result[size_actual] = {
-        "memory": [memory],
-        "n_atoms": size_actual,
-    }
+    result[system]['memory'][size_actual] = [memory]
     with open(path, 'w') as fout:
         json.dump(result, fout)
 
@@ -182,13 +184,13 @@ def plot(show):
         color = colors[i_system]
 
         # Plot CPU time
-        path = get_path(system, "cpu")
+        path = get_path()
         results = get_result(path)
         times = []
         n_atoms = []
-        for value in results.values():
-            times.append(value['elapsed_time'])
-            n_atoms.append(value['n_atoms'])
+        for key, value in results[system]['cpu'].items():
+            times.append(value)
+            n_atoms.append(int(key))
         times = np.array(times)
         n_atoms = np.array(n_atoms)
 
@@ -218,13 +220,13 @@ def plot(show):
         ax1.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
         # Plot max memory usage
-        path = get_path(system, "memory")
+        path = get_path()
         results = get_result(path)
         memory = []
         n_atoms = []
-        for value in results.values():
-            memory.append(value['memory'])
-            n_atoms.append(value['n_atoms'])
+        for key, value in results[system]['memory'].items():
+            memory.append(value)
+            n_atoms.append(int(key))
         memory = np.array(memory)
         n_atoms = np.array(n_atoms)
         memory_mean = memory.mean(axis=1)
@@ -287,7 +289,7 @@ def plot(show):
     ax2.set_xlabel("Number of atoms")
 
     fig.tight_layout()
-    plt.savefig("./results/performance.pdf")
+    plt.savefig(f"./results/results_{matid_version}.pdf")
     if show:
         plt.show(block=True)
 
