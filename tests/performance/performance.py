@@ -1,5 +1,6 @@
 import time
 import os
+import json
 import psutil
 import resource
 import math
@@ -11,6 +12,10 @@ from ase.io import write
 from ase.build import bulk
 import matplotlib.pyplot as plt
 from matid.clustering import SBC
+import matid
+from importlib.metadata import version
+matid_version = version('matid')
+print(matid_version)
 
 np.random.seed(7)
 
@@ -66,22 +71,17 @@ def generate_ordered(n_atoms):
 
 
 def get_path(system, type):
-    path = f"./results/{system}/{type}/"
-    path_n_atoms = f"{path}/n_atoms.npy"
-    path_values = f"{path}/values.npy"
-    return path_n_atoms, path_values
+    path = f"./results/{system}/{type}/results.json"
+    return path
 
 
-def get_result(path_n_atoms, path_values):
-    if os.path.exists(path_n_atoms):
-        n_atoms = np.load(path_n_atoms).tolist()
+def get_result(path):
+    if os.path.exists(path):
+        with open(path) as fin:
+            results = json.load(fin)
     else:
-        n_atoms = []
-    if os.path.exists(path_values):
-        values = np.load(path_values).tolist()
-    else:
-        values = [[]]
-    return n_atoms, values
+        results = {}
+    return results
 
 
 @click.group()
@@ -98,40 +98,27 @@ def run(system, n_atoms):
 
 @cli.command()
 @click.option("--system", help="System type", required=True)
-@click.option("-n", help="Number of repetitions", default=1, required=True)
-def benchmark_cpu(system, n):
-    sizes_requested = np.arange(100, 900 + 1, 100)
-    sizes_actual = np.zeros((len(sizes_requested)))
-    times = np.zeros((n, len(sizes_requested)))
-    for i in range(n):
-        for j, n_atoms in enumerate(sizes_requested):
-            atoms = globals()[f"generate_{system}"](n_atoms)
-            size_actual = len(atoms)
-            print(size_actual)
-            elapsed = run_single_cpu(atoms)
-            times[i, j] = elapsed
-            sizes_actual[j] = size_actual
-
-    path_n_atoms, path_values = get_path(system, "cpu")
-    np.save(path_n_atoms, sizes_actual)
-    np.save(path_values, times)
-
-
-@cli.command()
-@click.option("--system", help="System type", required=True)
 @click.option("-s", help="Requested system size", type=int, required=True)
 def benchmark_cpu_single(system, s):
     atoms = globals()[f"generate_{system}"](s)
     size_actual = len(atoms)
+
+    # Check if this size has already been calculated
+    path = get_path(system, "cpu")
+    result = get_result(path)
+    if result.get(str(size_actual)):
+        print(f"Results exist for size {size_actual}, skipping...")
+        return
+
     elapsed = run_single_cpu(atoms)
 
     # Save result
-    path_n_atoms, path_values = get_path(system, "cpu")
-    n_atoms, values = get_result(path_n_atoms, path_values)
-    n_atoms.append(size_actual)
-    values[0].append([elapsed])
-    np.save(path_n_atoms, n_atoms)
-    np.save(path_values, values)
+    result[size_actual] = {
+        "elapsed_time": [elapsed],
+        "n_atoms": size_actual,
+    }
+    with open(path, 'w') as fout:
+        json.dump(result, fout)
 
 
 @cli.command()
@@ -139,20 +126,28 @@ def benchmark_cpu_single(system, s):
 @click.option("-s", help="Requested system size", type=int, required=True)
 def benchmark_memory_single(system, s):
     """Measures the peak memory usage (resident set) as MiBi."""
-    process = psutil.Process()
-    start = process.memory_info().rss / 1024 / 1024
     atoms = globals()[f"generate_{system}"](s)
     size_actual = len(atoms)
+
+    # Check if this size has already been calculated
+    path = get_path(system, "memory")
+    result = get_result(path)
+    if result.get(str(size_actual)):
+        print(f"Results exist for size {size_actual}, skipping...")
+        return
+
+    process = psutil.Process()
+    start = process.memory_info().rss / 1024 / 1024
     mem = run_single_memory(atoms)
     memory = mem - start
 
     # Save result
-    path_n_atoms, path_values = get_path(system, "memory")
-    n_atoms, values = get_result(path_n_atoms, path_values)
-    n_atoms.append(size_actual)
-    values[0].append([memory])
-    np.save(path_n_atoms, n_atoms)
-    np.save(path_values, values)
+    result[size_actual] = {
+        "memory": [memory],
+        "n_atoms": size_actual,
+    }
+    with open(path, 'w') as fout:
+        json.dump(result, fout)
 
 
 @cli.command()
@@ -174,6 +169,7 @@ def plot(show):
 
     figsize = (8, 9)
     fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=figsize)
+    ax1.set_title(f"MatID v{matid_version}", y=1.2)
     colors = ["#2988AD", "#FEA534"]
     labels = {"ordered": "Ordered", "unordered": "Unordered"}
 
@@ -186,11 +182,18 @@ def plot(show):
         color = colors[i_system]
 
         # Plot CPU time
-        path_n_atoms, path_values = get_path(system, "cpu")
-        times = np.load(path_values)
-        times_mean = times.mean(axis=0)
-        # times_std = times.std(axis=0)
-        n_atoms = np.load(path_n_atoms)
+        path = get_path(system, "cpu")
+        results = get_result(path)
+        times = []
+        n_atoms = []
+        for value in results.values():
+            times.append(value['elapsed_time'])
+            n_atoms.append(value['n_atoms'])
+        times = np.array(times)
+        n_atoms = np.array(n_atoms)
+
+        times_mean = times.mean(axis=1)
+        # times_std = times.std(axis=1)
         i_timemax = times.max()
         i_timemin = times.min()
         i_nmax = n_atoms.max()
@@ -215,11 +218,17 @@ def plot(show):
         ax1.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
         # Plot max memory usage
-        path_n_atoms, path_values = get_path(system, "memory")
-        memory = np.load(path_values)
-        memory_mean = memory.mean(axis=0)
-        n_atoms = np.load(path_n_atoms)
-        # memory_std = memory.std(axis=0)
+        path = get_path(system, "memory")
+        results = get_result(path)
+        memory = []
+        n_atoms = []
+        for value in results.values():
+            memory.append(value['memory'])
+            n_atoms.append(value['n_atoms'])
+        memory = np.array(memory)
+        n_atoms = np.array(n_atoms)
+        memory_mean = memory.mean(axis=1)
+        # memory_std = memory.std(axis=1)
         # ax2.fill_between(n_atoms, memory_mean - memory_std, memory_mean + memory_std, color=color, alpha=0.3)
         ax2.plot(
             n_atoms,
@@ -257,22 +266,22 @@ def plot(show):
     margin = 0.05
     ax1.set_xlim(nmin - margin * ninterval, nmax + margin * ninterval)
     ax1.set_ylim(timemin - margin * timeinterval, timemax + margin * timeinterval)
-    ax1.set_xticks(
-        np.arange(100, 901, 100),
-        [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(100, 901, 100), 2)],
-        fontsize=20,
-    )
-    ax1.set_yticks(
-        np.arange(0, 200, 30),
-        [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(0, 200, 30), 0)],
-        fontsize=20,
-    )
-    ax2.set_yticks(
-        np.arange(0, 3001, 500),
-        [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(0, 3001, 500), 0)],
-        fontsize=20,
-    )
-    ax1.legend(loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2, fontsize=20)
+    # ax1.set_xticks(
+    #     np.arange(100, 901, 100),
+    #     [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(100, 901, 100), 2)],
+    #     fontsize=20,
+    # )
+    # ax1.set_yticks(
+    #     np.arange(0, 200, 30),
+    #     [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(0, 200, 30), 0)],
+    #     fontsize=20,
+    # )
+    # ax2.set_yticks(
+    #     np.arange(0, 3001, 500),
+    #     [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(0, 3001, 500), 0)],
+    #     fontsize=20,
+    # )
+    ax1.legend(loc="upper center", bbox_to_anchor=(0.5, 1.22), ncol=2, fontsize=20)
     ax1.set_ylabel("Elapsed time (s)")
     ax2.set_ylabel("Peak memory usage (MB)")
     ax2.set_xlabel("Number of atoms")
