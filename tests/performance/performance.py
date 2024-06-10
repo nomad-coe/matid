@@ -20,7 +20,7 @@ np.random.seed(7)
 
 
 def get_ordered_system():
-    ordered = bulk("Cu", "fcc", a=3.6, cubic=True) * [1, 2, 2]
+    ordered = bulk("Cu", "fcc", a=3.6, cubic=True) * [1, 1, 1]
     ordered.set_pbc(True)
     return ordered
 
@@ -63,8 +63,8 @@ def generate_ordered(n_atoms):
     """Generates a pristine surface system with n_atoms."""
     system = get_ordered_system()
     n_atoms_unit = len(system)
-    repetitions = math.ceil(n_atoms / n_atoms_unit)
-    system *= [repetitions, 1, 1]
+    n_repetitions = int(np.power(n_atoms/n_atoms_unit, 1.0/3.0))
+    system *= [n_repetitions, n_repetitions, n_repetitions]
 
     return system
 
