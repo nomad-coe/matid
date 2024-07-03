@@ -2418,25 +2418,36 @@ class SearchGraphTests(unittest.TestCase):
         periodicity = region.get_connected_directions()
         self.assertTrue(np.array_equal(periodicity, [True, True, False]))
 
-    # TODO: This test fails with the improved matching. Should investigate why.
-    # def test_surface_difficult_basis_atoms(self):
-    #     """This system with this specific position tolerance fails if there is
-    #     no check against moves that occur inside the unit cell 'grid', and do
-    #     not wrap across it.
+    # def test_connected_directions(self):
+    #     """TODO: Should be fixed.
+
+    #     Checks that the correct connected directions are returned in a case
+    #     where the search may wrap around periodic boundaries.
+
+    #     This test will fail if the connected directions are based on graph nodes
+    #     having two inbound edges with opposing search directions. E.g. "cell
+    #     [0,0,0] has inbound node from direction [1, 0, 0] and from direction
+    #     [-1, 0 0]".
     #     """
-    #     system = ase.io.read(
-    #         "./data/RzQh5XijWuXsNZiRSxeOlPFUY_9Gl+PY5NRLMRYyQXsYmBN9hMcT-FftquP.xyz"
-    #     )
-    #     view(system)
+    #     for i in range(5):
+    #         system = Atoms(
+    #             positions=[[0, 4, 0], [2, 6, 0], [0, 8, 0]],
+    #             cell=[4, 12, 2],
+    #             symbols=['Al', 'Al', 'Al'],
+    #             pbc=True
+    #         )
+    #         system = system * [2, 1, 1]
+    #         system.rattle(0.05, seed=i)
 
-    #     finder = PeriodicFinder()
-    #     region = finder.get_region(system, 42, 12, 1.05146337551)
+    #         finder = PeriodicFinder()
+    #         region = finder.get_region(system, 0, 6, 0.2)
 
-    #     # Check graph periodicity
-    #     periodicity = region.get_connected_directions()
-    #     view(region.cell)
-    #     print(periodicity)
-    #     self.assertTrue(np.array_equal(periodicity, [False, True, True]))
+    #         # Check that entire system is found
+    #         self.assertTrue(len(region.get_all_indices()) == len(system))
+
+    #         # Check graph periodicity
+    #         periodicity = region.get_connected_directions()
+    #         self.assertTrue(periodicity.sum() == 2)
 
     def test_surface_adsorbate(self):
         """Test graph search in the presence of adsorbates."""

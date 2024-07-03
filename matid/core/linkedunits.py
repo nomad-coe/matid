@@ -495,17 +495,18 @@ class LinkedUnitCollection(dict):
         G = self._search_graph
         dir_vectors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         directions = set([0, 1, 2])
-        for node, ndata in G.nodes(data=True):
+        for node in G.nodes(data=False):
             node_edges = G.in_edges(node, data=True)
             dir_to_remove = set()
-            for direction in directions:
+            for direction in sorted(directions):
+                dir_vector = dir_vectors[direction]
                 positive = False
                 negative = False
                 for edge in node_edges:
                     multiplier = edge[2]["multiplier"]
-                    if np.array_equal(multiplier, dir_vectors[direction]):
+                    if np.array_equal(multiplier, dir_vector):
                         positive = True
-                    if np.array_equal(multiplier, -dir_vectors[direction]):
+                    if np.array_equal(multiplier, -dir_vector):
                         negative = True
                     if positive and negative:
                         break
