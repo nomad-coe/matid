@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 from matid.clustering import SBC
 import matid
 from importlib.metadata import version
-matid_version = version('matid')
+
+matid_version = version("matid")
 
 np.random.seed(7)
 
@@ -63,7 +64,7 @@ def generate_ordered(n_atoms):
     """Generates a pristine surface system with n_atoms."""
     system = get_ordered_system()
     n_atoms_unit = len(system)
-    n_repetitions = int(np.power(n_atoms/n_atoms_unit, 1.0/3.0))
+    n_repetitions = int(np.power(n_atoms / n_atoms_unit, 1.0 / 3.0))
     system *= [n_repetitions, n_repetitions, n_repetitions]
 
     return system
@@ -80,13 +81,13 @@ def get_result(path):
             results = json.load(fin)
     else:
         results = {
-            'ordered': {
-                'memory': {},
-                'cpu': {},
+            "ordered": {
+                "memory": {},
+                "cpu": {},
             },
-            'unordered': {
-                'memory': {},
-                'cpu': {},
+            "unordered": {
+                "memory": {},
+                "cpu": {},
             },
         }
     return results
@@ -114,15 +115,15 @@ def benchmark_cpu_single(system, s):
     # Check if this size has already been calculated
     path = get_path()
     result = get_result(path)
-    if result[system]['cpu'].get(str(size_actual)):
+    if result[system]["cpu"].get(str(size_actual)):
         print(f"Results exist for size {size_actual}, skipping...")
         return
 
     elapsed = run_single_cpu(atoms)
 
     # Save result
-    result[system]['cpu'][size_actual] = [elapsed]
-    with open(path, 'w') as fout:
+    result[system]["cpu"][size_actual] = [elapsed]
+    with open(path, "w") as fout:
         json.dump(result, fout)
 
 
@@ -137,7 +138,7 @@ def benchmark_memory_single(system, s):
     # Check if this size has already been calculated
     path = get_path()
     result = get_result(path)
-    if result[system]['memory'].get(str(size_actual)):
+    if result[system]["memory"].get(str(size_actual)):
         print(f"Results exist for size {size_actual}, skipping...")
         return
 
@@ -147,8 +148,8 @@ def benchmark_memory_single(system, s):
     memory = mem - start
 
     # Save result
-    result[system]['memory'][size_actual] = [memory]
-    with open(path, 'w') as fout:
+    result[system]["memory"][size_actual] = [memory]
+    with open(path, "w") as fout:
         json.dump(result, fout)
 
 
@@ -188,7 +189,7 @@ def plot(show):
         results = get_result(path)
         times = []
         n_atoms = []
-        for key, value in results[system]['cpu'].items():
+        for key, value in results[system]["cpu"].items():
             times.append(value)
             n_atoms.append(int(key))
         times = np.array(times)
@@ -224,7 +225,7 @@ def plot(show):
         results = get_result(path)
         memory = []
         n_atoms = []
-        for key, value in results[system]['memory'].items():
+        for key, value in results[system]["memory"].items():
             memory.append(value)
             n_atoms.append(int(key))
         memory = np.array(memory)

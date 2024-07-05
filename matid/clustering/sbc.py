@@ -126,7 +126,7 @@ class SBC:
         # Calculate the distances here once if they have not been provided.
         with catchtime() as t1:
             distances = matid.geometry.get_distances(system_copy, radii)
-        print(f'Distances: {t1():.3f} seconds')
+        print(f"Distances: {t1():.3f} seconds")
 
         # Iteratively search for new clusters until whole system is covered
         with catchtime() as t2:
@@ -172,7 +172,7 @@ class SBC:
                         )
                     )
                     indices -= i_indices
-        print(f'Clustering 1: {t2():.3f} seconds')
+        print(f"Clustering 1: {t2():.3f} seconds")
 
         # Check overlaps of the regions. For large overlaps the grains are
         # merged (the real region was probably cut into pieces by unfortunate
@@ -181,7 +181,7 @@ class SBC:
             clusters = self._merge_clusters(
                 system_copy, clusters, merge_threshold, distances, bond_threshold
             )
-        print(f'Merging : {t3():.3f} seconds')
+        print(f"Merging : {t3():.3f} seconds")
 
         # Any remaining overlaps are resolved by assigning atoms to the
         # "nearest" cluster
@@ -189,13 +189,13 @@ class SBC:
             clusters = self._localize_clusters(
                 system_copy, clusters, merge_radius, distances
             )
-        print(f'Localizing : {t4():.3f} seconds')
+        print(f"Localizing : {t4():.3f} seconds")
 
         # Any atoms that are not chemically connected to the region will be
         # excluded.
         with catchtime() as t5:
             clusters = self._clean_clusters(clusters, bond_threshold)
-        print(f'Cleaning : {t5():.3f} seconds')
+        print(f"Cleaning : {t5():.3f} seconds")
 
         return clusters
 
