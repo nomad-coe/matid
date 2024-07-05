@@ -198,4 +198,4 @@ coverage
 tests/.coverage
 
 # performance results
-tests/perfomance/results
+tests/performance/results
