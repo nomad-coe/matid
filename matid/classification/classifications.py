@@ -61,10 +61,6 @@ class Class2DWithCell(Class2D):
         return self.region.get_adsorbates()
 
     @property
-    def substitutions(self):
-        return self.region.get_substitutions()
-
-    @property
     def vacancies(self):
         return self.region.get_vacancies()
 
