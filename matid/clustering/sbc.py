@@ -7,16 +7,6 @@ import matid.geometry
 from matid.clustering.cluster import Cluster
 from matid.core.periodicfinder import PeriodicFinder
 
-from time import perf_counter
-from contextlib import contextmanager
-
-
-@contextmanager
-def catchtime():
-    t1 = t2 = perf_counter()
-    yield lambda: t2 - t1
-    t2 = perf_counter()
-
 
 class SBC:
     """
@@ -124,78 +114,68 @@ class SBC:
         radii = matid.geometry.get_radii(radii, atomic_numbers)
 
         # Calculate the distances here once if they have not been provided.
-        with catchtime() as t1:
-            distances = matid.geometry.get_distances(system_copy, radii)
-        print(f"Distances: {t1():.3f} seconds")
+        distances = matid.geometry.get_distances(system_copy, radii)
 
         # Iteratively search for new clusters until whole system is covered
-        with catchtime() as t2:
-            periodic_finder = PeriodicFinder(
-                angle_tol=angle_tol, chem_similarity_threshold=0
+        periodic_finder = PeriodicFinder(
+            angle_tol=angle_tol, chem_similarity_threshold=0
+        )
+        indices = set(list(range(len(system_copy))))
+        clusters = []
+        while len(indices) != 0:
+            i_seed = self.rng.choice(list(indices), 1)[0]
+            i_grain, mask = periodic_finder.get_region(
+                system_copy,
+                seed_index=i_seed,
+                max_cell_size=max_cell_size,
+                pos_tol=pos_tol,
+                bond_threshold=bond_threshold,
+                overlap_threshold=overlap_threshold,
+                distances=distances,
+                return_mask=True,
             )
-            indices = set(list(range(len(system_copy))))
-            clusters = []
-            while len(indices) != 0:
-                i_seed = self.rng.choice(list(indices), 1)[0]
-                i_grain, mask = periodic_finder.get_region(
-                    system_copy,
-                    seed_index=i_seed,
-                    max_cell_size=max_cell_size,
-                    pos_tol=pos_tol,
-                    bond_threshold=bond_threshold,
-                    overlap_threshold=overlap_threshold,
-                    distances=distances,
-                    return_mask=True,
-                )
 
-                # All neighbours that the periodic finder has tested are removed
-                # from the search. This significantly helps with the scaling of the
-                # clustering.
-                tested_indices = set(np.arange(len(mask))[mask])
-                indices -= tested_indices
+            # All neighbours that the periodic finder has tested are removed
+            # from the search. This significantly helps with the scaling of the
+            # clustering.
+            tested_indices = set(np.arange(len(mask))[mask])
+            indices -= tested_indices
 
-                # If a grain is found, it is added as a single cluster and removed
-                # from the search
-                if i_grain is not None:
-                    i_indices = {i_seed}
-                    i_indices.update(i_grain.get_basis_indices())
-                    i_species = set(atomic_numbers[list(i_indices)])
-                    clusters.append(
-                        Cluster(
-                            i_indices,
-                            i_species,
-                            i_grain,
-                            system=system_copy,
-                            distances=distances,
-                            radii=radii,
-                            bond_threshold=bond_threshold,
-                        )
+            # If a grain is found, it is added as a single cluster and removed
+            # from the search
+            if i_grain is not None:
+                i_indices = {i_seed}
+                i_indices.update(i_grain.get_basis_indices())
+                i_species = set(atomic_numbers[list(i_indices)])
+                clusters.append(
+                    Cluster(
+                        i_indices,
+                        i_species,
+                        i_grain,
+                        system=system_copy,
+                        distances=distances,
+                        radii=radii,
+                        bond_threshold=bond_threshold,
                     )
-                    indices -= i_indices
-        print(f"Clustering 1: {t2():.3f} seconds")
+                )
+                indices -= i_indices
 
         # Check overlaps of the regions. For large overlaps the grains are
         # merged (the real region was probably cut into pieces by unfortunate
         # selection of the seed atom)
-        with catchtime() as t3:
-            clusters = self._merge_clusters(
-                system_copy, clusters, merge_threshold, distances, bond_threshold
-            )
-        print(f"Merging : {t3():.3f} seconds")
+        clusters = self._merge_clusters(
+            system_copy, clusters, merge_threshold, distances, bond_threshold
+        )
 
         # Any remaining overlaps are resolved by assigning atoms to the
         # "nearest" cluster
-        with catchtime() as t4:
-            clusters = self._localize_clusters(
-                system_copy, clusters, merge_radius, distances
-            )
-        print(f"Localizing : {t4():.3f} seconds")
+        clusters = self._localize_clusters(
+            system_copy, clusters, merge_radius, distances
+        )
 
         # Any atoms that are not chemically connected to the region will be
         # excluded.
-        with catchtime() as t5:
-            clusters = self._clean_clusters(clusters, bond_threshold)
-        print(f"Cleaning : {t5():.3f} seconds")
+        clusters = self._clean_clusters(clusters, bond_threshold)
 
         return clusters
 
