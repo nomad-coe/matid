@@ -1151,6 +1151,49 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     return matches, substitutions, vacancies, copy_indices
 
 
+def get_matches_simple(system, cell_list, positions, numbers, tolerance):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        cell_list(CellList): The cell list for an appropriately extended version
+            of the system.
+        positions(np.ndarray): Positions to match in the system.
+        tolerance(float): Maximum allowed distance for matching.
+    Returns:
+        list: list of matched atoms or None is nothing was matched.
+    """
+    atomic_numbers = system.get_atomic_numbers()
+    cell = system.get_cell()
+    pbc = system.get_pbc()
+    matches = []
+    displacements = []
+    wrapped_positions = ase.geometry.wrap_positions(positions, cell, pbc)
+
+    for wrapped_position, atomic_number in zip(wrapped_positions, numbers):
+        match = None
+        displacement = None
+        cell_list_result = cell_list.get_neighbours_for_position(
+            wrapped_position[0], wrapped_position[1], wrapped_position[2]
+        )
+        indices = cell_list_result.indices_original
+        if len(indices) > 0:
+            distances = cell_list_result.distances
+            min_distance_index = np.argmin(distances)
+            closest_distance = distances[min_distance_index]
+            closest_index = indices[min_distance_index]
+            if closest_distance <= tolerance:
+                closest_atomic_number = atomic_numbers[closest_index]
+                if closest_atomic_number == atomic_number:
+                    match = closest_index
+                    displacement = cell_list_result.displacements[min_distance_index]
+        matches.append(match)
+        displacements.append(displacement)
+
+    return matches, displacements
+
+
 def get_cell_list(positions, cell, pbc, extension, cutoff):
     """Given a system and a cutoff value, returns a cell list object.
 

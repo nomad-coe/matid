@@ -499,13 +499,14 @@ class LinkedUnitCollection(dict):
             node_edges = G.in_edges(node, data=True)
             dir_to_remove = set()
             for direction in directions:
+                dir_vector = dir_vectors[direction]
                 positive = False
                 negative = False
                 for edge in node_edges:
                     multiplier = edge[2]["multiplier"]
-                    if np.array_equal(multiplier, dir_vectors[direction]):
+                    if np.array_equal(multiplier, dir_vector):
                         positive = True
-                    if np.array_equal(multiplier, -dir_vectors[direction]):
+                    if np.array_equal(multiplier, -dir_vector):
                         negative = True
                     if positive and negative:
                         break

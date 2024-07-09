@@ -22,7 +22,6 @@ import parser
 import numpy as np
 import pickle
 from fractions import Fraction
-import urllib.request
 from bs4 import BeautifulSoup
 import requests
 
@@ -264,7 +263,7 @@ if __name__ == "__main__":
 
         # Raise exception if match not found for a space group number
         if space_group > i_spg:
-            raise
+            raise ValueError(f"No match for space group")
 
         if space_group == i_spg:
             spglib_defaults[space_group] = [hall_number, sub_hall, hm, settings]
