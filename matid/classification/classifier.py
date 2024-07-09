@@ -267,7 +267,6 @@ class Classifier:
                 n_region_conn = np.sum(region_conn)
                 region_is_periodic = n_region_conn == 2
 
-
                 # Check that the found region covers enough of the entire
                 # system. If not, then the region alone cannot be used to
                 # classify the entire structure. This happens e.g. when one
