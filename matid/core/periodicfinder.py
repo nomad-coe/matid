@@ -90,6 +90,8 @@ class PeriodicFinder:
             linkedunitcollection or None: A LinkedUnitCollection object representing
                 the region or None if no region could be identified.
         """
+        if bond_threshold is None:
+            bond_threshold = constants.BOND_THRESHOLD
 
         # If the distance information is not given, calculate it here.
         if distances is None:
