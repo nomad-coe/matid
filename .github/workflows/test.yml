@@ -6,7 +6,7 @@ name: test
 
 on:
   push:
-    branches: [ "main", "improved_matching"]
+    branches: [ "main", "distance-calc-optimization"]
   pull_request:
     branches: [ "main"]
 
