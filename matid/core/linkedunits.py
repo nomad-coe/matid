@@ -20,7 +20,6 @@ class LinkedUnitCollection(dict):
         system,
         cell,
         is_2d,
-        bond_threshold=constants.BOND_THRESHOLD,
     ):
         """
         Args:
@@ -33,21 +32,10 @@ class LinkedUnitCollection(dict):
         self.system = system
         self.cell = cell
         self.is_2d = is_2d
-        self.bond_threshold = bond_threshold
         self._search_graph = nx.MultiDiGraph()
-        self._wrapped_moves = []
         self._index_cell_map = {}
         self._used_points = set()
-        self._decomposition = None
-        self._inside_indices = None
-        self._outside_indices = None
-        self._adsorbates = None
-        self._substitutions = None
-        self._vacancies = None
-        self._clusters = None
         self._basis_indices = None
-        self._basis_environments = None
-        self._translations = None
         self._pos_tol = None
         dict.__init__(self)
 

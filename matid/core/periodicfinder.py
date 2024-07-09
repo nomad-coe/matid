@@ -62,7 +62,6 @@ class PeriodicFinder:
         seed_index,
         max_cell_size,
         pos_tol,
-        delaunay_threshold=None,
         bond_threshold=None,
         overlap_threshold=-0.1,
         distances: Distances = None,
@@ -91,10 +90,6 @@ class PeriodicFinder:
             linkedunitcollection or None: A LinkedUnitCollection object representing
                 the region or None if no region could be identified.
         """
-        if delaunay_threshold is None:
-            delaunay_threshold = constants.DELAUNAY_THRESHOLD
-        if bond_threshold is None:
-            bond_threshold = constants.BOND_THRESHOLD
 
         # If the distance information is not given, calculate it here.
         if distances is None:
@@ -151,8 +146,6 @@ class PeriodicFinder:
             unit_collection = self._find_periodic_region(
                 system,
                 dim == 2,
-                delaunay_threshold,
-                bond_threshold,
                 seed_index,
                 proto_cell,
                 offset,
@@ -1248,8 +1241,6 @@ class PeriodicFinder:
         self,
         system,
         is_2d,
-        tesselation_distance,
-        bond_threshold,
         seed_index,
         unit_cell,
         seed_position,
@@ -1294,7 +1285,6 @@ class PeriodicFinder:
             system,
             unit_cell,
             is_2d,
-            bond_threshold,
         )
         multipliers = self._get_multipliers(periodic_indices)
 
