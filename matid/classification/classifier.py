@@ -328,7 +328,6 @@ class Classifier:
                         index,
                         size,
                         tol,
-                        self.abs_delaunay_threshold,
                         self.bond_threshold,
                         distances=distances,
                     )
