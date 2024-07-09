@@ -178,39 +178,39 @@ class LinkedUnitCollection(dict):
                         indices.add(index)
             self._basis_indices = indices
             # else:
-                # translations, translations_reduced = self.get_chem_env_translations()
+            # translations, translations_reduced = self.get_chem_env_translations()
 
-                # For each atom in the basis check the chemical environment
-                # neighbour_map = self.get_basis_atom_neighbourhood()
+            # For each atom in the basis check the chemical environment
+            # neighbour_map = self.get_basis_atom_neighbourhood()
 
-                # indices = set()
-                # for unit in self.values():
-                #     indices |= unit.basis_indices
-                # self._basis_indices = np.array(list(indices))
+            # indices = set()
+            # for unit in self.values():
+            #     indices |= unit.basis_indices
+            # self._basis_indices = np.array(list(indices))
 
-                    # Compare the chemical environment near this atom to the one
-                    # that is present in the prototype cell. If these
-                    # neighbourhoods are too different, then the atom is not
-                    # counted as being a part of the region.
-                    # for i_index, index in enumerate(unit.basis_indices):
-                    #     if index is not None:
-                    #         real_environment = self.get_chemical_environment(
-                    #             self.system,
-                    #             index,
-                    #             self.disp_tensor_finite,
-                    #             translations,
-                    #             translations_reduced,
-                    #         )
-                    #         ideal_environment = neighbour_map[i_index]
-                    #         chem_similarity = self.get_chemical_similarity(
-                    #             ideal_environment, real_environment
-                    #         )
-                    #         if chem_similarity >= self.chem_similarity_threshold:
-                    #             indices.add(index)
+            # Compare the chemical environment near this atom to the one
+            # that is present in the prototype cell. If these
+            # neighbourhoods are too different, then the atom is not
+            # counted as being a part of the region.
+            # for i_index, index in enumerate(unit.basis_indices):
+            #     if index is not None:
+            #         real_environment = self.get_chemical_environment(
+            #             self.system,
+            #             index,
+            #             self.disp_tensor_finite,
+            #             translations,
+            #             translations_reduced,
+            #         )
+            #         ideal_environment = neighbour_map[i_index]
+            #         chem_similarity = self.get_chemical_similarity(
+            #             ideal_environment, real_environment
+            #         )
+            #         if chem_similarity >= self.chem_similarity_threshold:
+            #             indices.add(index)
 
-                # Ensure that all the basis atoms belong to the same cluster.
-                # clusters = self.get_clusters()
-                # self._basis_indices = np.array(list(indices))
+            # Ensure that all the basis atoms belong to the same cluster.
+            # clusters = self.get_clusters()
+            # self._basis_indices = np.array(list(indices))
 
         return self._basis_indices
 
@@ -245,65 +245,25 @@ class LinkedUnitCollection(dict):
 
     #     return neighbours
 
-    def get_chemical_similarity(self, ideal_env, real_env):
-        """Returns a metric that quantifies the similarity between two chemical
-        environments. Here the metric is defined simply by the number
-        neighbours that are found to be same as in the ideal environmen within
-        a certain radius.
-        """
-        max_score = sum(ideal_env.values())
+    # def get_chemical_similarity(self, ideal_env, real_env):
+    #     """Returns a metric that quantifies the similarity between two chemical
+    #     environments. Here the metric is defined simply by the number
+    #     neighbours that are found to be same as in the ideal environmen within
+    #     a certain radius.
+    #     """
+    #     max_score = sum(ideal_env.values())
 
-        score = 0
-        for ideal_key, ideal_value in ideal_env.items():
-            real_value = real_env.get(ideal_key)
-            if real_value is not None:
-                score += min(real_value, ideal_value)
+    #     score = 0
+    #     for ideal_key, ideal_value in ideal_env.items():
+    #         real_value = real_env.get(ideal_key)
+    #         if real_value is not None:
+    #             score += min(real_value, ideal_value)
 
-        return score / max_score
+    #     return score / max_score
 
     def get_all_indices(self):
         """Get all the indices that are present in the full system."""
         return set(range(len(self.system)))
-
-    def get_unknowns(self):
-        """Returns indices of the atoms that are in the outliers but are not
-        recognized as any specialized group.
-        """
-        outliers = set(self.get_outliers())
-        adsorbates = set(self.get_adsorbates())
-        interstitials = set(self.get_interstitials())
-        substitutions = set([x.index for x in self.get_substitutions()])
-
-        return outliers - adsorbates - interstitials - substitutions
-
-    def get_inside_and_outside_indices(self):
-        """Get the indices of atoms that are inside and outside the tetrahedra
-        tesselation.
-
-        Returns:
-            (np.ndarray, np.ndarray): Indices of atoms that are inside and
-            outside the tesselation. The inside indices are in the first array.
-        """
-        if self._inside_indices is None and self._outside_indices is None:
-            invalid_indices = self.get_outliers()
-            invalid_pos = self.system
-            inside_indices = []
-            outside_indices = []
-
-            if len(invalid_indices) != 0:
-                invalid_pos = self.system.get_positions()[invalid_indices]
-                tesselation = self.get_tetrahedra_decomposition()
-                for i, pos in zip(invalid_indices, invalid_pos):
-                    simplex_index = tesselation.find_simplex(pos)
-                    if simplex_index is None:
-                        outside_indices.append(i)
-                    else:
-                        inside_indices.append(i)
-
-            self._inside_indices = np.array(inside_indices)
-            self._outside_indices = np.array(outside_indices)
-
-        return self._inside_indices, self._outside_indices
 
     def get_connected_directions(self):
         """During the tracking of the region the information about searches
