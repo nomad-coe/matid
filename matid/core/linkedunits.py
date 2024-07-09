@@ -1,11 +1,7 @@
-from collections import defaultdict, OrderedDict
 import numpy as np
 
 from ase import Atoms
-from ase.data import covalent_radii
-from ase.io import write
 
-import matid.geometry
 from matid.data import constants
 
 import networkx as nx
@@ -24,9 +20,6 @@ class LinkedUnitCollection(dict):
         system,
         cell,
         is_2d,
-        dist_matrix_radii_pbc,
-        delaunay_threshold=constants.DELAUNAY_THRESHOLD,
-        chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
         bond_threshold=constants.BOND_THRESHOLD,
     ):
         """
@@ -36,16 +29,11 @@ class LinkedUnitCollection(dict):
             cell(ase.Atoms): The prototype cell that is used in finding this
                 region.
             is_2d(boolean): Whether this system represents a 2D-material or not.
-            delaunay_threshold(float): The maximum allowed size of a tetrahedra
-                edge in the Delaunay triangulation of the region..
         """
         self.system = system
         self.cell = cell
         self.is_2d = is_2d
-        self.delaunay_threshold = delaunay_threshold
-        self.chem_similarity_threshold = chem_similarity_threshold
         self.bond_threshold = bond_threshold
-        self.dist_matrix_radii_pbc = dist_matrix_radii_pbc
         self._search_graph = nx.MultiDiGraph()
         self._wrapped_moves = []
         self._index_cell_map = {}
@@ -99,67 +87,6 @@ class LinkedUnitCollection(dict):
 
         return recreated_system
 
-    # def get_basis_atom_neighbourhood(self):
-    #     """For each atom in the basis calculates the chemical neighbourhood.
-    #     The chemical neighbourhood consists of a list of atomic numbers that
-    #     are closer than a certain threshold value when the covalent radii is
-    #     taken into account.
-
-    #     Args:
-
-    #     Returns:
-    #     """
-    #     if self._basis_environments is None:
-    #         # Multiply the system to get the entire neighbourhood.
-    #         cell = self.cell
-    #         max_radii = covalent_radii[cell.get_atomic_numbers()].max()
-    #         cutoff = max_radii + self.bond_threshold
-    #         if self.is_2d:
-    #             pbc = [True, True, False]
-    #         else:
-    #             pbc = [True, True, True]
-    #         factors = matid.geometry.get_neighbour_cells(cell.get_cell(), cutoff, pbc)
-    #         tvecs = np.dot(factors, cell.get_cell())
-
-    #         # Find the factor corresponding to the original cell
-    #         for i_factor, factor in enumerate(factors):
-    #             if tuple(factor) == (0, 0, 0):
-    #                 tvecs_reduced = np.delete(tvecs, i_factor, axis=0)
-    #                 break
-
-    #         pos = cell.get_positions()
-    #         disp = matid.geometry.get_displacement_tensor(pos, cell.get_cell())
-
-    #         env_list = []
-    #         for i in range(len(cell)):
-    #             i_env = self.get_chemical_environment(
-    #                 cell, i, disp, tvecs, tvecs_reduced
-    #             )
-    #             env_list.append(i_env)
-    #         self._basis_environments = env_list
-
-    #     return self._basis_environments
-
-    # def get_chem_env_translations(self):
-    #     """Used to calculate the translations that are used in calculating the
-    #     chemical enviroments.
-    #     """
-    #     if self._translations is None:
-    #         cell = self.system.get_cell()
-    #         num = self.system.get_atomic_numbers()
-    #         max_radii = covalent_radii[num].max()
-    #         cutoff = max_radii + self.bond_threshold
-    #         factors = matid.geometry.get_neighbour_cells(cell, cutoff, True)
-    #         translations = np.dot(factors, cell)
-
-    #         # Find and remove the factor corresponding to the original cell
-    #         for i_factor, factor in enumerate(factors):
-    #             if tuple(factor) == (0, 0, 0):
-    #                 translations_reduced = np.delete(translations, i_factor, axis=0)
-    #                 break
-    #         self._translations = (translations, translations_reduced)
-    #     return self._translations
-
     def get_basis_indices(self):
         """Returns the indices of the atoms that were found to belong to a unit
         cell basis in the LinkedUnits in this collection as a single list.
@@ -169,101 +96,14 @@ class LinkedUnitCollection(dict):
             to this collection of LinkedUnits.
         """
         if self._basis_indices is None:
-            # The chemical similarity check is completely skipped if threshold is zero
-            # if self.chem_similarity_threshold == 0:
             indices = set()
             for unit in self.values():
                 for index in unit.basis_indices:
                     if index is not None:
                         indices.add(index)
             self._basis_indices = indices
-            # else:
-            # translations, translations_reduced = self.get_chem_env_translations()
-
-            # For each atom in the basis check the chemical environment
-            # neighbour_map = self.get_basis_atom_neighbourhood()
-
-            # indices = set()
-            # for unit in self.values():
-            #     indices |= unit.basis_indices
-            # self._basis_indices = np.array(list(indices))
-
-            # Compare the chemical environment near this atom to the one
-            # that is present in the prototype cell. If these
-            # neighbourhoods are too different, then the atom is not
-            # counted as being a part of the region.
-            # for i_index, index in enumerate(unit.basis_indices):
-            #     if index is not None:
-            #         real_environment = self.get_chemical_environment(
-            #             self.system,
-            #             index,
-            #             self.disp_tensor_finite,
-            #             translations,
-            #             translations_reduced,
-            #         )
-            #         ideal_environment = neighbour_map[i_index]
-            #         chem_similarity = self.get_chemical_similarity(
-            #             ideal_environment, real_environment
-            #         )
-            #         if chem_similarity >= self.chem_similarity_threshold:
-            #             indices.add(index)
-
-            # Ensure that all the basis atoms belong to the same cluster.
-            # clusters = self.get_clusters()
-            # self._basis_indices = np.array(list(indices))
 
         return self._basis_indices
-
-    # def get_chemical_environment(
-    #     self, system, index, disp_tensor_finite, translations, translations_reduced
-    # ):
-    #     """Get the chemical environment around an atom. The chemical
-    #     environment is quantified simply by the number of different species
-    #     around a certain distance when the covalent radii have been considered.
-    #     """
-    #     # Multiply the system to get the entire neighbourhood.
-    #     num = system.get_atomic_numbers()
-    #     n_atoms = len(system)
-    #     seed_num = num[index]
-
-    #     neighbours = defaultdict(lambda: 0)
-    #     for j in range(n_atoms):
-    #         j_num = num[j]
-    #         ij_disp = disp_tensor_finite[index, j, :]
-
-    #         if index == j:
-    #             trans = translations_reduced
-    #         else:
-    #             trans = translations
-
-    #         D_trans = trans + ij_disp
-    #         D_trans_len = np.linalg.norm(D_trans, axis=1)
-    #         ij_radii = covalent_radii[seed_num] + covalent_radii[j_num]
-    #         ij_n_neigh = np.sum(D_trans_len - ij_radii <= self.bond_threshold)
-
-    #         neighbours[j_num] += ij_n_neigh
-
-    #     return neighbours
-
-    # def get_chemical_similarity(self, ideal_env, real_env):
-    #     """Returns a metric that quantifies the similarity between two chemical
-    #     environments. Here the metric is defined simply by the number
-    #     neighbours that are found to be same as in the ideal environmen within
-    #     a certain radius.
-    #     """
-    #     max_score = sum(ideal_env.values())
-
-    #     score = 0
-    #     for ideal_key, ideal_value in ideal_env.items():
-    #         real_value = real_env.get(ideal_key)
-    #         if real_value is not None:
-    #             score += min(real_value, ideal_value)
-
-    #     return score / max_score
-
-    def get_all_indices(self):
-        """Get all the indices that are present in the full system."""
-        return set(range(len(self.system)))
 
     def get_connected_directions(self):
         """During the tracking of the region the information about searches

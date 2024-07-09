@@ -1294,9 +1294,6 @@ class PeriodicFinder:
             system,
             unit_cell,
             is_2d,
-            self.dist_matrix_radii_mic,
-            tesselation_distance,
-            self.chem_similarity_threshold,
             bond_threshold,
         )
         multipliers = self._get_multipliers(periodic_indices)

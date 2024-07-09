@@ -50,23 +50,9 @@ class Class2DWithCell(Class2D):
 
     @property
     def outliers(self):
-        return self.region.get_outliers()
-
-    @property
-    def interstitials(self):
-        return self.region.get_interstitials()
-
-    @property
-    def adsorbates(self):
-        return self.region.get_adsorbates()
-
-    @property
-    def vacancies(self):
-        return self.region.get_vacancies()
-
-    @property
-    def unknowns(self):
-        return self.region.get_unknowns()
+        all = set(list(range(len(self.atoms))))
+        region = self.region.get_basis_indices()
+        return list(all - region)
 
     @property
     def prototype_cell(self):

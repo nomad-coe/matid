@@ -267,26 +267,19 @@ class Classifier:
                 n_region_conn = np.sum(region_conn)
                 region_is_periodic = n_region_conn == 2
 
-                # This might be unnecessary because the connectivity of the
-                # unit cell is already checked.
-                clusters = best_region.get_clusters()
-                basis_indices = set(list(best_region.get_basis_indices()))
-                split = True
-                for cluster in clusters:
-                    if basis_indices.issubset(cluster):
-                        split = False
 
                 # Check that the found region covers enough of the entire
                 # system. If not, then the region alone cannot be used to
                 # classify the entire structure. This happens e.g. when one
                 # 2D sheet is found from a 2D heterostructure, or a local
                 # pattern is found inside a structure.
+                basis_indices = set(list(best_region.get_basis_indices()))
                 n_atoms = len(system)
                 n_basis_atoms = len(basis_indices)
                 coverage = n_basis_atoms / n_atoms
                 covered = coverage >= self.min_coverage
 
-                if not split and covered and region_is_periodic:
+                if covered and region_is_periodic:
                     if best_region.is_2d:
                         classification = Material2D(input_system, best_region)
                     else:

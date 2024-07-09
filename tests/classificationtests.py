@@ -2443,7 +2443,7 @@ class SearchGraphTests(unittest.TestCase):
     #         region = finder.get_region(system, 0, 6, 0.2)
 
     #         # Check that entire system is found
-    #         self.assertTrue(len(region.get_all_indices()) == len(system))
+    #         self.assertTrue(len(region.get_basis_indices()) == len(system))
 
     #         # Check graph periodicity
     #         periodicity = region.get_connected_directions()
