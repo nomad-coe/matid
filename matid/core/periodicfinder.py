@@ -62,7 +62,6 @@ class PeriodicFinder:
         seed_index,
         max_cell_size,
         pos_tol,
-        delaunay_threshold=None,
         bond_threshold=None,
         overlap_threshold=-0.1,
         distances: Distances = None,
@@ -91,8 +90,6 @@ class PeriodicFinder:
             linkedunitcollection or None: A LinkedUnitCollection object representing
                 the region or None if no region could be identified.
         """
-        if delaunay_threshold is None:
-            delaunay_threshold = constants.DELAUNAY_THRESHOLD
         if bond_threshold is None:
             bond_threshold = constants.BOND_THRESHOLD
 
@@ -151,8 +148,6 @@ class PeriodicFinder:
             unit_collection = self._find_periodic_region(
                 system,
                 dim == 2,
-                delaunay_threshold,
-                bond_threshold,
                 seed_index,
                 proto_cell,
                 offset,
@@ -255,11 +250,23 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches_old(
-                system, add_pos, neighbour_num, self.pos_tol
+            add_indices, _, _, add_factors, add_displacements = (
+                matid.geometry.get_matches(
+                    system,
+                    self.cell_list,
+                    add_pos,
+                    neighbour_num,
+                    self.pos_tol,
+                )
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches_old(
-                system, sub_pos, neighbour_num, self.pos_tol
+            sub_indices, _, _, sub_factors, sub_displacements = (
+                matid.geometry.get_matches(
+                    system,
+                    self.cell_list,
+                    sub_pos,
+                    neighbour_num,
+                    self.pos_tol,
+                )
             )
 
             n_metric = 0
@@ -736,23 +743,29 @@ class PeriodicFinder:
             # Handle each basis
             for i_basis in range(3):
                 a_final_neighbour = None
+                # final_displacement = None
                 a_add = adjacency_add[i_basis][node]
                 a_sub = adjacency_sub[i_basis][node]
+                # a_add_disp = add_displacements[i_basis][node]
+                # a_sub_disp = sub_displacements[i_basis][node]
 
                 if a_add:
                     a_add_neighbour, i_add_factor = a_add[0]
                     if a_add_neighbour != node_index:
                         a_final_neighbour = a_add_neighbour
+                        # final_displacement = a_add_disp
                         i_factor = i_add_factor
                         multiplier = 1
                 elif a_sub:
                     a_sub_neighbour, i_sub_factor = a_sub[0]
                     if a_sub_neighbour != node_index:
                         a_final_neighbour = a_sub_neighbour
+                        # final_displacement = a_sub_disp
                         i_factor = i_sub_factor
                         multiplier = -1
 
                 if a_final_neighbour is not None:
+                    # a = final_displacement
                     a_correction = np.dot(
                         (-np.array(node_factor) + np.array(i_factor)), orig_cell
                     )
@@ -761,7 +774,6 @@ class PeriodicFinder:
                         + a_correction
                     )
                     a *= multiplier
-
                 else:
                     a = best_spans[i_basis, :]
 
@@ -1248,8 +1260,6 @@ class PeriodicFinder:
         self,
         system,
         is_2d,
-        tesselation_distance,
-        bond_threshold,
         seed_index,
         unit_cell,
         seed_position,
@@ -1294,11 +1304,6 @@ class PeriodicFinder:
             system,
             unit_cell,
             is_2d,
-            self.dist_matrix_radii_mic,
-            self.disp_tensor_finite,
-            tesselation_distance,
-            self.chem_similarity_threshold,
-            bond_threshold,
         )
         multipliers = self._get_multipliers(periodic_indices)
 
@@ -1432,8 +1437,8 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches_old(
-            system, test_pos, cell_num, self.pos_tol
+        matches, substitutions, vacancies, _, _ = matid.geometry.get_matches(
+            system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell

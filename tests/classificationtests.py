@@ -1725,13 +1725,16 @@ class SurfaceTests(unittest.TestCase):
 
         # With a little higher chemical similarity threshold the whole surface
         # is not detected
-        classifier = Classifier(chem_similarity_threshold=0.45)
-        classification = classifier.classify(system)
-        self.assertIsInstance(classification, Surface)
+        # TODO: This part of the test is disabled in v2. SBC no longer considers
+        # the chemical neighbourhood: that can be added as a post-processing
+        # check.
+        # classifier = Classifier(chem_similarity_threshold=0.45)
+        # classification = classifier.classify(system)
+        # self.assertIsInstance(classification, Surface)
 
-        # Has outliers with these settings
-        outliers = classification.outliers
-        self.assertTrue(len(outliers) != 0)
+        # # Has outliers with these settings
+        # outliers = classification.outliers
+        # self.assertTrue(len(outliers) != 0)
 
         # With a little lower chemical similarity threshold the whole surface
         # is again detected
@@ -2443,7 +2446,7 @@ class SearchGraphTests(unittest.TestCase):
     #         region = finder.get_region(system, 0, 6, 0.2)
 
     #         # Check that entire system is found
-    #         self.assertTrue(len(region.get_all_indices()) == len(system))
+    #         self.assertTrue(len(region.get_basis_indices()) == len(system))
 
     #         # Check graph periodicity
     #         periodicity = region.get_connected_directions()

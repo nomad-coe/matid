@@ -566,14 +566,6 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     """
     system.set_pbc(pbc)
 
-    # Old python implementation
-    matches, _, _, factors = matid.geometry.get_matches_old(
-        system,
-        np.array(position)[None, :],
-        numbers=[system.get_atomic_numbers()[0]],
-        tolerance=tolerance,
-    )
-
     # New CPP implementation
     cell_list = matid.geometry.get_cell_list(
         system.get_positions(),
@@ -582,7 +574,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         tolerance,
         tolerance,
     )
-    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
+    matches_ext, _, _, factors_ext, _ = matid.geometry.get_matches(
         system,
         cell_list,
         np.array(position)[None, :],
@@ -591,11 +583,9 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
     )
 
     # Make sure that the atom is found in the correct copy
-    assert tuple(factors[0]) == expected_factors
     assert tuple(factors_ext[0]) == expected_factors
 
     # Make sure that the correct atom is found
-    assert np.array_equal(matches, expected_matches)
     assert np.array_equal(matches_ext, expected_matches)
 
 
@@ -763,37 +753,3 @@ def test_minimize_cell(system, axis, minimum_size, expected_cell, expected_pos):
 def test_thickness(system, axis, expected_thickness):
     thickness = matid.geometry.get_thickness(system, axis)
     assert thickness == expected_thickness
-
-
-def test_displacement_tensor_performance():
-    system = bulk("NaCl", "rocksalt", a=5.64) * [10, 10, 10]
-    cutoff = 10
-
-    start = time.time()
-    matid.geometry.get_displacement_tensor(
-        system.get_positions(),
-        system.get_cell(),
-        system.get_pbc(),
-        cutoff=cutoff,
-        return_distances=True,
-        return_factors=False,
-    )
-    end = time.time()
-    elapsed_new = end - start
-
-    start = time.time()
-    matid.geometry.get_displacement_tensor_old(
-        system.get_positions(),
-        system.get_positions(),
-        system.get_cell(),
-        system.get_pbc(),
-        mic=True,
-        cutoff=cutoff,
-        return_distances=True,
-        return_factors=False,
-    )
-    end = time.time()
-    elapsed_old = end - start
-
-    ratio = elapsed_old / elapsed_new
-    assert ratio > 30

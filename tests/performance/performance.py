@@ -3,16 +3,13 @@ import os
 import json
 import psutil
 import resource
-import math
 import click
 import numpy as np
 from typing import Tuple
 from ase import Atoms
-from ase.io import write
 from ase.build import bulk
 import matplotlib.pyplot as plt
 from matid.clustering import SBC
-import matid
 from importlib.metadata import version
 
 matid_version = version("matid")
