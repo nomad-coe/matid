@@ -250,19 +250,23 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors, add_displacements = matid.geometry.get_matches(
-                system,
-                self.cell_list,
-                add_pos,
-                neighbour_num,
-                self.pos_tol,
+            add_indices, _, _, add_factors, add_displacements = (
+                matid.geometry.get_matches(
+                    system,
+                    self.cell_list,
+                    add_pos,
+                    neighbour_num,
+                    self.pos_tol,
+                )
             )
-            sub_indices, _, _, sub_factors, sub_displacements = matid.geometry.get_matches(
-                system,
-                self.cell_list,
-                sub_pos,
-                neighbour_num,
-                self.pos_tol,
+            sub_indices, _, _, sub_factors, sub_displacements = (
+                matid.geometry.get_matches(
+                    system,
+                    self.cell_list,
+                    sub_pos,
+                    neighbour_num,
+                    self.pos_tol,
+                )
             )
 
             n_metric = 0
