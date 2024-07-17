@@ -1433,8 +1433,8 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches_old(
-            system, test_pos, cell_num, self.pos_tol
+        matches, substitutions, vacancies, _, _ = matid.geometry.get_matches(
+            system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell
