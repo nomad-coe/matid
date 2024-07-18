@@ -98,7 +98,6 @@ class PeriodicFinder:
             distances = matid.geometry.get_distances(system)
 
         self.disp_tensor_mic = distances.disp_tensor_mic
-        self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
 
@@ -250,23 +249,19 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors, add_displacements = (
-                matid.geometry.get_matches(
-                    system,
-                    self.cell_list,
-                    add_pos,
-                    neighbour_num,
-                    self.pos_tol,
-                )
+            add_indices, _, _, add_factors = matid.geometry.get_matches(
+                system,
+                self.cell_list,
+                add_pos,
+                neighbour_num,
+                self.pos_tol,
             )
-            sub_indices, _, _, sub_factors, sub_displacements = (
-                matid.geometry.get_matches(
-                    system,
-                    self.cell_list,
-                    sub_pos,
-                    neighbour_num,
-                    self.pos_tol,
-                )
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
+                system,
+                self.cell_list,
+                sub_pos,
+                neighbour_num,
+                self.pos_tol,
             )
 
             n_metric = 0
@@ -282,21 +277,17 @@ class PeriodicFinder:
                     if i_add is not None:
                         n_metric += 1
                         dest_factor = origin_factor + i_add_factor
-                        i_adj_list[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_add, tuple(dest_factor)))
-                        i_adj_list_add[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_add, tuple(dest_factor)))
+                        add_tuple = (i_add, tuple(dest_factor))
+                        add_key = (neighbour_indices[i_neigh], tuple(origin_factor))
+                        i_adj_list[add_key].append(add_tuple)
+                        i_adj_list_add[add_key].append(add_tuple)
                     if i_sub is not None:
                         n_metric += 1
                         dest_factor = origin_factor + i_sub_factor
-                        i_adj_list[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_sub, tuple(dest_factor)))
-                        i_adj_list_sub[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_sub, tuple(dest_factor)))
+                        sub_tuple = (i_sub, tuple(dest_factor))
+                        sub_key = (neighbour_indices[i_neigh], tuple(origin_factor))
+                        i_adj_list[sub_key].append(sub_tuple)
+                        i_adj_list_sub[sub_key].append(sub_tuple)
 
             metric[i_span] = n_metric
             adjacency_lists.append(i_adj_list)
@@ -328,18 +319,13 @@ class PeriodicFinder:
                     i_factor[i_per_span] = 1
                     for i_neigh, neigh_factor in neighbour_nodes:
                         neigh_tuple = tuple(neigh_factor)
-                        per_adjacency_list[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor + i_factor))
-                        )
-                        per_adjacency_list[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor - i_factor))
-                        )
-                        per_adjacency_list_add[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor + i_factor))
-                        )
-                        per_adjacency_list_sub[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor - i_factor))
-                        )
+                        key = (i_neigh, neigh_tuple)
+                        value_add = (i_neigh, tuple(neigh_factor + i_factor))
+                        value_sub = (i_neigh, tuple(neigh_factor - i_factor))
+                        per_adjacency_list[key].append(value_add)
+                        per_adjacency_list[key].append(value_sub)
+                        per_adjacency_list_add[key].append(value_add)
+                        per_adjacency_list_sub[key].append(value_sub)
 
                     adjacency_lists.append(per_adjacency_list)
                     adjacency_lists_add.append(per_adjacency_list_add)
@@ -730,6 +716,7 @@ class PeriodicFinder:
 
         # Find the seed positions copies that are within the neighbourhood
         orig_cell = system.get_cell()
+        positions = system.get_positions()
 
         # Find the cells in which the copies of the seed atom are at the
         # origin. Here we are reusing information from the displacement tensor
@@ -743,36 +730,28 @@ class PeriodicFinder:
             # Handle each basis
             for i_basis in range(3):
                 a_final_neighbour = None
-                # final_displacement = None
                 a_add = adjacency_add[i_basis][node]
                 a_sub = adjacency_sub[i_basis][node]
-                # a_add_disp = add_displacements[i_basis][node]
-                # a_sub_disp = sub_displacements[i_basis][node]
 
                 if a_add:
                     a_add_neighbour, i_add_factor = a_add[0]
                     if a_add_neighbour != node_index:
                         a_final_neighbour = a_add_neighbour
-                        # final_displacement = a_add_disp
                         i_factor = i_add_factor
                         multiplier = 1
                 elif a_sub:
                     a_sub_neighbour, i_sub_factor = a_sub[0]
                     if a_sub_neighbour != node_index:
                         a_final_neighbour = a_sub_neighbour
-                        # final_displacement = a_sub_disp
                         i_factor = i_sub_factor
                         multiplier = -1
 
                 if a_final_neighbour is not None:
-                    # a = final_displacement
                     a_correction = np.dot(
                         (-np.array(node_factor) + np.array(i_factor)), orig_cell
                     )
-                    a = (
-                        self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    displacement = positions[a_final_neighbour] - positions[node_index]
+                    a = displacement + a_correction
                     a *= multiplier
                 else:
                     a = best_spans[i_basis, :]
@@ -924,6 +903,7 @@ class PeriodicFinder:
             seed_group_index(int): A new index of the seed atom in the cell.
         """
         orig_cell = system.get_cell()
+        positions = system.get_positions()
 
         # We need to make the third basis vector, In 2D systems the maximum
         # thickness of the system is defined by max_cell_size.
@@ -965,11 +945,8 @@ class PeriodicFinder:
                     a_correction = np.dot(
                         (-np.array(node_factor) + np.array(i_factor)), orig_cell
                     )
-                    a = (
-                        multiplier
-                        * self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    displacement = positions[a_final_neighbour] - positions[node_index]
+                    a = multiplier * displacement + a_correction
                 else:
                     a = best_spans[i_basis, :]
                 cells[i_node, i_basis, :] = a
@@ -1437,7 +1414,7 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _, _ = matid.geometry.get_matches(
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
             system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 

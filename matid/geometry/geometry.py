@@ -935,7 +935,6 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     substitutions = []
     copy_indices = np.zeros((len(positions), 3))
     vacancies = []
-    displacements = []
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
@@ -955,7 +954,6 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             closest_distance = distances[min_distance_index]
             closest_factor = factors[min_distance_index]
             closest_index = indices[min_distance_index]
-            displacement = cell_list_result.displacements[min_distance_index]
             if closest_distance <= tolerance:
                 closest_atomic_number = atomic_numbers[closest_index]
                 copy_index = closest_factor
@@ -975,9 +973,8 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             vacancies.append(Atom(atomic_number, position=position))
             copy_index = np.floor(to_scaled(cell, position, wrap=False)[0])
         copy_indices[i] = copy_index
-        displacements.append(displacement)
 
-    return matches, substitutions, vacancies, copy_indices, displacements
+    return matches, substitutions, vacancies, copy_indices
 
 
 def get_matches_simple(system, cell_list, positions, numbers, tolerance):
@@ -1446,14 +1443,13 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
-    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
         disp_tensor_mic, disp_factors = get_displacement_tensor(
             pos, cell, pbc, return_factors=True
         )
     else:
-        disp_tensor_mic = disp_tensor_finite
-        disp_factors = np.zeros(disp_tensor_finite.shape)
+        disp_tensor_mic = get_displacement_tensor(pos)
+        disp_factors = np.zeros(disp_tensor_mic.shape)
     dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
 
     # Calculate the distance matrix where the periodicity and the covalent
@@ -1465,7 +1461,6 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     return Distances(
         disp_tensor_mic,
         disp_factors,
-        disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
     )
