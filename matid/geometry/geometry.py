@@ -1446,14 +1446,13 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
-    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
         disp_tensor_mic, disp_factors = get_displacement_tensor(
             pos, cell, pbc, return_factors=True
         )
     else:
-        disp_tensor_mic = disp_tensor_finite
-        disp_factors = np.zeros(disp_tensor_finite.shape)
+        disp_tensor_mic = get_displacement_tensor(pos)
+        disp_factors = np.zeros(disp_tensor_mic.shape)
     dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
 
     # Calculate the distance matrix where the periodicity and the covalent
@@ -1465,7 +1464,6 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     return Distances(
         disp_tensor_mic,
         disp_factors,
-        disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
     )
