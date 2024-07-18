@@ -249,14 +249,14 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors, _ = matid.geometry.get_matches(
+            add_indices, _, _, add_factors = matid.geometry.get_matches(
                 system,
                 self.cell_list,
                 add_pos,
                 neighbour_num,
                 self.pos_tol,
             )
-            sub_indices, _, _, sub_factors, _ = matid.geometry.get_matches(
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system,
                 self.cell_list,
                 sub_pos,
@@ -1414,7 +1414,7 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _, _ = matid.geometry.get_matches(
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
             system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 

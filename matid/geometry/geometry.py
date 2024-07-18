@@ -935,7 +935,6 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     substitutions = []
     copy_indices = np.zeros((len(positions), 3))
     vacancies = []
-    displacements = []
     cell = system.get_cell()
 
     # The already pre-computed cell-list is used in finding neighbours.
@@ -955,7 +954,6 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             closest_distance = distances[min_distance_index]
             closest_factor = factors[min_distance_index]
             closest_index = indices[min_distance_index]
-            displacement = cell_list_result.displacements[min_distance_index]
             if closest_distance <= tolerance:
                 closest_atomic_number = atomic_numbers[closest_index]
                 copy_index = closest_factor
@@ -975,9 +973,8 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             vacancies.append(Atom(atomic_number, position=position))
             copy_index = np.floor(to_scaled(cell, position, wrap=False)[0])
         copy_indices[i] = copy_index
-        displacements.append(displacement)
 
-    return matches, substitutions, vacancies, copy_indices, displacements
+    return matches, substitutions, vacancies, copy_indices
 
 
 def get_matches_simple(system, cell_list, positions, numbers, tolerance):

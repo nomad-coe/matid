@@ -574,7 +574,7 @@ def test_matches(system, pbc, position, expected_matches, expected_factors):
         tolerance,
         tolerance,
     )
-    matches_ext, _, _, factors_ext, _ = matid.geometry.get_matches(
+    matches_ext, _, _, factors_ext = matid.geometry.get_matches(
         system,
         cell_list,
         np.array(position)[None, :],
