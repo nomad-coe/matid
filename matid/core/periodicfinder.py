@@ -974,9 +974,15 @@ class PeriodicFinder:
             if i_seed in index_cell_map:
                 i_indices, i_pos, i_factors = index_cell_map[i_seed]
             else:
-                i_indices, i_pos, i_factors = matid.geometry.get_positions_within_basis(
-                    system, cell, search_coord, pos_tol, pbc=system.get_pbc()
-                )
+                # If there is a problem in using the given cell to retrieve
+                # positions (e.g. cell is singular), we don't report a prototype
+                # cell
+                try:
+                    i_indices, i_pos, i_factors = matid.geometry.get_positions_within_basis(
+                        system, cell, search_coord, pos_tol, pbc=system.get_pbc()
+                    )
+                except Exception:
+                    return None, None, None
                 index_cell_map[i_seed] = (i_indices, i_pos, i_factors)
 
             # Add the seed node factor
