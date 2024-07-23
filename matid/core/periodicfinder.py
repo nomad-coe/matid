@@ -978,8 +978,10 @@ class PeriodicFinder:
                 # positions (e.g. cell is singular), we don't report a prototype
                 # cell
                 try:
-                    i_indices, i_pos, i_factors = matid.geometry.get_positions_within_basis(
-                        system, cell, search_coord, pos_tol, pbc=system.get_pbc()
+                    i_indices, i_pos, i_factors = (
+                        matid.geometry.get_positions_within_basis(
+                            system, cell, search_coord, pos_tol, pbc=system.get_pbc()
+                        )
                     )
                 except Exception:
                     return None, None, None
