@@ -1397,6 +1397,7 @@ class PeriodicFinder:
             cell_pos = unit_cell.get_scaled_positions(wrap=False)
         except Exception:
             return
+
         cell_num = unit_cell.get_atomic_numbers()
         old_basis = unit_cell.get_cell()
 
@@ -1494,13 +1495,18 @@ class PeriodicFinder:
         )
         collection[cell_index] = new_unit
 
-        # Save the updated cell shape for the new cells in the queue
-        new_sys = Atoms(
-            cell=new_cell,
-            scaled_positions=cell_pos,
-            symbols=cell_num,
-            pbc=unit_cell.get_pbc(),
-        )
+        # Save the updated cell shape for the new cells in the queue. If the
+        # found system is invalid, the result is ignored.
+        try:
+            new_sys = Atoms(
+                cell=new_cell,
+                scaled_positions=cell_pos,
+                symbols=cell_num,
+                pbc=unit_cell.get_pbc(),
+            )
+        except Exception:
+            return
+
         cells = len(new_seed_pos) * [new_sys]
 
         # Add the found neighbours to a queue
