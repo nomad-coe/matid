@@ -1620,11 +1620,7 @@ class PeriodicFinder:
             ):
                 multiplier_tuple = tuple(multiplier)
 
-                # Save the position corresponding to a seed atom or a guess for
-                # it. If a match was found that is not the original seed, use
-                # it's position to update the cell. If the matched index is the
-                # same as the original seed, check the factors array to decide
-                # whether to use the guess or not.
+                # Save the position corresponding to a seed atom or a guess for it.
                 i_seed_pos = seed_guess if match is None else orig_pos[match]
 
                 # Check if this index has already been used as a seed. The
