@@ -325,12 +325,18 @@ class SBC:
         Returns:
             List of Clusters where any outlier atoms have been removed.
         """
+        clusters_cleaned = []
         for cluster in clusters:
-            dbscan_clusters = matid.geometry.get_clusters(
-                cluster._get_distance_matrix_radii_mic(),
-                bond_threshold,
-                min_samples=1,
-            )
+            # If the cluster cleaning fails, the cluster is not reported
+            try:
+                dbscan_clusters = matid.geometry.get_clusters(
+                    cluster._get_distance_matrix_radii_mic(),
+                    bond_threshold,
+                    min_samples=1,
+                )
+            except Exception:
+                continue
             largest_indices = max(dbscan_clusters, key=lambda x: len(x))
             cluster.indices = np.array(cluster.indices)[largest_indices].tolist()
-        return clusters
+            clusters_cleaned.append(cluster)
+        return clusters_cleaned
