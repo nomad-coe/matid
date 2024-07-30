@@ -117,9 +117,7 @@ class SBC:
         distances = matid.geometry.get_distances(system_copy, radii)
 
         # Iteratively search for new clusters until whole system is covered
-        periodic_finder = PeriodicFinder(
-            angle_tol=angle_tol, chem_similarity_threshold=0
-        )
+        periodic_finder = PeriodicFinder(angle_tol=angle_tol)
         indices = set(list(range(len(system_copy))))
         clusters = []
         while len(indices) != 0:
