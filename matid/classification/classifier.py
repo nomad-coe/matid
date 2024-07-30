@@ -321,7 +321,6 @@ class Classifier:
                         cell_size_tol=self.cell_size_tol,
                         max_2d_cell_height=self.max_2d_cell_height,
                         max_2d_single_cell_size=self.max_2d_single_cell_size,
-                        chem_similarity_threshold=self.chem_similarity_threshold,
                     )
                     region = periodicfinder.get_region(
                         system,

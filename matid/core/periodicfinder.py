@@ -39,7 +39,6 @@ class PeriodicFinder:
         cell_size_tol=constants.CELL_SIZE_TOL,
         max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
         max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
-        chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
     ):
         """
         Args:
@@ -54,7 +53,6 @@ class PeriodicFinder:
         self.cell_size_tol = cell_size_tol
         self.max_2d_cell_height = max_2d_cell_height
         self.max_2d_single_cell_size = (max_2d_single_cell_size,)
-        self.chem_similarity_threshold = chem_similarity_threshold
 
     def get_region(
         self,
