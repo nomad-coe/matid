@@ -220,42 +220,6 @@ is within the half-closed interval [0, 1)
 By wrapping values near 1 to 0 we will have a consistent way of
 presenting systems.
 
-## get\_displacement\_tensor\_old
-
-```python
-def get_displacement_tensor_old(pos1,
-                                pos2,
-                                cell=None,
-                                pbc=None,
-                                mic=False,
-                                cutoff=None,
-                                return_factors=False,
-                                return_distances=False)
-```
-
-Given an array of positions, calculates the 3D displacement tensor
-between the positions.
-
-The displacement tensor is a matrix where the entry A[i, j, :] is the
-vector pos1[i] - pos2[j], i.e. the vector from pos2 to pos1
-
-**Arguments**:
-
-- `pos1(np.ndarray)` - 2D array of positions
-- `pos2(np.ndarray)` - 2D array of positions
-- `cell(np.ndarray)` - Cell for taking into account the periodicity
-  pbc(boolean or a list of booleans): Periodicity of the axes
-- `mic(boolean)` - Whether to return the displacement to the nearest
-  periodic copy
-  
-
-**Returns**:
-
-- `np.ndarray` - 3D displacement tensor
-  (optional) np.ndarray: The indices of the periodic copies in which the
-  minimum image was found
-  (optional) np.ndarray: The lengths of the displacement vectors
-
 ## find\_mic
 
 ```python
@@ -398,34 +362,7 @@ Also takes periodic boundaries into account.
 ## get\_matches
 
 ```python
-def get_matches(system, positions, numbers, tolerances, mic=True)
-```
-
-Given a system and a list of cartesian positions and atomic numbers,
-returns a list of indices for the atoms corresponding to the given
-positions with some tolerance.
-
-**Arguments**:
-
-- `system(ASE.Atoms)` - System where to search the positions
-- `positions(np.ndarray)` - Positions to match in the system.
-- `tolerances(np.ndarray)` - Maximum allowed distance for each vector that
-  is allowed for a match in position.
-- `mic(boolean)` - Whether to find the minimum image copy.
-  
-
-**Returns**:
-
-- `np.ndarray` - indices of matched atoms
-- `list` - list of substitutions
-- `list` - list of vacancies
-- `np.ndarray` - for each searched position, an integer array representing
-  the number of the periodic copy where the match was found.
-
-## get\_matches\_new
-
-```python
-def get_matches_new(system, cell_list, positions, numbers, tolerances)
+def get_matches(system, cell_list, positions, numbers, tolerance)
 ```
 
 Given a system and a list of cartesian positions and atomic numbers,
@@ -438,8 +375,7 @@ positions with some tolerance.
 - `cell_list(CellList)` - The cell list for an appropriately extended version
   of the system.
 - `positions(np.ndarray)` - Positions to match in the system.
-- `tolerances(np.ndarray)` - Maximum allowed distance for each vector that
-  is allowed for a match in position.
+- `tolerance(float)` - Maximum allowed distance for matching.
   
 
 **Returns**:
@@ -450,17 +386,42 @@ positions with some tolerance.
 - `np.ndarray` - for each searched position, an integer array representing
   the number of the periodic copy where the match was found.
 
+## get\_matches\_simple
+
+```python
+def get_matches_simple(system, cell_list, positions, numbers, tolerance)
+```
+
+Given a system and a list of cartesian positions and atomic numbers,
+returns a list of indices for the atoms corresponding to the given
+positions with some tolerance.
+
+**Arguments**:
+
+- `system(ASE.Atoms)` - System where to search the positions
+- `cell_list(CellList)` - The cell list for an appropriately extended version
+  of the system.
+- `positions(np.ndarray)` - Positions to match in the system.
+- `tolerance(float)` - Maximum allowed distance for matching.
+
+**Returns**:
+
+- `list` - list of matched atoms or None is nothing was matched.
+
 ## get\_cell\_list
 
 ```python
-def get_cell_list(positions, indices, factors, cutoff=0)
+def get_cell_list(positions, cell, pbc, extension, cutoff)
 ```
 
 Given a system and a cutoff value, returns a cell list object.
 
 **Arguments**:
 
-- `system(ASE.Atoms)` - System to extend
+- `positions(np.ndarray)` - Cartesian positions
+- `cell(np.ndarray)` - Cell as 3x3 array
+- `pbc(np.ndarray)` - Periodic boundary conditions as array of three booleans
+- `extension(float)` - How much the system should be extended for the search.
 - `cutoff(float)` - Radial cutoff
   
 
