@@ -6,7 +6,7 @@ name: test
 
 on:
   push:
-    branches: [ "main", "v2.0.0"]
+    branches: [ "main", "2.1.0", "optimization"]
   pull_request:
     branches: [ "main"]
 
@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies

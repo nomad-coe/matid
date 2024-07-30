@@ -39,7 +39,6 @@ class PeriodicFinder:
         cell_size_tol=constants.CELL_SIZE_TOL,
         max_2d_cell_height=constants.MAX_2D_CELL_HEIGHT,
         max_2d_single_cell_size=constants.MAX_SINGLE_CELL_SIZE,
-        chem_similarity_threshold=constants.CHEM_SIMILARITY_THRESHOLD,
     ):
         """
         Args:
@@ -54,7 +53,6 @@ class PeriodicFinder:
         self.cell_size_tol = cell_size_tol
         self.max_2d_cell_height = max_2d_cell_height
         self.max_2d_single_cell_size = (max_2d_single_cell_size,)
-        self.chem_similarity_threshold = chem_similarity_threshold
 
     def get_region(
         self,
@@ -62,7 +60,6 @@ class PeriodicFinder:
         seed_index,
         max_cell_size,
         pos_tol,
-        delaunay_threshold=None,
         bond_threshold=None,
         overlap_threshold=-0.1,
         distances: Distances = None,
@@ -91,8 +88,6 @@ class PeriodicFinder:
             linkedunitcollection or None: A LinkedUnitCollection object representing
                 the region or None if no region could be identified.
         """
-        if delaunay_threshold is None:
-            delaunay_threshold = constants.DELAUNAY_THRESHOLD
         if bond_threshold is None:
             bond_threshold = constants.BOND_THRESHOLD
 
@@ -101,7 +96,6 @@ class PeriodicFinder:
             distances = matid.geometry.get_distances(system)
 
         self.disp_tensor_mic = distances.disp_tensor_mic
-        self.disp_tensor_finite = distances.disp_tensor_finite
         self.disp_factors = distances.disp_factors
         self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
 
@@ -112,13 +106,13 @@ class PeriodicFinder:
         # system is extended using the position tolerance and the celllist
         # cutoff is at most the size of the position tolerance, but not too
         # small to not take too much time/memory to create.
-        # self.cell_list = matid.geometry.get_cell_list(
-        #     system.get_positions(),
-        #     system.get_cell(),
-        #     system.get_pbc(),
-        #     max_cell_size,
-        #     max(pos_tol, 1),
-        # )
+        self.cell_list = matid.geometry.get_cell_list(
+            system.get_positions(),
+            system.get_cell(),
+            system.get_pbc(),
+            pos_tol,
+            max(pos_tol, 1),
+        )
 
         self.pos_tol = pos_tol
         self.max_cell_size = max_cell_size
@@ -151,8 +145,6 @@ class PeriodicFinder:
             unit_collection = self._find_periodic_region(
                 system,
                 dim == 2,
-                delaunay_threshold,
-                bond_threshold,
                 seed_index,
                 proto_cell,
                 offset,
@@ -255,11 +247,19 @@ class PeriodicFinder:
             add_pos = neighbour_pos + span
             sub_pos = neighbour_pos - span
 
-            add_indices, _, _, add_factors = matid.geometry.get_matches_old(
-                system, add_pos, neighbour_num, self.pos_tol
+            add_indices, _, _, add_factors = matid.geometry.get_matches(
+                system,
+                self.cell_list,
+                add_pos,
+                neighbour_num,
+                self.pos_tol,
             )
-            sub_indices, _, _, sub_factors = matid.geometry.get_matches_old(
-                system, sub_pos, neighbour_num, self.pos_tol
+            sub_indices, _, _, sub_factors = matid.geometry.get_matches(
+                system,
+                self.cell_list,
+                sub_pos,
+                neighbour_num,
+                self.pos_tol,
             )
 
             n_metric = 0
@@ -275,21 +275,17 @@ class PeriodicFinder:
                     if i_add is not None:
                         n_metric += 1
                         dest_factor = origin_factor + i_add_factor
-                        i_adj_list[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_add, tuple(dest_factor)))
-                        i_adj_list_add[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_add, tuple(dest_factor)))
+                        add_tuple = (i_add, tuple(dest_factor))
+                        add_key = (neighbour_indices[i_neigh], tuple(origin_factor))
+                        i_adj_list[add_key].append(add_tuple)
+                        i_adj_list_add[add_key].append(add_tuple)
                     if i_sub is not None:
                         n_metric += 1
                         dest_factor = origin_factor + i_sub_factor
-                        i_adj_list[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_sub, tuple(dest_factor)))
-                        i_adj_list_sub[
-                            (neighbour_indices[i_neigh], tuple(origin_factor))
-                        ].append((i_sub, tuple(dest_factor)))
+                        sub_tuple = (i_sub, tuple(dest_factor))
+                        sub_key = (neighbour_indices[i_neigh], tuple(origin_factor))
+                        i_adj_list[sub_key].append(sub_tuple)
+                        i_adj_list_sub[sub_key].append(sub_tuple)
 
             metric[i_span] = n_metric
             adjacency_lists.append(i_adj_list)
@@ -321,18 +317,13 @@ class PeriodicFinder:
                     i_factor[i_per_span] = 1
                     for i_neigh, neigh_factor in neighbour_nodes:
                         neigh_tuple = tuple(neigh_factor)
-                        per_adjacency_list[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor + i_factor))
-                        )
-                        per_adjacency_list[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor - i_factor))
-                        )
-                        per_adjacency_list_add[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor + i_factor))
-                        )
-                        per_adjacency_list_sub[(i_neigh, neigh_tuple)].append(
-                            (i_neigh, tuple(neigh_factor - i_factor))
-                        )
+                        key = (i_neigh, neigh_tuple)
+                        value_add = (i_neigh, tuple(neigh_factor + i_factor))
+                        value_sub = (i_neigh, tuple(neigh_factor - i_factor))
+                        per_adjacency_list[key].append(value_add)
+                        per_adjacency_list[key].append(value_sub)
+                        per_adjacency_list_add[key].append(value_add)
+                        per_adjacency_list_sub[key].append(value_sub)
 
                     adjacency_lists.append(per_adjacency_list)
                     adjacency_lists_add.append(per_adjacency_list_add)
@@ -723,6 +714,7 @@ class PeriodicFinder:
 
         # Find the seed positions copies that are within the neighbourhood
         orig_cell = system.get_cell()
+        positions = system.get_positions()
 
         # Find the cells in which the copies of the seed atom are at the
         # origin. Here we are reusing information from the displacement tensor
@@ -756,12 +748,9 @@ class PeriodicFinder:
                     a_correction = np.dot(
                         (-np.array(node_factor) + np.array(i_factor)), orig_cell
                     )
-                    a = (
-                        self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    displacement = positions[a_final_neighbour] - positions[node_index]
+                    a = displacement + a_correction
                     a *= multiplier
-
                 else:
                     a = best_spans[i_basis, :]
 
@@ -912,6 +901,7 @@ class PeriodicFinder:
             seed_group_index(int): A new index of the seed atom in the cell.
         """
         orig_cell = system.get_cell()
+        positions = system.get_positions()
 
         # We need to make the third basis vector, In 2D systems the maximum
         # thickness of the system is defined by max_cell_size.
@@ -953,11 +943,8 @@ class PeriodicFinder:
                     a_correction = np.dot(
                         (-np.array(node_factor) + np.array(i_factor)), orig_cell
                     )
-                    a = (
-                        multiplier
-                        * self.disp_tensor_finite[a_final_neighbour, node_index, :]
-                        + a_correction
-                    )
+                    displacement = positions[a_final_neighbour] - positions[node_index]
+                    a = multiplier * displacement + a_correction
                 else:
                     a = best_spans[i_basis, :]
                 cells[i_node, i_basis, :] = a
@@ -985,9 +972,17 @@ class PeriodicFinder:
             if i_seed in index_cell_map:
                 i_indices, i_pos, i_factors = index_cell_map[i_seed]
             else:
-                i_indices, i_pos, i_factors = matid.geometry.get_positions_within_basis(
-                    system, cell, search_coord, pos_tol, pbc=system.get_pbc()
-                )
+                # If there is a problem in using the given cell to retrieve
+                # positions (e.g. cell is singular), we don't report a prototype
+                # cell
+                try:
+                    i_indices, i_pos, i_factors = (
+                        matid.geometry.get_positions_within_basis(
+                            system, cell, search_coord, pos_tol, pbc=system.get_pbc()
+                        )
+                    )
+                except Exception:
+                    return None, None, None
                 index_cell_map[i_seed] = (i_indices, i_pos, i_factors)
 
             # Add the seed node factor
@@ -1248,8 +1243,6 @@ class PeriodicFinder:
         self,
         system,
         is_2d,
-        tesselation_distance,
-        bond_threshold,
         seed_index,
         unit_cell,
         seed_position,
@@ -1294,11 +1287,6 @@ class PeriodicFinder:
             system,
             unit_cell,
             is_2d,
-            self.dist_matrix_radii_mic,
-            self.disp_tensor_finite,
-            tesselation_distance,
-            self.chem_similarity_threshold,
-            bond_threshold,
         )
         multipliers = self._get_multipliers(periodic_indices)
 
@@ -1415,6 +1403,7 @@ class PeriodicFinder:
             cell_pos = unit_cell.get_scaled_positions(wrap=False)
         except Exception:
             return
+
         cell_num = unit_cell.get_atomic_numbers()
         old_basis = unit_cell.get_cell()
 
@@ -1432,8 +1421,8 @@ class PeriodicFinder:
         test_pos = matid.geometry.to_cartesian(orig_cell, test_pos)
 
         # Find the atoms that match the positions in the original basis
-        matches, substitutions, vacancies, _ = matid.geometry.get_matches_old(
-            system, test_pos, cell_num, self.pos_tol
+        matches, substitutions, vacancies, _ = matid.geometry.get_matches(
+            system, self.cell_list, test_pos, cell_num, self.pos_tol
         )
 
         # Associate the matched atoms to this cell
@@ -1512,13 +1501,18 @@ class PeriodicFinder:
         )
         collection[cell_index] = new_unit
 
-        # Save the updated cell shape for the new cells in the queue
-        new_sys = Atoms(
-            cell=new_cell,
-            scaled_positions=cell_pos,
-            symbols=cell_num,
-            pbc=unit_cell.get_pbc(),
-        )
+        # Save the updated cell shape for the new cells in the queue. If the
+        # found system is invalid, the result is ignored.
+        try:
+            new_sys = Atoms(
+                cell=new_cell,
+                scaled_positions=cell_pos,
+                symbols=cell_num,
+                pbc=unit_cell.get_pbc(),
+            )
+        except Exception:
+            return
+
         cells = len(new_seed_pos) * [new_sys]
 
         # Add the found neighbours to a queue
@@ -1582,8 +1576,6 @@ class PeriodicFinder:
             return new_cell, new_seed_indices, new_seed_pos, new_cell_indices
         else:
             used_points.add(seed_index)
-
-        orig_cell = system.get_cell()
         orig_pos = system.get_positions()
 
         # Filter out cells that have already been searched
@@ -1602,37 +1594,32 @@ class PeriodicFinder:
             # Find out the atoms that match the seed_guesses in the original
             # system
             seed_guesses = seed_pos + dislocations
-            matches, _, _, factors = matid.geometry.get_matches_old(
+            matches, displacements = matid.geometry.get_matches_simple(
                 system,
+                self.cell_list,
                 seed_guesses,
                 len(dislocations) * [seed_atomic_number],
                 self.pos_tol,
             )
-            for match, factor, seed_guess, multiplier, disloc, test_cell_index in zip(
+            for (
+                match,
+                seed_guess,
+                multiplier,
+                disloc,
+                test_cell_index,
+                displacement,
+            ) in zip(
                 matches,
-                factors,
                 seed_guesses,
                 multipliers,
                 dislocations,
                 test_cell_indices,
+                displacements,
             ):
                 multiplier_tuple = tuple(multiplier)
 
-                # Save the position corresponding to a seed atom or a guess for
-                # it. If a match was found that is not the original seed, use
-                # it's position to update the cell. If the matched index is the
-                # same as the original seed, check the factors array to decide
-                # whether to use the guess or not.
-                if match is not None:
-                    if match != seed_index:
-                        i_seed_pos = orig_pos[match]
-                    else:
-                        if (factor == 0).all():
-                            i_seed_pos = seed_guess
-                        else:
-                            i_seed_pos = orig_pos[match]
-                else:
-                    i_seed_pos = seed_guess
+                # Save the position corresponding to a seed atom or a guess for it.
+                i_seed_pos = seed_guess if match is None else orig_pos[match]
 
                 # Check if this index has already been used as a seed. The
                 # used_seed_indices is needed so that the same atom cannot
@@ -1670,21 +1657,17 @@ class PeriodicFinder:
                     if match is not None:
                         used_indices.add(match)
 
-                # Store the cell basis vector
+                # Update the cell basis vector based on the found match. TODO:
+                # This displacement correction may have unwanted effects in
+                # noisy systems.
                 for i in range(3):
                     basis_mult = [0, 0, 0]
                     basis_mult[i] = 1
                     basis_mult = tuple(basis_mult)
                     if multiplier_tuple == basis_mult:
-                        if match is None:
-                            i_basis = disloc
-                        else:
-                            temp = i_seed_pos + np.dot(factor, orig_cell)
-                            i_basis = temp - seed_pos
+                        i_basis = disloc
+                        if match:
+                            i_basis -= np.array(displacement)
                         new_cell[i, :] = i_basis
-
-        # TODO: Calculate the average cell for this seed atom. The average cell
-        # is then used in the next phase of the search for the neighbouring
-        # cells.
 
         return new_cell, new_seed_indices, new_seed_pos, new_cell_indices

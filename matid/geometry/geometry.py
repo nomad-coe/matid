@@ -558,75 +558,6 @@ def get_wrapped_positions(scaled_pos, precision=1e-5):
     return scaled_pos
 
 
-def get_displacement_tensor_old(
-    pos1,
-    pos2,
-    cell=None,
-    pbc=None,
-    mic=False,
-    cutoff=None,
-    return_factors=False,
-    return_distances=False,
-):
-    """Given an array of positions, calculates the 3D displacement tensor
-    between the positions.
-
-    The displacement tensor is a matrix where the entry A[i, j, :] is the
-    vector pos1[i] - pos2[j], i.e. the vector from pos2 to pos1
-
-    Args:
-        pos1(np.ndarray): 2D array of positions
-        pos2(np.ndarray): 2D array of positions
-        cell(np.ndarray): Cell for taking into account the periodicity
-        pbc(boolean or a list of booleans): Periodicity of the axes
-        mic(boolean): Whether to return the displacement to the nearest
-            periodic copy
-
-    Returns:
-        np.ndarray: 3D displacement tensor
-        (optional) np.ndarray: The indices of the periodic copies in which the
-            minimum image was found
-        (optional) np.ndarray: The lengths of the displacement vectors
-    """
-    # Make 1D into 2D
-    shape1 = pos1.shape
-    shape2 = pos2.shape
-    if len(shape1) == 1:
-        n_cols1 = len(pos1)
-        pos1 = np.reshape(pos1, (-1, n_cols1))
-    if len(shape2) == 1:
-        n_cols2 = len(pos2)
-        pos2 = np.reshape(pos2, (-1, n_cols2))
-
-    # Calculate the pairwise distance vectors
-    disp_tensor = pos1[:, None, :] - pos2[None, :, :]
-    tensor_shape = np.array(disp_tensor.shape)
-
-    # If minimum image convention is used, get the corrected vectors
-    if mic:
-        flattened_disp = np.reshape(disp_tensor, (-1, 3))
-        D, D_len, factors = find_mic(flattened_disp, cell, pbc, cutoff)
-        disp_tensor = np.reshape(D, tensor_shape)
-        if return_factors:
-            factors = np.reshape(factors, tensor_shape)
-        if return_distances:
-            lengths = np.reshape(D_len, (tensor_shape[0], tensor_shape[1]))
-    else:
-        if return_factors:
-            factors = np.zeros((tensor_shape[0], tensor_shape[1], 3))
-        if return_distances:
-            lengths = np.linalg.norm(disp_tensor, axis=2)
-
-    if return_factors and return_distances:
-        return disp_tensor, factors, lengths
-    elif return_factors:
-        return disp_tensor, factors
-    elif return_distances:
-        return disp_tensor, lengths
-    else:
-        return disp_tensor
-
-
 def get_displacement_tensor(
     positions,
     cell=None,
@@ -979,112 +910,6 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches_old(system, positions, numbers, tolerance, mic=True):
-    """Given a system and a list of cartesian positions and atomic numbers,
-    returns a list of indices for the atoms corresponding to the given
-    positions with some tolerance.
-
-    Args:
-        system(ASE.Atoms): System where to search the positions
-        positions(np.ndarray): Positions to match in the system.
-        tolerance(float): Maximum allowed distance for each vector that
-            is allowed for a match in position.
-        mic(boolean): Whether to find the minimum image copy.
-
-    Returns:
-        np.ndarray: indices of matched atoms
-        list: list of substitutions
-        list: list of vacancies
-        np.ndarray: for each searched position, an integer array representing
-            the number of the periodic copy where the match was found.
-    """
-    orig_num = system.get_atomic_numbers()
-    orig_pos = system.get_positions()
-    cell = system.get_cell()
-    pbc = system.get_pbc()
-    pbc = expand_pbc(pbc)
-    scaled_pos2 = to_scaled(cell, positions, wrap=False)
-
-    _, factors, dist_matrix = get_displacement_tensor_old(
-        positions,
-        orig_pos,
-        cell,
-        pbc,
-        mic=mic,
-        cutoff=tolerance,
-        return_factors=True,
-        return_distances=True,
-    )
-
-    # Find the closest atom within the tolerance and with the required atomic
-    # number, or if not found, get the closest atom that is within the
-    # tolerance
-    best_matches = []
-    best_substitutions = []
-    for i_atom, i in enumerate(dist_matrix):
-        near_mask = i <= tolerance
-        element_mask = orig_num == numbers[i_atom]
-        combined_mask = near_mask & element_mask
-        possible_indices = np.where(combined_mask)[0]
-        if len(possible_indices) != 0:
-            min_dist_index = np.argmin(i[combined_mask])
-            best_index = possible_indices[min_dist_index]
-            best_matches.append(best_index)
-            best_substitutions.append(None)
-        elif near_mask.any():
-            best_matches.append(None)
-            near_indices = np.where(near_mask)[0]
-            nearest_index = np.argmin(i[near_mask])
-            best_substitutions.append(near_indices[nearest_index])
-        else:
-            best_matches.append(None)
-            best_substitutions.append(None)
-
-    matches = []
-    substitutions = []
-    vacancies = []
-    copy_indices = np.zeros((len(positions), 3), dtype=int)
-
-    for i, (i_match, i_subst) in enumerate(zip(best_matches, best_substitutions)):
-        match = None
-        copy = None
-        subst = None
-        b_num = numbers[i]
-
-        if i_match is not None:
-            ind = i_match
-            match = ind
-
-            # If a match was found the factor is reported based on the
-            # displacement tensor
-            i_move = factors[i][ind]
-            copy = i_move
-        elif i_subst is not None:
-            ind = i_subst
-            a_num = orig_num[ind]
-
-            # Wrap the substitute position
-            subst_pos_cart = orig_pos[ind]
-            subst = Substitution(ind, subst_pos_cart, b_num, a_num)
-
-            # If a match was found the factor is reported based on the
-            # displacement tensor
-            i_move = factors[i][ind]
-            copy = i_move
-        else:
-            vacancies.append(Atom(b_num, position=positions[i]))
-
-            # If no match was found, the factor is reported from the scaled
-            # positions
-            copy = np.floor(scaled_pos2[i])
-
-        substitutions.append(subst)
-        matches.append(match)
-        copy_indices[i] = copy
-
-    return matches, substitutions, vacancies, copy_indices
-
-
 def get_matches(system, cell_list, positions, numbers, tolerance):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
@@ -1117,6 +942,7 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
         match = None
         substitution = None
         copy_index = None
+        displacement = None
         cell_list_result = cell_list.get_neighbours_for_position(
             position[0], position[1], position[2]
         )
@@ -1149,6 +975,49 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
         copy_indices[i] = copy_index
 
     return matches, substitutions, vacancies, copy_indices
+
+
+def get_matches_simple(system, cell_list, positions, numbers, tolerance):
+    """Given a system and a list of cartesian positions and atomic numbers,
+    returns a list of indices for the atoms corresponding to the given
+    positions with some tolerance.
+    Args:
+        system(ASE.Atoms): System where to search the positions
+        cell_list(CellList): The cell list for an appropriately extended version
+            of the system.
+        positions(np.ndarray): Positions to match in the system.
+        tolerance(float): Maximum allowed distance for matching.
+    Returns:
+        list: list of matched atoms or None is nothing was matched.
+    """
+    atomic_numbers = system.get_atomic_numbers()
+    cell = system.get_cell()
+    pbc = system.get_pbc()
+    matches = []
+    displacements = []
+    wrapped_positions = ase.geometry.wrap_positions(positions, cell, pbc)
+
+    for wrapped_position, atomic_number in zip(wrapped_positions, numbers):
+        match = None
+        displacement = None
+        cell_list_result = cell_list.get_neighbours_for_position(
+            wrapped_position[0], wrapped_position[1], wrapped_position[2]
+        )
+        indices = cell_list_result.indices_original
+        if len(indices) > 0:
+            distances = cell_list_result.distances
+            min_distance_index = np.argmin(distances)
+            closest_distance = distances[min_distance_index]
+            closest_index = indices[min_distance_index]
+            if closest_distance <= tolerance:
+                closest_atomic_number = atomic_numbers[closest_index]
+                if closest_atomic_number == atomic_number:
+                    match = closest_index
+                    displacement = cell_list_result.displacements[min_distance_index]
+        matches.append(match)
+        displacements.append(displacement)
+
+    return matches, displacements
 
 
 def get_cell_list(positions, cell, pbc, extension, cutoff):
@@ -1574,15 +1443,15 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
-    disp_tensor_finite = get_displacement_tensor(pos)
     if pbc.any():
-        disp_tensor_mic, disp_factors = get_displacement_tensor(
-            pos, cell, pbc, return_factors=True
+        disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
+            pos, cell, pbc, return_factors=True, return_distances=True
         )
     else:
-        disp_tensor_mic = disp_tensor_finite
-        disp_factors = np.zeros(disp_tensor_finite.shape)
-    dist_matrix_mic = np.linalg.norm(disp_tensor_mic, axis=2)
+        disp_tensor_mic, dist_matrix_mic = get_displacement_tensor(
+            pos, return_distances=True
+        )
+        disp_factors = np.zeros(disp_tensor_mic.shape)
 
     # Calculate the distance matrix where the periodicity and the covalent
     # radii have been taken into account
@@ -1593,7 +1462,6 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     return Distances(
         disp_tensor_mic,
         disp_factors,
-        disp_tensor_finite,
         dist_matrix_mic,
         dist_matrix_radii_mic,
     )
