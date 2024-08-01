@@ -12,16 +12,6 @@ periodically repeating motifs, and as such it is not suitable for e.g.
 finding molecules. Any atoms that do not have enough periodic repetitions
 will be returned as isolated clusters.
 
-## \_\_init\_\_
-
-```python
-def __init__(seed=7)
-```
-
-**Arguments**:
-
-- `seed(int)` - The seed that is used for random number generation.
-
 ## get\_clusters
 
 ```python
@@ -33,7 +23,8 @@ def get_clusters(system,
                  merge_radius=1,
                  bond_threshold=0.65,
                  overlap_threshold=-0.1,
-                 radii="covalent")
+                 radii="covalent",
+                 seed=7)
 ```
 
 Used to detect and return structurally separate clusters within the
@@ -67,6 +58,7 @@ given system.
   - vdw: van Der Waals radii from DOI:10.1039/C3DT50599E
   - vdw_covalent: preferably van Der Waals radii, covalent if vdw
   not defined.
+- `seed(int)` - The seed that is used for random number generation.
   
 
 **Returns**:
