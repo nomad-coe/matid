@@ -41,10 +41,10 @@ clustering requires that we define a metric for the distance between atoms. We
 use the following metric:
 
 $$
-   d_{ij} = \lvert \vec{r}_i - \vec{r}_j \rvert^{\text{MIC}} - r_i - r_j
+   d_{ij} = \lvert \vec{R}_i - \vec{R}_j \rvert^{\text{MIC}} - r_i - r_j
 $$
 
-where $\vec{r}_i$ and $\vec{r}_i$ are the cartesian positions of atom $i$ and
+where $\vec{R}_i$ and $\vec{R}_j$ are the cartesian positions of atom $i$ and
 $j$, respectively, and $r_i$ and $r_j$ are their radii. The radii definition can
 be changed and defaults to covalent radii[^3]. It is important to notice that in
 this metric the distances always follow the minimum image convention (MIC), i.e.
