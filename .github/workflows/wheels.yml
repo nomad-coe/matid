@@ -14,9 +14,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v2.18.0
         env:
-          CIBW_SKIP: cp36-* cp313*
+          CIBW_SKIP: cp36-*
 
       - uses: actions/upload-artifact@v4
         with:
