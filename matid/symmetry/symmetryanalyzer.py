@@ -1139,8 +1139,7 @@ class SymmetryAnalyzer(object):
                     i_n = r["wyckoff_positions"].get((w, z))
                     if i_n is not None:
                         n_atoms_map[i_n].append(r)
-                        if i_n > n_atoms_max:
-                            n_atoms_max = i_n
+                        n_atoms_max = max(i_n, n_atoms_max)
                 if n_atoms_max != 0:
                     representations = n_atoms_map[n_atoms_max]
                 if len(representations) == 1:

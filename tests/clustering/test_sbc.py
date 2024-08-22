@@ -5,8 +5,9 @@ import pytest
 import ase.io
 from ase import Atoms
 from ase.build import bulk
+from ase.visualize import view
 
-from conftest import surface, stack, rattle, assert_topology
+from conftest import surface, stack, rattle, assert_topology, create_graphene, create_fe
 from matid.clustering import SBC, Cluster
 
 
@@ -299,6 +300,53 @@ def test_clustering_coincidental_patterns(system, clusters_expected):
     contains coindidental patterns that bump up the selection of some basis
     directions."""
     results = SBC().get_clusters(system, pos_tol=0.1)
+    assert_topology(results, clusters_expected)
+
+
+@pytest.mark.parametrize(
+    "system, clusters_expected",
+    [
+        pytest.param(
+            create_fe(),
+            [
+                Cluster(
+                    [0, 1],
+                    dimensionality=3,
+                ),
+            ],
+            id="clusters that consist only of the 3D prototype cell but contain a periodic span should be accepted",
+        ),
+        pytest.param(
+            create_graphene(),
+            [
+                Cluster(
+                    [0, 1],
+                    dimensionality=2,
+                ),
+            ],
+            id="clusters that consist only of the 2D prototype cell but contain a periodic span should be accepted",
+        ),
+        pytest.param(
+            ase.build.surface(
+                ase.build.bulk(
+                    "MoC", crystalstructure="rocksalt", a=4.38, b=4.38, c=4.38, alpha=90
+                ),
+                (0, 0, 1),
+                5,
+                vacuum=5,
+                tol=1e-10,
+                periodic=True,
+            )
+            * [3, 3, 1],
+            [],
+            id="clusters that consist only of the prototype cell but don't contain a periodic span should be ignored",
+        ),
+    ],
+)
+def test_small_clusters(system, clusters_expected):
+    """Tests that small clusters that do not cover"""
+    system = rattle(system, 0.1)
+    results = SBC().get_clusters(system, pos_tol=0.01)
     assert_topology(results, clusters_expected)
 
 
