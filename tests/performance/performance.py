@@ -198,14 +198,10 @@ def plot(show):
         i_timemin = times.min()
         i_nmax = n_atoms.max()
         i_nmin = n_atoms.min()
-        if i_timemax > timemax:
-            timemax = i_timemax
-        if i_timemin < timemin:
-            timemin = i_timemin
-        if i_nmax > nmax:
-            nmax = i_nmax
-        if i_nmin < nmin:
-            nmin = i_nmin
+        timemax = max(i_timemax, timemax)
+        timemin = min(i_timemin, timemin)
+        nmax = max(i_nmax, nmax)
+        nmin = min(i_nmin, nmin)
         # ax1.fill_between(n_atoms, times_mean - times_std, times_mean + times_std, color=color, alpha=0.3)
         ax1.plot(
             n_atoms,

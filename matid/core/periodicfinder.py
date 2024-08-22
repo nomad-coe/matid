@@ -350,11 +350,29 @@ class PeriodicFinder:
         if len(valid_span_indices) == 0:
             return None, None, None, None
 
+        # Get indices of periodic spans if any were selected
+        n_valid_span_indices = len(valid_span_indices)
+        i_periodic_spans = []
+        for index in range(
+            n_valid_span_indices - n_periodic_spans, n_valid_span_indices
+        ):
+            search_result = np.where(valid_span_indices == index)[0]
+            if search_result:
+                i_periodic_spans.append(search_result[0])
+
         # Find the best basis
         valid_span_metrics = metric[valid_span_indices]
         valid_spans = possible_spans[valid_span_indices]
         best_combo = self._find_best_basis(valid_spans, valid_span_metrics)
         dim = len(best_combo)
+
+        # Check how many of the periodic spans are still selected as prototype
+        # unit cell vectors
+        n_periodic_spans_selected = 0
+        for i_periodic_span in i_periodic_spans:
+            search_result = np.where(best_combo == i_periodic_span)[0]
+            if search_result:
+                n_periodic_spans_selected += 1
 
         # Currently 1D is not handled
         if dim == 1:
@@ -464,15 +482,6 @@ class PeriodicFinder:
                     n_spans = 2
                 else:
                     return None, None, None, None
-
-        # Check how many of the periodic spans were selected as prototype unit
-        # cell vectors
-        n_valid_span_indices = len(valid_span_indices)
-        periodic_span_indices = valid_span_indices[
-            n_valid_span_indices - n_periodic_spans :
-        ]
-        best_span_ind = valid_span_indices[best_combo]
-        n_periodic_spans_selected = len(set(best_span_ind) & set(periodic_span_indices))
 
         if two_valid_spans:
             # If the best 2D vectors consists only of the simulation basis cell
