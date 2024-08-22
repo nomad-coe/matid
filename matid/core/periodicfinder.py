@@ -348,7 +348,8 @@ class PeriodicFinder:
             | (metric >= 0.75 * n_neighbours)
         )[0]
 
-        if len(valid_span_indices) == 0:
+        total_valid_spans = len(valid_span_indices)
+        if total_valid_spans == 0:
             return None, None, None, None
 
         # Find the best basis
@@ -359,7 +360,6 @@ class PeriodicFinder:
 
         # Check how many of the periodic spans are still selected as prototype
         # unit cell vectors
-        total_valid_spans = len(valid_span_indices)
         selected_spans = range(total_valid_spans - n_periodic_spans, total_valid_spans)
         n_periodic_spans_selected = sum(span_index in best_combo for span_index in selected_spans)
 
