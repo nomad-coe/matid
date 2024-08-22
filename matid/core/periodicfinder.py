@@ -361,7 +361,9 @@ class PeriodicFinder:
         # Check how many of the periodic spans are still selected as prototype
         # unit cell vectors
         selected_spans = range(total_valid_spans - n_periodic_spans, total_valid_spans)
-        n_periodic_spans_selected = sum(span_index in best_combo for span_index in selected_spans)
+        n_periodic_spans_selected = sum(
+            span_index in best_combo for span_index in selected_spans
+        )
 
         # Currently 1D is not handled
         if dim == 1:
