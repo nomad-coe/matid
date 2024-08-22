@@ -157,8 +157,7 @@ class PeriodicFinder:
             # it or one of the spans is periodic. In many cases the prototype
             # cell can be found (seed + number of spans), but it cannot really
             # be extended to cover any significant portion of the system.
-            region_size_absolute = len(i_indices)
-            if region_size_absolute > 1 + dim or n_periodic_spans_selected >= 1:
+            if len(i_indices) > 1 + dim or n_periodic_spans_selected >= 1:
                 region = unit_collection
                 region._pos_tol = pos_tol
 
@@ -228,6 +227,8 @@ class PeriodicFinder:
         Returns:
             ase.Atoms: A system representing the best cell that was found
             np.ndarray: Position of the seed atom in the cell
+            int: Dimensionality of the found system
+            int: Number of periodic unit cell vectors used
         """
         positions = system.get_positions()
         numbers = system.get_atomic_numbers()
@@ -350,16 +351,6 @@ class PeriodicFinder:
         if len(valid_span_indices) == 0:
             return None, None, None, None
 
-        # Get indices of periodic spans if any were selected
-        n_valid_span_indices = len(valid_span_indices)
-        i_periodic_spans = []
-        for index in range(
-            n_valid_span_indices - n_periodic_spans, n_valid_span_indices
-        ):
-            search_result = np.where(valid_span_indices == index)[0]
-            if search_result:
-                i_periodic_spans.append(search_result[0])
-
         # Find the best basis
         valid_span_metrics = metric[valid_span_indices]
         valid_spans = possible_spans[valid_span_indices]
@@ -368,11 +359,9 @@ class PeriodicFinder:
 
         # Check how many of the periodic spans are still selected as prototype
         # unit cell vectors
-        n_periodic_spans_selected = 0
-        for i_periodic_span in i_periodic_spans:
-            search_result = np.where(best_combo == i_periodic_span)[0]
-            if search_result:
-                n_periodic_spans_selected += 1
+        total_valid_spans = len(valid_span_indices)
+        selected_spans = range(total_valid_spans - n_periodic_spans, total_valid_spans)
+        n_periodic_spans_selected = sum(span_index in best_combo for span_index in selected_spans)
 
         # Currently 1D is not handled
         if dim == 1:
