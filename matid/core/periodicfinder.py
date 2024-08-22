@@ -158,7 +158,7 @@ class PeriodicFinder:
             # cell can be found (seed + number of spans), but it cannot really
             # be extended to cover any significant portion of the system.
             region_size_absolute = len(i_indices)
-            if region_size_absolute > 1+dim or n_periodic_spans_selected >= 1:
+            if region_size_absolute > 1 + dim or n_periodic_spans_selected >= 1:
                 region = unit_collection
                 region._pos_tol = pos_tol
 
@@ -468,7 +468,9 @@ class PeriodicFinder:
         # Check how many of the periodic spans were selected as prototype unit
         # cell vectors
         n_valid_span_indices = len(valid_span_indices)
-        periodic_span_indices = valid_span_indices[n_valid_span_indices-n_periodic_spans:]
+        periodic_span_indices = valid_span_indices[
+            n_valid_span_indices - n_periodic_spans :
+        ]
         best_span_ind = valid_span_indices[best_combo]
         n_periodic_spans_selected = len(set(best_span_ind) & set(periodic_span_indices))
 

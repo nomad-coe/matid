@@ -336,7 +336,8 @@ def test_clustering_coincidental_patterns(system, clusters_expected):
                 vacuum=5,
                 tol=1e-10,
                 periodic=True,
-            ) * [3, 3, 1],
+            )
+            * [3, 3, 1],
             [],
             id="clusters that consist only of the prototype cell but don't contain a periodic span should be ignored",
         ),
