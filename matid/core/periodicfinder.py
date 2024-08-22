@@ -124,7 +124,7 @@ class PeriodicFinder:
             neighbour_factors,
             search_mask,
         ) = self._find_possible_bases(system, seed_index)
-        proto_cell, offset, dim = self._find_proto_cell(
+        proto_cell, offset, dim, n_periodic_spans_selected = self._find_proto_cell(
             system,
             seed_index,
             possible_spans,
@@ -153,7 +153,12 @@ class PeriodicFinder:
 
             i_indices = unit_collection.get_basis_indices()
 
-            if len(i_indices) > 0:
+            # The region is accepted if it either has more than 1+dim atoms in
+            # it or one of the spans is periodic. In many cases the prototype
+            # cell can be found (seed + number of spans), but it cannot really
+            # be extended to cover any significant portion of the system.
+            region_size_absolute = len(i_indices)
+            if region_size_absolute > 1+dim or n_periodic_spans_selected >= 1:
                 region = unit_collection
                 region._pos_tol = pos_tol
 
@@ -343,7 +348,7 @@ class PeriodicFinder:
         )[0]
 
         if len(valid_span_indices) == 0:
-            return None, None, None
+            return None, None, None, None
 
         # Find the best basis
         valid_span_metrics = metric[valid_span_indices]
@@ -353,7 +358,7 @@ class PeriodicFinder:
 
         # Currently 1D is not handled
         if dim == 1:
-            return None, None, 1
+            return None, None, 1, None
 
         best_spans = valid_spans[best_combo]
         n_spans = len(best_spans)
@@ -382,7 +387,7 @@ class PeriodicFinder:
 
         # If the seed atom is not in a valid graph, no region could be found.
         if seed_group_index is None:
-            return None, None, None
+            return None, None, None, None
 
         # Notice that the seed group index can get updated by the cell search if
         # an atom is dropped out of the cell due to appearing too infrequently.
@@ -409,7 +414,7 @@ class PeriodicFinder:
                 pos_tol,
             )
         if proto_cell is None:
-            return None, None, None
+            return None, None, None, None
 
         two_valid_spans = n_spans == 2
         if n_spans == 3:
@@ -424,7 +429,7 @@ class PeriodicFinder:
                     proto_cell, bond_threshold
                 )
             except MatIDError:
-                return None, None, None
+                return None, None, None, None
             if dimensionality != 3:
                 # Try if the cell can be "reduced" to a 2D material
                 if dimensionality == 2:
@@ -458,7 +463,14 @@ class PeriodicFinder:
                     two_valid_spans = True
                     n_spans = 2
                 else:
-                    return None, None, None
+                    return None, None, None, None
+
+        # Check how many of the periodic spans were selected as prototype unit
+        # cell vectors
+        n_valid_span_indices = len(valid_span_indices)
+        periodic_span_indices = valid_span_indices[n_valid_span_indices-n_periodic_spans:]
+        best_span_ind = valid_span_indices[best_combo]
+        n_periodic_spans_selected = len(set(best_span_ind) & set(periodic_span_indices))
 
         if two_valid_spans:
             # If the best 2D vectors consists only of the simulation basis cell
@@ -466,12 +478,10 @@ class PeriodicFinder:
             # Otherwise the cell cannot be accepted because there is not enough
             # statistics about the cell contents to distinguish outliers.
             if n_periodic_spans > 0:
-                periodic_span_indices = valid_span_indices[-n_periodic_spans:]
-                best_span_ind = valid_span_indices[best_combo]
-                if set(best_span_ind).issubset(set(periodic_span_indices)):
+                if n_periodic_spans_selected == 2:
                     cell_lens = np.linalg.norm(best_spans, axis=1)
                     if np.any(cell_lens > self.max_2d_single_cell_size):
-                        return None, None, None
+                        return None, None, None, None
 
             # Check the dimensionality
             dimensionality, cluster_labels = matid.geometry.get_dimensionality(
@@ -482,7 +492,7 @@ class PeriodicFinder:
                 # has multiple stacked 2D sheets with identical periodicity. In
                 # this case the unit cell should only comprise of atoms in the
                 # cluster where the seed atom is in.
-                for i_index, i_cluster in enumerate(cluster_labels):
+                for i_cluster in cluster_labels:
                     try:
                         seed_group_index = i_cluster.index(seed_group_index)
                     except ValueError:
@@ -498,13 +508,13 @@ class PeriodicFinder:
                     proto_cell, bond_threshold
                 )
                 if dimensionality is None:
-                    return None, None, None
+                    return None, None, None, None
                 else:
                     if dimensionality != 2:
-                        return None, None, None
+                        return None, None, None, None
             else:
                 if dimensionality != 2:
-                    return None, None, None
+                    return None, None, None, None
 
             # Check the cell thickness. 2D materials that are thicker than a
             # specified threshold are not accepted.
@@ -514,16 +524,16 @@ class PeriodicFinder:
             offset = proto_cell.get_positions()[seed_group_index]
             thickness = matid.geometry.get_thickness(proto_cell, 2)
             if thickness > self.max_2d_cell_height:
-                return None, None, None
+                return None, None, None, None
 
         # Check that the final proto cell atoms don't overlap
         if proto_cell is not None:
             dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix_mic
             dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0])]
             if dist_proto_cell.min() < overlap_threshold:
-                return None, None, None
+                return None, None, None, None
 
-        return proto_cell, offset, n_spans
+        return proto_cell, offset, n_spans, n_periodic_spans_selected
 
     def _find_graphs(
         self,
