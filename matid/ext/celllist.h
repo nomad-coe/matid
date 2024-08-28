@@ -32,7 +32,8 @@ struct CellListResult {
 };
 
 /**
- * For calculating pairwise distances using a cell list.
+ * For calculating pairwise distances using a cell lists:
+ * https://en.wikipedia.org/wiki/Cell_lists.
  */
 class CellList {
     public:
