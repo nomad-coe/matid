@@ -48,15 +48,6 @@ Sinnott, and Richard G. Hennig Phys. Rev. Lett. 118, 106101).
 - `list` - A list of clusters. Each entry in the list contains the indices
   of atoms in a cluster.
 
-## get\_tetrahedra\_decomposition
-
-```python
-def get_tetrahedra_decomposition(system, max_distance)
-```
-
-Used to decompose a series of 3D atomic coordinates into non-overlapping
-tetrahedron that together represent the atomic structure.
-
 ## get\_moments\_of\_inertia
 
 ```python
