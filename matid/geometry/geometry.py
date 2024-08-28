@@ -21,8 +21,6 @@ from matid.data.constants import CLUSTER_THRESHOLD
 import matid.geometry
 import matid.ext
 
-from sklearn.cluster import DBSCAN
-
 from scipy.spatial import Delaunay
 import spglib
 
@@ -421,6 +419,10 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         list: A list of clusters, where each cluster is a list of indices for
         the elements belonging to the cluster.
     """
+    # The import is localized here to keep the startup times shorter: importing
+    # sklearn takes quite a while
+    from sklearn.cluster import DBSCAN
+
     # As the distances have been normalized with respect to the covalent radiis,
     # the distance matrix may in some cases have negative values. This simply
     # means that the distance between two atoms is smaller than the sum of
