@@ -419,63 +419,6 @@ class PeriodicFinderTests(unittest.TestCase):
         self.assertEqual(set(range(len(system))), set(region.get_basis_indices()))
 
 
-class DelaunayTests(unittest.TestCase):
-    """Tests for the Delaunay triangulation."""
-
-    classifier = Classifier()
-    delaunay_threshold = classifier.delaunay_threshold
-
-    def test_surface(self):
-        system = bcc100("Fe", size=(5, 5, 3), vacuum=8)
-        decomposition = matid.geometry.get_tetrahedra_decomposition(
-            system, DelaunayTests.delaunay_threshold
-        )
-
-        # Atom inside
-        test_pos = np.array([7, 7, 9.435])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-
-        # Atoms at the edges should belong to the surface
-        test_pos = np.array([14, 2, 9.435])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-        test_pos = np.array([1.435, 13, 9.435])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-
-        # Atoms outside
-        test_pos = np.array([5, 5, 10.9])
-        self.assertEqual(decomposition.find_simplex(test_pos), None)
-        test_pos = np.array([5, 5, 7.9])
-        self.assertEqual(decomposition.find_simplex(test_pos), None)
-
-    def test_2d(self):
-        system = ase.build.mx2(
-            formula="MoS2", kind="2H", a=3.18, thickness=3.19, size=(2, 2, 1), vacuum=8
-        )
-        system.set_pbc(True)
-
-        decomposition = matid.geometry.get_tetrahedra_decomposition(
-            system, DelaunayTests.delaunay_threshold
-        )
-
-        # Atom inside
-        test_pos = np.array([2, 2, 10])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-        test_pos = np.array([2, 2, 10.5])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-
-        # Atoms at the edges should belong to the surface
-        test_pos = np.array([0, 4, 10])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-        test_pos = np.array([5, 1, 10])
-        self.assertNotEqual(decomposition.find_simplex(test_pos), None)
-
-        # Atoms outside
-        test_pos = np.array([2, 2, 11.2])
-        self.assertEqual(decomposition.find_simplex(test_pos), None)
-        test_pos = np.array([0, 0, 7.9])
-        self.assertEqual(decomposition.find_simplex(test_pos), None)
-
-
 class AtomTests(unittest.TestCase):
     """Tests for detecting an Atom."""
 

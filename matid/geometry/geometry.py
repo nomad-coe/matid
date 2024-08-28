@@ -3,7 +3,6 @@ a atomic system.
 """
 
 import math
-import itertools
 from collections import defaultdict
 
 import numpy as np
@@ -14,15 +13,14 @@ from ase.data.vdw_alvarez import vdw_radii
 from ase import Atom, Atoms
 import ase.geometry
 
+import spglib
+
 from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
 from matid.core.distances import Distances
 from matid.data.constants import CLUSTER_THRESHOLD
 import matid.geometry
 import matid.ext
-
-from scipy.spatial import Delaunay
-import spglib
 
 
 def get_dimensionality(
@@ -133,127 +131,6 @@ def get_dimensionality(
         return dim, clusters_1x
     else:
         return dim
-
-
-def get_tetrahedra_decomposition(system, max_distance):
-    """Used to decompose a series of 3D atomic coordinates into non-overlapping
-    tetrahedron that together represent the atomic structure.
-
-    """
-    # TODO: Reuse the distance matrix from the original system, just filter out
-    # the entries that do not belong to the valid basis. This way we can avoid
-    # recalculating the distances.
-
-    # TODO: Determine the distance matrix of the padded system during the
-    # construction of the padded system. This should be doable by simply using
-    # the internal displacements and the cell periodicity.
-
-    class TetrahedraDecomposition:
-        """A class that represents a collection of tetrahedron."""
-
-        def __init__(self, delaunay, invalid_simplex_indices):
-            self.delaunay = delaunay
-            self.invalid_simplex_indices = invalid_simplex_indices
-
-        def find_simplex(self, pos):
-            """Used to find the index of the simplex in which the given
-            position resides in.
-
-            Args:
-                pos(np.nadrray): Position for which to find the simplex
-
-            Returns:
-                int: Index of the simplex in which the point is in. Returns
-                None if simplex was not found.
-            """
-            index = self.delaunay.find_simplex(pos).item()
-            if index == -1:
-                return None
-            if index not in self.invalid_simplex_indices:
-                return index
-            return None
-
-    cell = system.get_cell()
-    pos = system.get_positions()
-    num = system.get_atomic_numbers()
-
-    # Calculate a matrix containing the combined radii for each pair of atoms
-    # in an extended system
-    radii = covalent_radii[num]
-    radii_matrix = radii[:, None] + radii[None, :]
-
-    displacements_finite = get_displacement_tensor(pos)
-
-    # In order for the decomposition to cover also the edges, we have to extend
-    # the system to cover also into the adjacent periodic images. That is done
-    # within this loop.
-    tesselation_atoms = system.copy()
-    multipliers = np.array(list(itertools.product((-1, 0, 1), repeat=3)))
-
-    for mult in multipliers:
-        if tuple(mult) != (0, 0, 0):
-            disloc = np.dot(mult, cell)
-
-            # If system is periodic in this direction, calculate the distance
-            # between atoms in the periodically repeated images and choose
-            # atoms from the copies that are within a certain range when the
-            # radii are taken into account
-            disp = np.array(displacements_finite)
-            disp += disloc
-            dist = np.linalg.norm(disp, axis=2)
-            dist_radii = dist - radii_matrix
-            connectivity_mask = np.where(dist_radii < max_distance)
-
-            pad_pos = (
-                pos[connectivity_mask[1]]
-                + disp[connectivity_mask[0], connectivity_mask[1]]
-            )
-            pad_num = num[connectivity_mask[1]]
-            pad_atoms = Atoms(positions=pad_pos, symbols=pad_num)
-            tesselation_atoms += pad_atoms
-
-    # view(tesselation_atoms)
-    tesselation_pos = tesselation_atoms.get_positions()
-
-    # The QJ options makes sure that all positions are included in the
-    # tesselation
-    tri = Delaunay(tesselation_pos, qhull_options="QJ")
-
-    # Remove invalid simplices from the surface until only valid simplices are
-    # found on the surface
-    distance_matrix = get_covalent_distances(tesselation_atoms, mic=False)
-    simplices = np.array(tri.simplices)
-    neighbors = np.array(tri.neighbors)
-    end = False
-    invalid_indices = set()
-    surface_simplices = np.any(neighbors == -1, axis=1)
-    original_indices = np.arange(len(simplices))
-    surface_simplex_indices = set(original_indices[surface_simplices])
-
-    while not end:
-        # Remove the surface simplices that are too big. Also update the
-        # neighbour list.
-        too_big_simplex_indices = []
-        for i_simplex in surface_simplex_indices:
-            simplex = simplices[i_simplex]
-            for i, j in itertools.combinations(simplex, 2):
-                distance = distance_matrix[i, j]
-                if distance >= max_distance:
-                    too_big_simplex_indices.append(i_simplex)
-                    break
-        invalid_indices = invalid_indices | set(too_big_simplex_indices)
-        if len(too_big_simplex_indices) == 0:
-            end = True
-        else:
-            # Find the neighbours of the simplices that were removed
-            mask = np.isin(neighbors, too_big_simplex_indices)
-            affected = np.any(mask, axis=1)
-            new_surface_simplex_indices = set(original_indices[affected])
-            new_surface_simplex_indices -= invalid_indices
-            surface_simplex_indices = new_surface_simplex_indices
-
-    tetrahedras = TetrahedraDecomposition(tri, invalid_indices)
-    return tetrahedras
 
 
 def get_moments_of_inertia(system, weight=True):
