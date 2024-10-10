@@ -28,7 +28,7 @@ class SBC:
         merge_threshold=0.5,
         merge_radius=1,
         bond_threshold=0.65,
-        overlap_threshold=-0.1,
+        overlap_threshold=-0.4,
         radii="covalent",
         seed=7,
     ):
