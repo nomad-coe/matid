@@ -21,7 +21,7 @@ surface_1 = surface(
     Atoms(
         symbols=["O", "C", "C"],
         scaled_positions=[[0, 0, 0], [1 / 3, 0, 0], [2 / 3, 0, 0]],
-        cell=[3, 1, 1],
+        cell=[3.2, 1.2, 1.2],
         pbc=True,
     ),
     [0, 0, 1],
@@ -32,7 +32,7 @@ surface_2 = surface(
     Atoms(
         symbols=["O", "N", "N"],
         scaled_positions=[[0, 0, 0], [1 / 3, 0, 0], [2 / 3, 0, 0]],
-        cell=[3, 1, 1],
+        cell=[3.2, 1.2, 1.2],
         pbc=True,
     ),
     [0, 0, 1],
@@ -402,3 +402,42 @@ def test_completion_error(cell, pbc):
     system.set_pbc(pbc)
     with pytest.raises(ValueError):
         SBC().get_clusters(system)
+
+
+@pytest.mark.parametrize(
+    "system, radii, overlap",
+    [
+        pytest.param(
+            Atoms(
+                symbols=['C', 'H'],
+                positions=[[0, 0, 0], [0, 0, 0.55]],
+                cell=[2, 2, 2],
+                pbc=True
+            ),
+            None,
+            None,
+            id="overlap, default settings"
+        ),
+        pytest.param(
+            Atoms(
+                symbols=['C'],
+                positions=[[0, 0, 0]],
+                cell=[1, 1, 1],
+                pbc=True
+            ),
+            None,
+            None,
+            id="self-overlap, default settings"
+        ),
+    ],
+)
+def test_overlap(system, radii, overlap):
+    """Tests that cells with overlapping atoms are not reported.
+    """
+    kwargs = {}
+    if overlap is not None:
+        kwargs['overlap_threshold'] = overlap
+    if radii is not None:
+        kwargs['radii'] = overlap
+    clusters = SBC().get_clusters(system, **kwargs)
+    assert len(clusters) == 0
