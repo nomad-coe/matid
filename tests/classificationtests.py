@@ -1915,7 +1915,6 @@ if __name__ == "__main__":
     suites.append(unittest.TestLoader().loadTestsFromTestCase(DimensionalityTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(PeriodicFinderTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(SearchGraphTests))
-    suites.append(unittest.TestLoader().loadTestsFromTestCase(DelaunayTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(AtomTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(Class0DTests))
     suites.append(unittest.TestLoader().loadTestsFromTestCase(Class1DTests))

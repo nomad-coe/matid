@@ -297,7 +297,9 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         the elements belonging to the cluster.
     """
     # The import is localized here to keep the startup times shorter: importing
-    # sklearn takes quite a while
+    # sklearn takes quite a while. TODO: It should be possible to get rid of the
+    # sklearn dependency completely with a built-in version of DBSCAN. Much of
+    # the work is already done with calculating the distance matrix anyways.
     from sklearn.cluster import DBSCAN
 
     # As the distances have been normalized with respect to the covalent radiis,
@@ -306,9 +308,9 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
     # their covalent radiis. The distance values are here clipped to
     # zero to avoid problems in the cluster detection. Another option would be
     # to normalize the distances so that unity would correspond to the sum of
-    # the two radii. In addition, any values larger than the capped: this is
-    # required in order to handle infinite values which come from distances
-    # larger than a set radial cutoff.
+    # the two radii. In addition, any values larger than the threshold are
+    # capped: this is required in order to handle infinite values which come
+    # from distances larger than a set radial cutoff.
     np.clip(dist_matrix, a_min=0, a_max=1.1 * threshold, out=dist_matrix)
 
     # Detect clusters
@@ -474,166 +476,6 @@ def get_displacement_tensor(
     if len(result) == 1:
         return result[0]
     return tuple(result)
-
-
-def find_mic(D, cell, pbc, max_distance=None):
-    """Finds the minimum-image representation of vector(s) D.
-
-    Args:
-        D(np.ndarray): A nx3 array of vectors.
-        cell(np.ndarray): A valid ase Atoms cell definition.
-        pbc(np.ndarray): A 3x1 boolean array for the periodic boundary
-            conditions.
-        mic_copies(np.ndarray): The maximum number of periodic copies to
-            consider in each direction. If not specified, the maximum possible
-            number of copies is determined and used.
-
-    Returns:
-        np.ndarray: The minimum image versions of the given vectors.
-        np.ndarray: The shifts corresponding to the indices of the neighbouring
-            cells in which the vectors were found.
-    """
-    cell = ase.geometry.complete_cell(cell)
-    n_vectors = len(D)
-
-    # Calculate the 4 unique unit cell diagonal lengths
-    diags = np.sqrt(
-        (
-            np.dot(
-                [
-                    [1, 1, 1],
-                    [-1, 1, 1],
-                    [1, -1, 1],
-                    [-1, -1, 1],
-                ],
-                cell,
-            )
-            ** 2
-        ).sum(1)
-    )
-
-    Dr = np.dot(D, np.linalg.inv(cell))
-
-    # calculate 'mic' vectors (D) and lengths (D_len) using simple method
-    # return mic vectors and lengths for only orthorhombic cells,
-    # as the results may be wrong for non-orthorhombic cells
-    if (max(diags) - min(diags)) / max(diags) < 1e-9:
-        factors = np.floor(Dr + 0.5) * pbc
-        D = np.dot(Dr - factors, cell)
-        D_len = np.linalg.norm(D, axis=1)
-        return D, D_len, factors
-    # Non-orthorhombic cell
-    else:
-        D_len = np.linalg.norm(D, axis=1)
-
-    # The cutoff radius is the longest direct distance between atoms
-    # or half the longest lattice diagonal, whichever is smaller
-    if max_distance is None:
-        max_distance = max(D_len)
-    mic_cutoff = min(max_distance, max(diags) / 2.0)
-
-    # Construct a list of translation vectors. For example, if we are
-    # searching only the nearest images (27 total), tvecs will be a
-    # 27x3 array of translation vectors.
-    tvec_factors = get_neighbour_cells(cell, mic_cutoff, pbc)
-    tvecs = np.dot(tvec_factors, cell)
-
-    # Translate the direct displacement vectors by each translation
-    # vector, and calculate the corresponding lengths.
-    D_trans = tvecs[np.newaxis] + D[:, np.newaxis]
-    D_trans_len = np.linalg.norm(D_trans, axis=2)
-
-    # Find mic distances and corresponding vector(s) for each given pair
-    # of atoms. For symmetrical systems, there may be more than one
-    # translation vector corresponding to the MIC distance; this finds the
-    # first one in D_trans_len.
-    D_min_ind = D_trans_len.argmin(axis=1)
-    D_min_len = D_trans_len[list(range(n_vectors)), D_min_ind]
-    D_min = D_trans[list(range(n_vectors)), D_min_ind]
-    factors = tvec_factors[D_min_ind, :]
-
-    # Negate the factors because of the order of the displacement
-    factors *= -1
-
-    return D_min, D_min_len, factors
-
-
-def get_neighbour_cells(cell, cutoff, pbc):
-    """Given a cell and a cutoff, returns the indices of the copies of the cell
-    which have to be searched in order to reach atom within the cutoff
-    distance.
-
-    The number of neighboring images to search in each direction is equal to
-    the ceiling of the cutoff distance (defined above) divided by the length of
-    the projection of the lattice vector onto its corresponding surface normal.
-    a's surface normal vector is e.g.  b x c / (|b| |c|), so this projection is
-    (a . (b x c)) / (|b| |c|).  The numerator is just the lattice volume, so
-    this can be simplified to V / (|b| |c|). This is rewritten as V |a| / (|a|
-    |b| |c|) for vectorization purposes.
-
-    Args:
-
-    Returns:
-    """
-    pbc = expand_pbc(pbc)
-    latt_len = np.linalg.norm(cell, axis=1)
-    V = abs(np.linalg.det(cell))
-    mic_copies = pbc * np.array(
-        np.ceil(cutoff * np.prod(latt_len) / (V * latt_len)), dtype=int
-    )
-    n0 = range(-mic_copies[0], mic_copies[0] + 1)
-    n1 = range(-mic_copies[1], mic_copies[1] + 1)
-    n2 = range(-mic_copies[2], mic_copies[2] + 1)
-
-    factors = cartesian((n0, n1, n2))
-
-    return factors
-
-
-def get_mic_vector(w, v, cell):
-    """Used to calculate the minimum image version of a vector in the given
-    cell.
-
-    Args:
-        rel_vector(np.ndarray): Relative vector in the cell basis:
-
-    Returns:
-        np.ndarray: The MIC version of the given vector
-        np.ndarray: The shift that corresponds to the neighbouring cell in
-            which the copy was found.
-    """
-    # Get the original shift
-    dvw = w - v
-    cart_vec = to_cartesian(cell, dvw)
-
-    orig_shift = np.array([0, 0, 0])
-    for i in range(0, 3):
-        if dvw[i] < -0.5 or dvw[i] > 0.5:
-            k = np.floor(dvw[i] + 0.5)
-            dvw[i] -= k
-            orig_shift[i] = -k
-
-    # Figure out in which block of 2x2x2 cells we are testing
-    init_val = np.array([0, 0, 0])
-    init_val[dvw > 0] = -1
-
-    # Figure out the minimum vector in this block of 8 cells
-    a_range = range(init_val[0], init_val[0] + 2)
-    b_range = range(init_val[1], init_val[1] + 2)
-    c_range = range(init_val[2], init_val[2] + 2)
-    multipliers = cartesian((a_range, b_range, c_range))
-
-    vec_copies = cart_vec + np.dot(multipliers, cell)
-    squared_len = np.sum(vec_copies**2)
-    min_index = np.argmin(squared_len)
-    min_shift = multipliers[min_index]
-
-    shift = orig_shift + min_shift
-
-    addition = np.dot(shift, cell)
-    result = cart_vec + addition
-
-    return result, shift
 
 
 def expand_pbc(pbc):

@@ -30,7 +30,7 @@ using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
 PYBIND11_MODULE(ext, m) {
     // Geometry
     m.def("extend_system", &extend_system, "Create a periodically extended system.");
-    py::class_<ExtendedSystem>(m, "ExtendedSystem")
+    py::class_<ExtendedSystem>(m, "ExtendedSystem", py::module_local())
         .def(py::init<>())
         .def_readonly("positions", &ExtendedSystem::positions)
         .def_readonly("atomic_numbers", &ExtendedSystem::atomic_numbers)
@@ -40,7 +40,7 @@ PYBIND11_MODULE(ext, m) {
     m.def("get_displacement_tensor", &get_displacement_tensor, "Get displacement vectors respecting minimum image convention.");
 
     // CellList
-    py::class_<CellList>(m, "CellList")
+    py::class_<CellList>(m, "CellList", py::module_local())
         .def(py::init<py::array_t<double>, py::array_t<int>, py::array_t<double>, double>())
         .def("get_neighbours_for_index", &CellList::get_neighbours_for_index)
         .def("get_neighbours_for_position", &CellList::get_neighbours_for_position);

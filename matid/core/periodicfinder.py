@@ -61,7 +61,7 @@ class PeriodicFinder:
         max_cell_size,
         pos_tol,
         bond_threshold=None,
-        overlap_threshold=-0.1,
+        overlap_threshold=-0.6,
         distances: Distances = None,
         return_mask: bool = False,
     ):
@@ -528,9 +528,18 @@ class PeriodicFinder:
             if thickness > self.max_2d_cell_height:
                 return None, None, None, None
 
-        # Check that the final proto cell atoms don't overlap
+        # Check that the final proto cell atoms don't overlap. Self-distances
+        # are here considered to be measured as the distance to the nearest copy
+        # when PBC is taken into account.
         if proto_cell is not None:
-            dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix_mic
+            distances = matid.geometry.get_distances(proto_cell)
+            dist_proto_cell = distances.dist_matrix_radii_mic
+            proto_bases = proto_cell.get_cell()
+            proto_pbc = proto_cell.get_pbc()
+            min_distance = min(
+                np.linalg.norm(proto_bases[i, :]) for i in range(3) if proto_pbc[i]
+            )
+            dist_proto_cell[np.diag_indices_from(dist_proto_cell)] += min_distance
             dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0])]
             if dist_proto_cell.min() < overlap_threshold:
                 return None, None, None, None
