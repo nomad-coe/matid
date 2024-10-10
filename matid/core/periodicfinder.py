@@ -61,7 +61,7 @@ class PeriodicFinder:
         max_cell_size,
         pos_tol,
         bond_threshold=None,
-        overlap_threshold=-0.1,
+        overlap_threshold=-0.6,
         distances: Distances = None,
         return_mask: bool = False,
     ):
@@ -530,10 +530,14 @@ class PeriodicFinder:
 
         # Check that the final proto cell atoms don't overlap
         if proto_cell is not None:
-            dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix_mic
-            dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0])]
+            dist_proto_cell = matid.geometry.get_distances(proto_cell).dist_matrix_radii_mic
+            dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0], 1)]
+            print(dist_proto_cell.min(), overlap_threshold)
             if dist_proto_cell.min() < overlap_threshold:
                 return None, None, None, None
+
+        from ase.visualize import view
+        view(proto_cell)
 
         return proto_cell, offset, n_spans, n_periodic_spans_selected
 
