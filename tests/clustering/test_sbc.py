@@ -21,7 +21,7 @@ surface_1 = surface(
     Atoms(
         symbols=["O", "C", "C"],
         scaled_positions=[[0, 0, 0], [1 / 3, 0, 0], [2 / 3, 0, 0]],
-        cell=[3.2, 1.2, 1.2],
+        cell=[3, 1, 1],
         pbc=True,
     ),
     [0, 0, 1],
@@ -32,7 +32,7 @@ surface_2 = surface(
     Atoms(
         symbols=["O", "N", "N"],
         scaled_positions=[[0, 0, 0], [1 / 3, 0, 0], [2 / 3, 0, 0]],
-        cell=[3.2, 1.2, 1.2],
+        cell=[3, 1, 1],
         pbc=True,
     ),
     [0, 0, 1],
@@ -410,7 +410,7 @@ def test_completion_error(cell, pbc):
         pytest.param(
             Atoms(
                 symbols=["C", "H"],
-                positions=[[0, 0, 0], [0, 0, 0.55]],
+                positions=[[0, 0, 0], [0, 0, 0.45]],
                 cell=[2, 2, 2],
                 pbc=True,
             ),
@@ -419,7 +419,7 @@ def test_completion_error(cell, pbc):
             id="overlap, default settings",
         ),
         pytest.param(
-            Atoms(symbols=["C"], positions=[[0, 0, 0]], cell=[1, 1, 1], pbc=True),
+            Atoms(symbols=["C"], positions=[[0, 0, 0]], cell=[0.8, 1, 1], pbc=True),
             None,
             None,
             id="self-overlap, default settings",

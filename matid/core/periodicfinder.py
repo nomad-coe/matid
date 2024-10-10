@@ -61,7 +61,7 @@ class PeriodicFinder:
         max_cell_size,
         pos_tol,
         bond_threshold=None,
-        overlap_threshold=-0.5,
+        overlap_threshold=-0.6,
         distances: Distances = None,
         return_mask: bool = False,
     ):
