@@ -537,9 +537,7 @@ class PeriodicFinder:
             proto_bases = proto_cell.get_cell()
             proto_pbc = proto_cell.get_pbc()
             min_distance = min(
-                np.linalg.norm(proto_bases[i, :])
-                for i in range(3)
-                if proto_pbc[i]
+                np.linalg.norm(proto_bases[i, :]) for i in range(3) if proto_pbc[i]
             )
             dist_proto_cell[np.diag_indices_from(dist_proto_cell)] += min_distance
             dist_proto_cell = dist_proto_cell[np.triu_indices(dist_proto_cell.shape[0])]

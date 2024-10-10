@@ -409,35 +409,29 @@ def test_completion_error(cell, pbc):
     [
         pytest.param(
             Atoms(
-                symbols=['C', 'H'],
+                symbols=["C", "H"],
                 positions=[[0, 0, 0], [0, 0, 0.55]],
                 cell=[2, 2, 2],
-                pbc=True
+                pbc=True,
             ),
             None,
             None,
-            id="overlap, default settings"
+            id="overlap, default settings",
         ),
         pytest.param(
-            Atoms(
-                symbols=['C'],
-                positions=[[0, 0, 0]],
-                cell=[1, 1, 1],
-                pbc=True
-            ),
+            Atoms(symbols=["C"], positions=[[0, 0, 0]], cell=[1, 1, 1], pbc=True),
             None,
             None,
-            id="self-overlap, default settings"
+            id="self-overlap, default settings",
         ),
     ],
 )
 def test_overlap(system, radii, overlap):
-    """Tests that cells with overlapping atoms are not reported.
-    """
+    """Tests that cells with overlapping atoms are not reported."""
     kwargs = {}
     if overlap is not None:
-        kwargs['overlap_threshold'] = overlap
+        kwargs["overlap_threshold"] = overlap
     if radii is not None:
-        kwargs['radii'] = overlap
+        kwargs["radii"] = overlap
     clusters = SBC().get_clusters(system, **kwargs)
     assert len(clusters) == 0
