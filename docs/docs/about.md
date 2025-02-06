@@ -18,14 +18,24 @@ When using versions < 2.0.0, please consider citing the article:
    year = {2018}
    publisher = {Springer US},
    doi = {10.1038/s41524-018-0107-6},
-   url = {http://www.nature.com/articles/s41524-018-0107-6},
+   url = {https://www.nature.com/articles/s41524-018-0107-6},
 }
 ```
 
 When using versions >= 2.0.0, please additionally cite:
 
 ```bibtex
-TODO
+@article{matidv2,
+   author = {Denell, Thea and Himanen, Lauri and Scheidgen, Markus and Draxl, Claudia},
+   title = {{Automated identification of bulk structures, two-dimensional materials, and interfaces using symmetry-based clustering}},
+   journal = {npj Computational Materials},
+   volume = {11},
+   number = {25},
+   year = {2025}
+   publisher = {Springer US},
+   doi = {10.1038/s41524-024-01498-x},
+   url = {https://www.nature.com/articles/s41524-024-01498-x},
+}
 ```
 
 ## License

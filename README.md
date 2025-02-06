@@ -11,8 +11,9 @@ on their structure.
 For more details and tutorials, visit the documentation at:
 [https://nomad-coe.github.io/matid/](https://nomad-coe.github.io/matid/)
 
-You can find even more details in the following articles:
+You can find even more details in the following open-access articles:
 
+- [Automated identiﬁcation of bulk structures, two-dimensional materials, and interfaces using symmetry-based clustering](<https://doi.org/10.1038/s41524-024-01498-x>)
 - [Materials structure genealogy and high-throughput topological classification of surfaces and 2D materials](<https://doi.org/10.1038/s41524-018-0107-6>)
 
 ## Example: Surface detection and analysis
