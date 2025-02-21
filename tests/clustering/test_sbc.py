@@ -10,8 +10,6 @@ from ase.visualize import view
 from conftest import surface, stack, rattle, assert_topology, create_graphene, create_fe
 from matid.clustering import SBC, Cluster
 
-import numpy as np
-# np._set_promotion_state("weak_and_warn")
 
 surface_fcc = surface(bulk("Cu", "fcc", a=3.6, cubic=True), [1, 0, 0], vacuum=10)
 surface_rocksalt = surface(
