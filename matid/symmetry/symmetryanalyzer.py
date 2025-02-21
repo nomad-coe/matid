@@ -18,6 +18,12 @@ import matid.geometry
 from ase import Atoms
 
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
 class SymmetryAnalyzer(object):
     """A base class for getting symmetry related properties of unit cells."""
 
@@ -144,7 +150,7 @@ class SymmetryAnalyzer(object):
             int: The space group number.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["number"]
+        value = dataset.number
 
         return value
 
@@ -154,7 +160,7 @@ class SymmetryAnalyzer(object):
             str: The international space group short symbol.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["international"]
+        value = dataset.international
 
         return value
 
@@ -164,7 +170,7 @@ class SymmetryAnalyzer(object):
             str: The Hall symbol.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["hall"]
+        value = dataset.hall
 
         return value
 
@@ -174,7 +180,7 @@ class SymmetryAnalyzer(object):
             int: The Hall number.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["hall_number"]
+        value = dataset.hall_number
 
         return value
 
@@ -186,7 +192,7 @@ class SymmetryAnalyzer(object):
             str: point group symbol
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["pointgroup"]
+        value = dataset.pointgroup
 
         return value
 
@@ -367,7 +373,7 @@ class SymmetryAnalyzer(object):
             # The index of the originally non-periodic dimension may not correspond
             # to the one in the normalized system, because the normalized system
             # may use a different coordinate system.
-            transformation_matrix = self.get_symmetry_dataset()["transformation_matrix"]
+            transformation_matrix = self.get_symmetry_dataset().transformation_matrix
             nonperiodic_axis = None
             prec = 1e-8
             for i_axis, axis in enumerate(transformation_matrix):
@@ -448,7 +454,7 @@ class SymmetryAnalyzer(object):
             np.ndarray: Rotation matrices.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["rotations"]
+        value = dataset.rotations
 
         return value
 
@@ -461,7 +467,7 @@ class SymmetryAnalyzer(object):
             np.ndarray: Translation vectors.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["translations"]
+        value = dataset.translations
 
         return value
 
@@ -472,7 +478,7 @@ class SymmetryAnalyzer(object):
             settings.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["choice"]
+        value = dataset.choice
 
         return value
 
@@ -595,6 +601,11 @@ class SymmetryAnalyzer(object):
         if symmetry_dataset is None:
             raise CellNormalizationError("Spglib error when finding symmetry dataset.")
 
+        # Prior to spglib 2.5.0 the dataset is returned as a dictionary: this
+        # provides backwards compatibility
+        if isinstance(symmetry_dataset, dict):
+            symmetry_dataset = AttrDict(symmetry_dataset)
+
         self._symmetry_dataset = symmetry_dataset
 
         return symmetry_dataset
@@ -610,9 +621,9 @@ class SymmetryAnalyzer(object):
             return self._spglib_conventional_system
 
         dataset = self.get_symmetry_dataset()
-        cell = dataset["std_lattice"]
-        pos = dataset["std_positions"]
-        num = dataset["std_types"]
+        cell = dataset.std_lattice
+        pos = dataset.std_positions
+        num = dataset.std_types
         spg_conv_sys = self._spglib_description_to_system((cell, pos, num))
 
         self._spglib_conventional_system = spg_conv_sys
@@ -624,7 +635,7 @@ class SymmetryAnalyzer(object):
             list of str: Wyckoff letters for the atoms in the original system.
         """
         dataset = self.get_symmetry_dataset()
-        value = np.array(dataset["wyckoffs"])
+        value = np.array(dataset.wyckoffs)
 
         return value
 
@@ -640,7 +651,7 @@ class SymmetryAnalyzer(object):
         # equivalent atoms reported by spglib are based on the symmetry of the
         # original cell. Equivalence in crystallographic_orbits is instead
         # based on the primitive cell/conventional cell which is what we want.
-        value = dataset["crystallographic_orbits"]
+        value = dataset.crystallographic_orbits
 
         return value
 
@@ -653,7 +664,7 @@ class SymmetryAnalyzer(object):
         if self._spglib_wyckoff_letters_conventional is None:
             wyckoff_letters_primitive = self._get_spglib_wyckoff_letters_primitive()
             dataset = self.get_symmetry_dataset()
-            mapping = dataset["std_mapping_to_primitive"]
+            mapping = dataset.std_mapping_to_primitive
             self._spglib_wyckoff_letters_conventional = wyckoff_letters_primitive[
                 mapping
             ]
@@ -668,7 +679,7 @@ class SymmetryAnalyzer(object):
         if self._spglib_equivalent_atoms_conventional is None:
             equivalent_atoms_primitive = self._get_spglib_equivalent_atoms_primitive()
             dataset = self.get_symmetry_dataset()
-            mapping = dataset["std_mapping_to_primitive"]
+            mapping = dataset.std_mapping_to_primitive
             self._spglib_equivalent_atoms_conventional = equivalent_atoms_primitive[
                 mapping
             ]
@@ -690,7 +701,7 @@ class SymmetryAnalyzer(object):
             3*1 np.ndarray: The shift of the origin as a vector.
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["origin_shift"]
+        value = dataset.origin_shift
 
         return value
 
@@ -707,8 +718,8 @@ class SymmetryAnalyzer(object):
         """
         dataset = self.get_symmetry_dataset()
         operations = {
-            "rotations": dataset["rotations"],
-            "translations": dataset["translations"],
+            "rotations": dataset.rotations,
+            "translations": dataset.translations,
         }
 
         return operations
@@ -728,7 +739,7 @@ class SymmetryAnalyzer(object):
             3x3 np.ndarray:
         """
         dataset = self.get_symmetry_dataset()
-        value = dataset["transformation_matrix"]
+        value = dataset.transformation_matrix
 
         return value
 
@@ -802,7 +813,7 @@ class SymmetryAnalyzer(object):
         """
         if self._spglib_primitive_to_original_mapping is None:
             dataset = self.get_symmetry_dataset()
-            mapping = dataset["mapping_to_primitive"]
+            mapping = dataset.mapping_to_primitive
             _, indices = np.unique(mapping, return_index=True)
             self._spglib_primitive_to_original_mapping = indices
 
@@ -896,7 +907,7 @@ class SymmetryAnalyzer(object):
         # Keep one occurrence for each atom that should be within the cell and
         # wrap it's position to tbe inside the primitive cell.
         conv_num = conv_system.get_atomic_numbers()
-        conv_to_prim_map = self._symmetry_dataset["std_mapping_to_primitive"]
+        conv_to_prim_map = self._symmetry_dataset.std_mapping_to_primitive
         _, inside_mask = np.unique(conv_to_prim_map, return_index=True)
         prim_pos = prim_pos[inside_mask]
         prim_num = conv_num[inside_mask]
@@ -1204,7 +1215,7 @@ class SymmetryAnalyzer(object):
         precision,
         return_parameters,
     ):
-        """Used to get detailed information about about the sets of equivalent
+        r"""Used to get detailed information about about the sets of equivalent
         atoms. The detected Wyckoff set variables (x, y, z) are reported
         consistenly by selecting the variable sets that has lowest x value, then
         lowest y and finally lowest z.

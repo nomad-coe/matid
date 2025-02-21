@@ -15,7 +15,7 @@ space_hall_map = defaultdict(list)
 
 for hall_number in range(1, 531):
     dataset = spglib.get_spacegroup_type(hall_number)
-    number = dataset["number"]
+    number = dataset.number
     space_hall_map[number].append(hall_number)
 
 degenerate_spgs = []
@@ -26,7 +26,7 @@ for key, value in space_hall_map.items():
     degenerate_spgs.append(key)
     first_hall = value[0]
     dataset = spglib.get_spacegroup_type(first_hall)
-    choice = dataset["choice"]
+    choice = dataset.choice
 
     # try:
     # origin = int(choice)

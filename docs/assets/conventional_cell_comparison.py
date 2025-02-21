@@ -14,9 +14,9 @@ def get_spglib_conventional(system):
     dataset = spglib.get_symmetry_dataset(cell)
 
     return Atoms(
-        symbols=dataset["std_types"],
-        scaled_positions=dataset["std_positions"],
-        cell=dataset["std_lattice"],
+        symbols=dataset.std_types,
+        scaled_positions=dataset.std_positions,
+        cell=dataset.std_lattice,
     )
 
 # Lets define two variants of NaCl in rocksalt structure

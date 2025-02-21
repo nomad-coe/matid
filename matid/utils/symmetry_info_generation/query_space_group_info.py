@@ -12,8 +12,8 @@ space_group_database = {}
 
 for hall_number in range(1, 531):
     dataset = spglib.get_spacegroup_type(hall_number)
-    number = dataset["number"]
-    international_short = dataset["international_short"]
+    number = dataset.number
+    international_short = dataset.international_short
 
     # Check that the spglib data has no two different international symbols for
     # the same space group number
@@ -28,7 +28,7 @@ for hall_number in range(1, 531):
         # Point group. There actually seeems to be a bug in spglib 1.9.4, where
         # the Hermann-Mauguin point group symbol is in the plalce of Schonflies
         # data and vice versa.
-        pointgroup = dataset["pointgroup_schoenflies"]
+        pointgroup = dataset.pointgroup_schoenflies
         space_group_database[number]["pointgroup"] = pointgroup
 
         # Crystal system
