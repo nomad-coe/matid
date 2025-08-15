@@ -1198,7 +1198,7 @@ def get_radii(radii, atomic_numbers=None) -> np.ndarray:
         elif radii == "vdw_covalent":
             radii = np.array(
                 [
-                    vdw_radii[i] if vdw_radii[i] != np.nan else covalent_radii[i]
+                    vdw_radii[i] if not np.isnan(vdw_radii[i]) else covalent_radii[i]
                     for i in range(len(vdw_radii))
                 ]
             )
