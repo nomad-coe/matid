@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'matid'
-version = '2.1.5'
+version = '2.1.6'
 description = 'MatID is a Python package for identifying and analyzing atomistic systems based on their structure.'
 readme = "README.md"
 authors = [{ name = "Lauri Himanen" }]
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "ase",
@@ -25,11 +25,12 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 keywords = ['atoms', 'structure', 'materials', 'science', 'crystal', 'symmetry']
 
