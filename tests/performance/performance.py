@@ -153,6 +153,23 @@ def benchmark_memory_single(system, s):
 @cli.command()
 @click.option("--show", is_flag=True, help="Whether to show the plot")
 def plot(show):
+    # Results are stored per matid version, so a freshly bumped version has no
+    # data until the benchmark scripts are run. Bail out early with a clear
+    # message instead of crashing later on an empty array.
+    path = get_path()
+    results = get_result(path)
+    has_data = any(
+        results[system][metric]
+        for system in ("ordered", "unordered")
+        for metric in ("cpu", "memory")
+    )
+    if not has_data:
+        raise click.ClickException(
+            f"No benchmark results found at '{path}'. Generate data for matid "
+            f"v{matid_version} by running benchmark_cpu.sh and "
+            f"benchmark_memory.sh before plotting."
+        )
+
     plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
     plt.rcParams.update(
         {
@@ -182,8 +199,6 @@ def plot(show):
         color = colors[i_system]
 
         # Plot CPU time
-        path = get_path()
-        results = get_result(path)
         times = []
         n_atoms = []
         for key, value in results[system]["cpu"].items():
@@ -192,30 +207,29 @@ def plot(show):
         times = np.array(times)
         n_atoms = np.array(n_atoms)
 
-        times_mean = times.mean(axis=1)
-        # times_std = times.std(axis=1)
-        i_timemax = times.max()
-        i_timemin = times.min()
-        i_nmax = n_atoms.max()
-        i_nmin = n_atoms.min()
-        timemax = max(i_timemax, timemax)
-        timemin = min(i_timemin, timemin)
-        nmax = max(i_nmax, nmax)
-        nmin = min(i_nmin, nmin)
-        # ax1.fill_between(n_atoms, times_mean - times_std, times_mean + times_std, color=color, alpha=0.3)
-        ax1.plot(
-            n_atoms,
-            times_mean,
-            color=color,
-            marker="o",
-            linestyle="dashed",
-            label=labels[system],
-        )
+        if times.size:
+            times_mean = times.mean(axis=1)
+            # times_std = times.std(axis=1)
+            i_timemax = times.max()
+            i_timemin = times.min()
+            i_nmax = n_atoms.max()
+            i_nmin = n_atoms.min()
+            timemax = max(i_timemax, timemax)
+            timemin = min(i_timemin, timemin)
+            nmax = max(i_nmax, nmax)
+            nmin = min(i_nmin, nmin)
+            # ax1.fill_between(n_atoms, times_mean - times_std, times_mean + times_std, color=color, alpha=0.3)
+            ax1.plot(
+                n_atoms,
+                times_mean,
+                color=color,
+                marker="o",
+                linestyle="dashed",
+                label=labels[system],
+            )
         ax1.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
         # Plot max memory usage
-        path = get_path()
-        results = get_result(path)
         memory = []
         n_atoms = []
         for key, value in results[system]["memory"].items():
@@ -223,21 +237,23 @@ def plot(show):
             n_atoms.append(int(key))
         memory = np.array(memory)
         n_atoms = np.array(n_atoms)
-        memory_mean = memory.mean(axis=1)
-        # memory_std = memory.std(axis=1)
-        # ax2.fill_between(n_atoms, memory_mean - memory_std, memory_mean + memory_std, color=color, alpha=0.3)
-        ax2.plot(
-            n_atoms,
-            memory_mean,
-            color=color,
-            marker="o",
-            linestyle="dashed",
-            label=labels[system],
-        )
+        if memory.size:
+            memory_mean = memory.mean(axis=1)
+            # memory_std = memory.std(axis=1)
+            # ax2.fill_between(n_atoms, memory_mean - memory_std, memory_mean + memory_std, color=color, alpha=0.3)
+            ax2.plot(
+                n_atoms,
+                memory_mean,
+                color=color,
+                marker="o",
+                linestyle="dashed",
+                label=labels[system],
+            )
         ax2.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
     ninterval = nmax - nmin
     timeinterval = timemax - timemin
+    has_cpu_data = np.isfinite([nmin, nmax, timemin, timemax]).all()
 
     # Add images of tested systems
     # axisratio = figsize[0] / figsize[1]
@@ -260,8 +276,9 @@ def plot(show):
     #     ax1.imshow(im, aspect='auto', extent=(nmin+marginleft, nmin + ninterval*amount+marginleft, timemax - amount*aspectratio*axisratio*timeinterval-margintop, timemax-margintop))
 
     margin = 0.05
-    ax1.set_xlim(nmin - margin * ninterval, nmax + margin * ninterval)
-    ax1.set_ylim(timemin - margin * timeinterval, timemax + margin * timeinterval)
+    if has_cpu_data:
+        ax1.set_xlim(nmin - margin * ninterval, nmax + margin * ninterval)
+        ax1.set_ylim(timemin - margin * timeinterval, timemax + margin * timeinterval)
     # ax1.set_xticks(
     #     np.arange(100, 901, 100),
     #     [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(100, 901, 100), 2)],
