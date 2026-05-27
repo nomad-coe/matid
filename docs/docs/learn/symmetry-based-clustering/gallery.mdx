@@ -29,7 +29,20 @@ full, self-contained source for every example is linked underneath it.
   .gallery-panels { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
   .gallery-col { flex: 1 1 280px; min-width: 240px; }
   .gallery-results { display: flex; flex-wrap: wrap; gap: 1rem; }
-  .gallery-results > figure { flex: 1 1 130px; margin: 0; }
+  .gallery-panels > figure,
+  .gallery-results > figure { flex: 0 0 auto; width: 250px; margin: 0; }
+  /* Per-example width variants (override the 250px default). */
+  .gallery-panels.gallery-w300 > figure,
+  .gallery-panels.gallery-w300 .gallery-results > figure { width: 300px; }
+  .gallery-results.gallery-w150 > figure { width: 150px; }
+  /* Every image (original and results) has a fixed width; its height follows
+     from the image's own aspect ratio. */
+  .gallery-imgbox img {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
   .gallery-panels figure { margin: 0; }
   .gallery-panels figcaption {
     text-align: center;
@@ -52,22 +65,30 @@ based on their distinct repeating unit cells.
 
 <div className="gallery-example">
   <div className="gallery-panels">
-    <figure className="gallery-col">
-      <Image img={stackedOriginal} alt="Stacked Cu, MoS2 and graphene heterostructure" />
+    <figure>
+      <div className="gallery-imgbox">
+        <Image img={stackedOriginal} alt="Stacked Cu, MoS2 and graphene heterostructure" />
+      </div>
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
     <div className="gallery-col gallery-results">
       <figure>
-        <Image img={stackedCu} alt="Identified Cu(111) surface" />
+        <div className="gallery-imgbox">
+          <Image img={stackedCu} alt="Identified Cu(111) surface" />
+        </div>
         <figcaption>Cu(111) surface</figcaption>
       </figure>
       <figure>
-        <Image img={stackedMos2} alt="Identified MoS2 monolayer" />
+        <div className="gallery-imgbox">
+          <Image img={stackedMos2} alt="Identified MoS2 monolayer" />
+        </div>
         <figcaption>MoS<sub>2</sub></figcaption>
       </figure>
       <figure>
-        <Image img={stackedGraphene} alt="Identified graphene sheet" />
+        <div className="gallery-imgbox">
+          <Image img={stackedGraphene} alt="Identified graphene sheet" />
+        </div>
         <figcaption>Graphene</figcaption>
       </figure>
     </div>
@@ -84,15 +105,19 @@ lets SBC follow the curvature and recover the graphene as a single cluster,
 while the adsorbed CO<sub>2</sub> molecules are left unclustered.
 
 <div className="gallery-example">
-  <div className="gallery-panels">
-    <figure className="gallery-col">
-      <Image img={curvedOriginal} alt="Warped graphene sheet with adsorbed CO2 molecules" />
+  <div className="gallery-panels gallery-w300">
+    <figure>
+      <div className="gallery-imgbox">
+        <Image img={curvedOriginal} alt="Warped graphene sheet with adsorbed CO2 molecules" />
+      </div>
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
     <div className="gallery-col gallery-results">
       <figure>
-        <Image img={curvedGraphene} alt="Identified graphene sheet" />
+        <div className="gallery-imgbox">
+          <Image img={curvedGraphene} alt="Identified graphene sheet" />
+        </div>
         <figcaption>Graphene (CO<sub>2</sub> excluded)</figcaption>
       </figure>
     </div>
@@ -110,18 +135,24 @@ on to return them as two separate clusters.
 
 <div className="gallery-example">
   <div className="gallery-panels">
-    <figure className="gallery-col">
-      <Image img={gbOriginal} alt="Copper bicrystal with a tilt grain boundary" />
+    <figure>
+      <div className="gallery-imgbox">
+        <Image img={gbOriginal} alt="Copper bicrystal with a tilt grain boundary" />
+      </div>
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
-    <div className="gallery-col gallery-results">
+    <div className="gallery-col gallery-results gallery-w150">
       <figure>
-        <Image img={gbGrain1} alt="Identified first grain" />
+        <div className="gallery-imgbox">
+          <Image img={gbGrain1} alt="Identified first grain" />
+        </div>
         <figcaption>Grain 1</figcaption>
       </figure>
       <figure>
-        <Image img={gbGrain2} alt="Identified second grain" />
+        <div className="gallery-imgbox">
+          <Image img={gbGrain2} alt="Identified second grain" />
+        </div>
         <figcaption>Grain 2</figcaption>
       </figure>
     </div>
@@ -139,14 +170,18 @@ impurity, since a single atom has no translational symmetry of its own.
 
 <div className="gallery-example">
   <div className="gallery-panels">
-    <figure className="gallery-col">
-      <Image img={impurityOriginal} alt="Diamond silicon bulk with a caesium impurity" />
+    <figure>
+      <div className="gallery-imgbox">
+        <Image img={impurityOriginal} alt="Diamond silicon bulk with a caesium impurity" />
+      </div>
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
     <div className="gallery-col gallery-results">
       <figure>
-        <Image img={impurityBulk} alt="Identified silicon bulk" />
+        <div className="gallery-imgbox">
+          <Image img={impurityBulk} alt="Identified silicon bulk" />
+        </div>
         <figcaption>Silicon bulk (impurity excluded)</figcaption>
       </figure>
     </div>
