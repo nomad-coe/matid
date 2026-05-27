@@ -1,0 +1,156 @@
+import Image from '@theme/IdealImage'
+
+import stackedOriginal from '@site/static/img/gallery/stacked/original.png'
+import stackedMos2 from '@site/static/img/gallery/stacked/cluster0.png'
+import stackedCu from '@site/static/img/gallery/stacked/cluster1.png'
+import stackedGraphene from '@site/static/img/gallery/stacked/cluster2.png'
+
+import curvedOriginal from '@site/static/img/gallery/curved/original.png'
+import curvedGraphene from '@site/static/img/gallery/curved/cluster0.png'
+
+import gbOriginal from '@site/static/img/gallery/grainboundary/original.png'
+import gbGrain1 from '@site/static/img/gallery/grainboundary/cluster0.png'
+import gbGrain2 from '@site/static/img/gallery/grainboundary/cluster1.png'
+
+import impurityOriginal from '@site/static/img/gallery/impurity/original.png'
+import impurityBulk from '@site/static/img/gallery/impurity/cluster0.png'
+
+# Gallery
+
+The examples below showcase SBC on systems that are hard for distance- or
+composition-based clustering: heterostructures, curved sheets with impurities,
+grain boundaries and point defects. Each example builds a structure with ASE,
+runs SBC, verifies that the expected clusters are found, and renders the
+original system (left) next to the subsystems that SBC identifies (right). The
+full, self-contained source for every example is linked underneath it.
+
+<style>{`
+  .gallery-example { margin-bottom: 3rem; }
+  .gallery-panels { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+  .gallery-col { flex: 1 1 280px; min-width: 240px; }
+  .gallery-results { display: flex; flex-wrap: wrap; gap: 1rem; }
+  .gallery-results > figure { flex: 1 1 130px; margin: 0; }
+  .gallery-panels figure { margin: 0; }
+  .gallery-panels figcaption {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--ifm-color-emphasis-700);
+    margin-top: 0.4rem;
+  }
+  .gallery-arrow {
+    flex: 0 0 auto;
+    font-size: 1.6rem;
+    color: var(--ifm-color-emphasis-500);
+  }
+`}</style>
+
+## Layered heterostructure
+
+A Cu(111) surface, a MoS<sub>2</sub> monolayer and a graphene sheet stacked on
+top of one another. SBC separates the heterostructure into its three components
+based on their distinct repeating unit cells.
+
+<div className="gallery-example">
+  <div className="gallery-panels">
+    <figure className="gallery-col">
+      <Image img={stackedOriginal} alt="Stacked Cu, MoS2 and graphene heterostructure" />
+      <figcaption>Original system</figcaption>
+    </figure>
+    <div className="gallery-arrow">→</div>
+    <div className="gallery-col gallery-results">
+      <figure>
+        <Image img={stackedCu} alt="Identified Cu(111) surface" />
+        <figcaption>Cu(111) surface</figcaption>
+      </figure>
+      <figure>
+        <Image img={stackedMos2} alt="Identified MoS2 monolayer" />
+        <figcaption>MoS<sub>2</sub></figcaption>
+      </figure>
+      <figure>
+        <Image img={stackedGraphene} alt="Identified graphene sheet" />
+        <figcaption>Graphene</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  [**View source: stacked.py**](https://github.com/nomad-coe/matid/blob/main/docs/assets/gallery/stacked.py)
+</div>
+
+## Warped sheet with impurities
+
+A graphene sheet that has been curved by a sinusoidal ripple and decorated with
+a few gold adatoms. Despite the curvature and the foreign atoms, SBC recovers
+the graphene as a single cluster and leaves the isolated gold impurities
+unclustered.
+
+<div className="gallery-example">
+  <div className="gallery-panels">
+    <figure className="gallery-col">
+      <Image img={curvedOriginal} alt="Warped graphene sheet with gold impurities" />
+      <figcaption>Original system</figcaption>
+    </figure>
+    <div className="gallery-arrow">→</div>
+    <div className="gallery-col gallery-results">
+      <figure>
+        <Image img={curvedGraphene} alt="Identified graphene sheet" />
+        <figcaption>Graphene (gold impurities excluded)</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  [**View source: curved.py**](https://github.com/nomad-coe/matid/blob/main/docs/assets/gallery/curved.py)
+</div>
+
+## Grain boundary
+
+Two grains of the same FCC copper, rotated with respect to each other and joined
+along a tilt boundary. The grains are chemically identical, so only the
+difference in their lattice orientation tells them apart — exactly what SBC keys
+on to return them as two separate clusters.
+
+<div className="gallery-example">
+  <div className="gallery-panels">
+    <figure className="gallery-col">
+      <Image img={gbOriginal} alt="Copper bicrystal with a tilt grain boundary" />
+      <figcaption>Original system</figcaption>
+    </figure>
+    <div className="gallery-arrow">→</div>
+    <div className="gallery-col gallery-results">
+      <figure>
+        <Image img={gbGrain1} alt="Identified first grain" />
+        <figcaption>Grain 1</figcaption>
+      </figure>
+      <figure>
+        <Image img={gbGrain2} alt="Identified second grain" />
+        <figcaption>Grain 2</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  [**View source: grainboundary.py**](https://github.com/nomad-coe/matid/blob/main/docs/assets/gallery/grainboundary.py)
+</div>
+
+## Bulk with a point defect
+
+A diamond-silicon crystal with a single gold atom substituted at an interior
+site (the gold atom is visible through the open diamond channels in the
+original). SBC returns the surrounding bulk as one cluster and discards the lone
+impurity, since a single atom has no translational symmetry of its own.
+
+<div className="gallery-example">
+  <div className="gallery-panels">
+    <figure className="gallery-col">
+      <Image img={impurityOriginal} alt="Diamond silicon bulk with a gold impurity" />
+      <figcaption>Original system</figcaption>
+    </figure>
+    <div className="gallery-arrow">→</div>
+    <div className="gallery-col gallery-results">
+      <figure>
+        <Image img={impurityBulk} alt="Identified silicon bulk" />
+        <figcaption>Silicon bulk (impurity excluded)</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  [**View source: impurity.py**](https://github.com/nomad-coe/matid/blob/main/docs/assets/gallery/impurity.py)
+</div>
