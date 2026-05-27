@@ -334,7 +334,7 @@ class SBC:
                 )
             except Exception:
                 continue
-            largest_indices = max(dbscan_clusters, key=lambda x: len(x))
+            largest_indices = max(dbscan_clusters, key=len)
             cluster.indices = np.array(cluster.indices)[largest_indices].tolist()
             clusters_cleaned.append(cluster)
         return clusters_cleaned
