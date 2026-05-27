@@ -1,9 +1,9 @@
-"""SBC gallery example: a warped sheet with impurities.
+"""SBC gallery example: a warped sheet with adsorbates.
 
-Builds a graphene sheet, applies a sinusoidal ripple to curve it, and decorates
-it with a few gold adatoms. Even though the sheet is curved and contains
-foreign atoms, SBC recovers the graphene as a single cluster while leaving the
-isolated gold impurities unclustered.
+Builds a graphene sheet, applies a sinusoidal ripple to curve it, and adsorbs a
+few carbon dioxide molecules above it at a physically reasonable distance. Even
+though the sheet is curved and decorated with foreign molecules, SBC recovers
+the graphene as a single cluster while leaving the adsorbed CO2 unclustered.
 """
 import os
 
@@ -44,28 +44,33 @@ x_span = x.max() - x.min()
 pos[:, 2] += 2.0 * np.sin(2 * np.pi * 1.5 * (x - x.min()) / x_span)
 graphene.set_positions(pos)
 
-# Add a few gold adatoms above the curved sheet as impurities
-com = graphene.get_center_of_mass()
-gold = Atoms(
-    "Au3",
-    positions=[
-        [com[0] - 6, com[1] - 4, graphene.get_positions()[:, 2].max() + 2.3],
-        [com[0] + 3, com[1] + 5, graphene.get_positions()[:, 2].min() - 2.3],
-        [com[0] + 8, com[1] - 6, graphene.get_positions()[:, 2].max() + 2.3],
-    ],
-)
-system = graphene + gold
-gold_indices = set(range(len(graphene), len(system)))
+# Adsorb a few CO2 molecules above the curved sheet. CO2 is linear (O=C=O) with
+# a ~1.16 A C-O bond, physisorbed flat ~3.2 A above the graphene.
+def co2(x, y, z):
+    c = np.array([x, y, z])
+    return Atoms("CO2", positions=[c, c + [1.16, 0, 0], c - [1.16, 0, 0]])
 
-# Cluster and verify
-clusters = SBC().get_clusters(system)
+
+z_top = graphene.get_positions()[:, 2].max()
+com = graphene.get_center_of_mass()
+adsorbates = (
+    co2(com[0] - 6, com[1] - 4, z_top + 3.2)
+    + co2(com[0] + 4, com[1] + 5, z_top + 3.2)
+    + co2(com[0] + 9, com[1] - 6, z_top + 3.2)
+)
+system = graphene + adsorbates
+adsorbate_indices = set(range(len(graphene), len(system)))
+
+# Cluster and verify. A looser position tolerance lets the periodic finder
+# follow the curvature of the rippled sheet and recover it as a single cluster.
+clusters = SBC().get_clusters(system, pos_tol=1.0)
 print(f"Found {len(clusters)} clusters:")
 for c in clusters:
     symbols = "".join(sorted(set(c.get_atoms().get_chemical_symbols())))
     print(f"  {len(c)} atoms, species={symbols}")
 assert len(clusters) == 1, f"expected 1 cluster, got {len(clusters)}"
 assert set(clusters[0].get_atoms().get_chemical_symbols()) == {"C"}, "cluster should be pure carbon"
-assert not (set(clusters[0].indices) & gold_indices), "gold impurities should not be clustered"
+assert not (set(clusters[0].indices) & adsorbate_indices), "CO2 adsorbates should not be clustered"
 
 # Render the original system and the identified cluster
 render(system, "original.png")

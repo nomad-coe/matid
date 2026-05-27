@@ -63,6 +63,9 @@ for c in clusters:
 assert len(clusters) == 2, f"expected 2 clusters, got {len(clusters)}"
 assert all(set(c.get_atoms().get_chemical_symbols()) == {"Cu"} for c in clusters)
 
+# Order the grains left-to-right so cluster0 is grain 1 (left) and cluster1 is grain 2 (right)
+clusters = sorted(clusters, key=lambda c: c.get_atoms().get_positions()[:, 0].mean())
+
 # Render the original system and each identified grain
 render(system, "original.png")
 for i, cluster in enumerate(clusters):

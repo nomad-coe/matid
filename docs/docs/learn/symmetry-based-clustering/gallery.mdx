@@ -76,24 +76,24 @@ based on their distinct repeating unit cells.
   [**View source: stacked.py**](https://github.com/nomad-coe/matid/blob/main/docs/assets/gallery/stacked.py)
 </div>
 
-## Warped sheet with impurities
+## Warped sheet with adsorbates
 
-A graphene sheet that has been curved by a sinusoidal ripple and decorated with
-a few gold adatoms. Despite the curvature and the foreign atoms, SBC recovers
-the graphene as a single cluster and leaves the isolated gold impurities
-unclustered.
+A graphene sheet that has been curved by a sinusoidal ripple, with a few carbon
+dioxide molecules adsorbed a few ångström above it. A looser position tolerance
+lets SBC follow the curvature and recover the graphene as a single cluster,
+while the adsorbed CO<sub>2</sub> molecules are left unclustered.
 
 <div className="gallery-example">
   <div className="gallery-panels">
     <figure className="gallery-col">
-      <Image img={curvedOriginal} alt="Warped graphene sheet with gold impurities" />
+      <Image img={curvedOriginal} alt="Warped graphene sheet with adsorbed CO2 molecules" />
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
     <div className="gallery-col gallery-results">
       <figure>
         <Image img={curvedGraphene} alt="Identified graphene sheet" />
-        <figcaption>Graphene (gold impurities excluded)</figcaption>
+        <figcaption>Graphene (CO<sub>2</sub> excluded)</figcaption>
       </figure>
     </div>
   </div>
@@ -132,15 +132,15 @@ on to return them as two separate clusters.
 
 ## Bulk with a point defect
 
-A diamond-silicon crystal with a single gold atom substituted at an interior
-site (the gold atom is visible through the open diamond channels in the
+A diamond-silicon crystal with a single caesium atom substituted at an interior
+site (the large caesium atom is visible through the open diamond channels in the
 original). SBC returns the surrounding bulk as one cluster and discards the lone
 impurity, since a single atom has no translational symmetry of its own.
 
 <div className="gallery-example">
   <div className="gallery-panels">
     <figure className="gallery-col">
-      <Image img={impurityOriginal} alt="Diamond silicon bulk with a gold impurity" />
+      <Image img={impurityOriginal} alt="Diamond silicon bulk with a caesium impurity" />
       <figcaption>Original system</figcaption>
     </figure>
     <div className="gallery-arrow">→</div>
