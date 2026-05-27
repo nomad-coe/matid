@@ -45,18 +45,27 @@ pos[:, 2] += 2.0 * np.sin(2 * np.pi * 1.5 * (x - x.min()) / x_span)
 graphene.set_positions(pos)
 
 # Adsorb a few CO2 molecules above the curved sheet. CO2 is linear (O=C=O) with
-# a ~1.16 A C-O bond, physisorbed flat ~3.2 A above the graphene.
-def co2(x, y, z):
-    c = np.array([x, y, z])
+# a ~1.16 A C-O bond, physisorbed flat ~3.2 A above the *local* sheet height
+# (measured under each molecule, so they track the ripple instead of floating).
+gpos = graphene.get_positions()
+
+
+def local_top(x, y, radius=2.0):
+    d = np.linalg.norm(gpos[:, :2] - [x, y], axis=1)
+    near = gpos[d < radius] if (d < radius).any() else gpos[np.argsort(d)[:3]]
+    return near[:, 2].max()
+
+
+def co2(x, y):
+    c = np.array([x, y, local_top(x, y) + 3.2])
     return Atoms("CO2", positions=[c, c + [1.16, 0, 0], c - [1.16, 0, 0]])
 
 
-z_top = graphene.get_positions()[:, 2].max()
 com = graphene.get_center_of_mass()
 adsorbates = (
-    co2(com[0] - 6, com[1] - 4, z_top + 3.2)
-    + co2(com[0] + 4, com[1] + 5, z_top + 3.2)
-    + co2(com[0] + 9, com[1] - 6, z_top + 3.2)
+    co2(com[0] - 6, com[1] - 4)
+    + co2(com[0] + 4, com[1] + 5)
+    + co2(com[0] + 9, com[1] - 6)
 )
 system = graphene + adsorbates
 adsorbate_indices = set(range(len(graphene), len(system)))
