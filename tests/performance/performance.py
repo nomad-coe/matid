@@ -1,6 +1,7 @@
 import time
 import os
 import json
+import subprocess
 import psutil
 import resource
 import click
@@ -13,6 +14,38 @@ from matid.clustering import SBC
 from importlib.metadata import version
 
 matid_version = version("matid")
+
+
+def _git_short_sha():
+    """Short SHA of HEAD in the matid repo, with `-dirty` if the working tree
+    has uncommitted changes. Returns None when git or the repo is unavailable
+    (e.g. matid installed from a wheel)."""
+    repo_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_dir,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    dirty = subprocess.call(
+        ["git", "diff", "--quiet", "HEAD"],
+        cwd=repo_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if dirty != 0:
+        sha = f"{sha}-dirty"
+    return sha
+
+
+git_sha = _git_short_sha()
+# Folder name for the current benchmark run. Prefer the git SHA so individual
+# commits can be benchmarked independently; fall back to the package version
+# when the SHA is not available.
+version_id = git_sha or f"v{matid_version}"
 
 np.random.seed(7)
 
@@ -67,9 +100,12 @@ def generate_ordered(n_atoms):
     return system
 
 
+def get_dir():
+    return f"./results/{version_id}"
+
+
 def get_path():
-    path = f"./results/results_{matid_version}.json"
-    return path
+    return f"{get_dir()}/results.json"
 
 
 def get_result(path):
@@ -120,6 +156,7 @@ def benchmark_cpu_single(system, s):
 
     # Save result
     result[system]["cpu"][size_actual] = [elapsed]
+    os.makedirs(get_dir(), exist_ok=True)
     with open(path, "w") as fout:
         json.dump(result, fout)
 
@@ -146,6 +183,7 @@ def benchmark_memory_single(system, s):
 
     # Save result
     result[system]["memory"][size_actual] = [memory]
+    os.makedirs(get_dir(), exist_ok=True)
     with open(path, "w") as fout:
         json.dump(result, fout)
 
@@ -153,6 +191,23 @@ def benchmark_memory_single(system, s):
 @cli.command()
 @click.option("--show", is_flag=True, help="Whether to show the plot")
 def plot(show):
+    # Results are stored per matid version, so a freshly bumped version has no
+    # data until the benchmark scripts are run. Bail out early with a clear
+    # message instead of crashing later on an empty array.
+    path = get_path()
+    results = get_result(path)
+    has_data = any(
+        results[system][metric]
+        for system in ("ordered", "unordered")
+        for metric in ("cpu", "memory")
+    )
+    if not has_data:
+        raise click.ClickException(
+            f"No benchmark results found at '{path}'. Generate data for "
+            f"'{version_id}' by running benchmark_cpu.sh and "
+            f"benchmark_memory.sh before plotting."
+        )
+
     plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
     plt.rcParams.update(
         {
@@ -169,7 +224,10 @@ def plot(show):
 
     figsize = (8, 9)
     fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=figsize)
-    ax1.set_title(f"MatID v{matid_version}", y=1.2)
+    title = f"MatID v{matid_version}"
+    if git_sha:
+        title += f" ({git_sha})"
+    ax1.set_title(title, y=1.2)
     colors = ["#2988AD", "#FEA534"]
     labels = {"ordered": "Ordered", "unordered": "Unordered"}
 
@@ -182,8 +240,6 @@ def plot(show):
         color = colors[i_system]
 
         # Plot CPU time
-        path = get_path()
-        results = get_result(path)
         times = []
         n_atoms = []
         for key, value in results[system]["cpu"].items():
@@ -192,30 +248,29 @@ def plot(show):
         times = np.array(times)
         n_atoms = np.array(n_atoms)
 
-        times_mean = times.mean(axis=1)
-        # times_std = times.std(axis=1)
-        i_timemax = times.max()
-        i_timemin = times.min()
-        i_nmax = n_atoms.max()
-        i_nmin = n_atoms.min()
-        timemax = max(i_timemax, timemax)
-        timemin = min(i_timemin, timemin)
-        nmax = max(i_nmax, nmax)
-        nmin = min(i_nmin, nmin)
-        # ax1.fill_between(n_atoms, times_mean - times_std, times_mean + times_std, color=color, alpha=0.3)
-        ax1.plot(
-            n_atoms,
-            times_mean,
-            color=color,
-            marker="o",
-            linestyle="dashed",
-            label=labels[system],
-        )
+        if times.size:
+            times_mean = times.mean(axis=1)
+            # times_std = times.std(axis=1)
+            i_timemax = times.max()
+            i_timemin = times.min()
+            i_nmax = n_atoms.max()
+            i_nmin = n_atoms.min()
+            timemax = max(i_timemax, timemax)
+            timemin = min(i_timemin, timemin)
+            nmax = max(i_nmax, nmax)
+            nmin = min(i_nmin, nmin)
+            # ax1.fill_between(n_atoms, times_mean - times_std, times_mean + times_std, color=color, alpha=0.3)
+            ax1.plot(
+                n_atoms,
+                times_mean,
+                color=color,
+                marker="o",
+                linestyle="dashed",
+                label=labels[system],
+            )
         ax1.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
         # Plot max memory usage
-        path = get_path()
-        results = get_result(path)
         memory = []
         n_atoms = []
         for key, value in results[system]["memory"].items():
@@ -223,21 +278,23 @@ def plot(show):
             n_atoms.append(int(key))
         memory = np.array(memory)
         n_atoms = np.array(n_atoms)
-        memory_mean = memory.mean(axis=1)
-        # memory_std = memory.std(axis=1)
-        # ax2.fill_between(n_atoms, memory_mean - memory_std, memory_mean + memory_std, color=color, alpha=0.3)
-        ax2.plot(
-            n_atoms,
-            memory_mean,
-            color=color,
-            marker="o",
-            linestyle="dashed",
-            label=labels[system],
-        )
+        if memory.size:
+            memory_mean = memory.mean(axis=1)
+            # memory_std = memory.std(axis=1)
+            # ax2.fill_between(n_atoms, memory_mean - memory_std, memory_mean + memory_std, color=color, alpha=0.3)
+            ax2.plot(
+                n_atoms,
+                memory_mean,
+                color=color,
+                marker="o",
+                linestyle="dashed",
+                label=labels[system],
+            )
         ax2.grid(color="#333", linestyle="--", linewidth=1, alpha=0.3)
 
     ninterval = nmax - nmin
     timeinterval = timemax - timemin
+    has_cpu_data = np.isfinite([nmin, nmax, timemin, timemax]).all()
 
     # Add images of tested systems
     # axisratio = figsize[0] / figsize[1]
@@ -260,8 +317,9 @@ def plot(show):
     #     ax1.imshow(im, aspect='auto', extent=(nmin+marginleft, nmin + ninterval*amount+marginleft, timemax - amount*aspectratio*axisratio*timeinterval-margintop, timemax-margintop))
 
     margin = 0.05
-    ax1.set_xlim(nmin - margin * ninterval, nmax + margin * ninterval)
-    ax1.set_ylim(timemin - margin * timeinterval, timemax + margin * timeinterval)
+    if has_cpu_data:
+        ax1.set_xlim(nmin - margin * ninterval, nmax + margin * ninterval)
+        ax1.set_ylim(timemin - margin * timeinterval, timemax + margin * timeinterval)
     # ax1.set_xticks(
     #     np.arange(100, 901, 100),
     #     [r"$\mathsf{{{}}}$".format(i) for i in np.round(np.arange(100, 901, 100), 2)],
@@ -283,7 +341,8 @@ def plot(show):
     ax2.set_xlabel("Number of atoms")
 
     fig.tight_layout()
-    plt.savefig(f"./results/results_{matid_version}.pdf")
+    os.makedirs(get_dir(), exist_ok=True)
+    plt.savefig(f"{get_dir()}/results.pdf")
     if show:
         plt.show(block=True)
 

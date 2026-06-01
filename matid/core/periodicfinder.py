@@ -259,6 +259,7 @@ class PeriodicFinder:
                 add_pos,
                 neighbour_num,
                 self.pos_tol,
+                return_vacancies=False,
             )
             sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system,
@@ -266,6 +267,7 @@ class PeriodicFinder:
                 sub_pos,
                 neighbour_num,
                 self.pos_tol,
+                return_vacancies=False,
             )
 
             n_metric = 0
