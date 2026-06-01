@@ -631,7 +631,7 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(system, cell_list, positions, numbers, tolerance):
+def get_matches(system, cell_list, positions, numbers, tolerance, return_vacancies=True):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -642,6 +642,10 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             of the system.
         positions(np.ndarray): Positions to match in the system.
         tolerance(float): Maximum allowed distance for matching.
+        return_vacancies(bool): Whether to build and return the list of vacancy
+            ase.Atom objects. Constructing these is comparatively expensive, so
+            callers that do not consume the vacancies can set this to False to
+            skip the work.
 
     Returns:
         np.ndarray: indices of matched atoms
@@ -658,10 +662,12 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     vacancies = []
     cell = system.get_cell()
 
-    # Scaled positions (floored) are only needed for the vacancy copy index.
-    # Computing them once for all positions avoids a per-vacancy linear solve,
-    # which dominates runtime for disordered systems.
-    floored_factors = np.floor(to_scaled(cell, positions, wrap=False))
+    # Scaled positions (floored) are only needed for the copy index of the
+    # returned vacancies. Computing them once for all positions avoids a
+    # per-vacancy linear solve, which dominates runtime for disordered systems.
+    # When the caller does not consume the vacancies, this is skipped entirely.
+    if return_vacancies:
+        floored_factors = np.floor(to_scaled(cell, positions, wrap=False))
 
     # The already pre-computed cell-list is used in finding neighbours.
     for i, (position, atomic_number) in enumerate(zip(positions, numbers)):
@@ -696,9 +702,13 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
         matches.append(match)
         substitutions.append(substitution)
         if match is None and substitution is None:
-            vacancies.append(Atom(atomic_number, position=position))
-            copy_index = floored_factors[i]
-        copy_indices[i] = copy_index
+            if return_vacancies:
+                vacancies.append(Atom(atomic_number, position=position))
+                copy_index = floored_factors[i]
+        # When vacancies are not requested, the vacancy copy index is left at
+        # its initialized zero value (it is never consumed by such callers).
+        if copy_index is not None:
+            copy_indices[i] = copy_index
 
     return matches, substitutions, vacancies, copy_indices
 
