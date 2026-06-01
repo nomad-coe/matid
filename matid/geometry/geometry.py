@@ -658,6 +658,11 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     vacancies = []
     cell = system.get_cell()
 
+    # Scaled positions (floored) are only needed for the vacancy copy index.
+    # Computing them once for all positions avoids a per-vacancy linear solve,
+    # which dominates runtime for disordered systems.
+    floored_factors = np.floor(to_scaled(cell, positions, wrap=False))
+
     # The already pre-computed cell-list is used in finding neighbours.
     for i, (position, atomic_number) in enumerate(zip(positions, numbers)):
         match = None
@@ -692,7 +697,7 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
         substitutions.append(substitution)
         if match is None and substitution is None:
             vacancies.append(Atom(atomic_number, position=position))
-            copy_index = np.floor(to_scaled(cell, position, wrap=False)[0])
+            copy_index = floored_factors[i]
         copy_indices[i] = copy_index
 
     return matches, substitutions, vacancies, copy_indices
