@@ -1,6 +1,7 @@
 import time
 import os
 import json
+import subprocess
 import psutil
 import resource
 import click
@@ -13,6 +14,38 @@ from matid.clustering import SBC
 from importlib.metadata import version
 
 matid_version = version("matid")
+
+
+def _git_short_sha():
+    """Short SHA of HEAD in the matid repo, with `-dirty` if the working tree
+    has uncommitted changes. Returns None when git or the repo is unavailable
+    (e.g. matid installed from a wheel)."""
+    repo_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_dir,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    dirty = subprocess.call(
+        ["git", "diff", "--quiet", "HEAD"],
+        cwd=repo_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if dirty != 0:
+        sha = f"{sha}-dirty"
+    return sha
+
+
+git_sha = _git_short_sha()
+# Folder name for the current benchmark run. Prefer the git SHA so individual
+# commits can be benchmarked independently; fall back to the package version
+# when the SHA is not available.
+version_id = git_sha or f"v{matid_version}"
 
 np.random.seed(7)
 
@@ -67,9 +100,12 @@ def generate_ordered(n_atoms):
     return system
 
 
+def get_dir():
+    return f"./results/{version_id}"
+
+
 def get_path():
-    path = f"./results/results_{matid_version}.json"
-    return path
+    return f"{get_dir()}/results.json"
 
 
 def get_result(path):
@@ -120,6 +156,7 @@ def benchmark_cpu_single(system, s):
 
     # Save result
     result[system]["cpu"][size_actual] = [elapsed]
+    os.makedirs(get_dir(), exist_ok=True)
     with open(path, "w") as fout:
         json.dump(result, fout)
 
@@ -146,6 +183,7 @@ def benchmark_memory_single(system, s):
 
     # Save result
     result[system]["memory"][size_actual] = [memory]
+    os.makedirs(get_dir(), exist_ok=True)
     with open(path, "w") as fout:
         json.dump(result, fout)
 
@@ -165,8 +203,8 @@ def plot(show):
     )
     if not has_data:
         raise click.ClickException(
-            f"No benchmark results found at '{path}'. Generate data for matid "
-            f"v{matid_version} by running benchmark_cpu.sh and "
+            f"No benchmark results found at '{path}'. Generate data for "
+            f"'{version_id}' by running benchmark_cpu.sh and "
             f"benchmark_memory.sh before plotting."
         )
 
@@ -186,7 +224,10 @@ def plot(show):
 
     figsize = (8, 9)
     fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True, figsize=figsize)
-    ax1.set_title(f"MatID v{matid_version}", y=1.2)
+    title = f"MatID v{matid_version}"
+    if git_sha:
+        title += f" ({git_sha})"
+    ax1.set_title(title, y=1.2)
     colors = ["#2988AD", "#FEA534"]
     labels = {"ordered": "Ordered", "unordered": "Unordered"}
 
@@ -300,7 +341,8 @@ def plot(show):
     ax2.set_xlabel("Number of atoms")
 
     fig.tight_layout()
-    plt.savefig(f"./results/results_{matid_version}.pdf")
+    os.makedirs(get_dir(), exist_ok=True)
+    plt.savefig(f"{get_dir()}/results.pdf")
     if show:
         plt.show(block=True)
 
