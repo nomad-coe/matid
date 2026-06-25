@@ -18,7 +18,7 @@ To install the latest development version from source, clone the source code
 from github and install with pip from local file:
 
 ```sh
-git clone https://github.com/nomad-coe/matid.git
+git clone https://github.com/fairmat-nfdi/matid.git
 cd matid
 pip install .
 ```

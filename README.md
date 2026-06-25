@@ -1,6 +1,6 @@
-<img src="https://raw.githubusercontent.com/nomad-coe/matid/main/docs/static/img/logo.png" width="300">
+<img src="https://raw.githubusercontent.com/fairmat-nfdi/matid/main/docs/static/img/logo.png" width="300">
 
-![Build status](https://github.com/nomad-coe/matid/actions/workflows/test.yml/badge.svg)
+![Build status](https://github.com/fairmat-nfdi/matid/actions/workflows/test.yml/badge.svg)
 ![Coverage Status](./reports/coverage/coverage-badge.svg)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -9,7 +9,7 @@ on their structure.
 
 # Documentation
 For more details and tutorials, visit the documentation at:
-[https://nomad-coe.github.io/matid/](https://nomad-coe.github.io/matid/)
+[https://fairmat-nfdi.github.io/matid/](https://fairmat-nfdi.github.io/matid/)
 
 You can find even more details in the following open-access articles:
 
@@ -68,7 +68,7 @@ pip install matid
 
 ## From source
 ```sh
-git clone https://github.com/nomad-coe/matid.git
+git clone https://github.com/fairmat-nfdi/matid.git
 cd matid
 pip install .
 ```

@@ -35,8 +35,8 @@ classifiers = [
 keywords = ['atoms', 'structure', 'materials', 'science', 'crystal', 'symmetry']
 
 [project.urls]
-Documentation = 'https://nomad-coe.github.io/matid/'
-Source = "https://github.com/nomad-coe/matid"
+Documentation = 'https://fairmat-nfdi.github.io/matid/'
+Source = "https://github.com/fairmat-nfdi/matid"
 
 [project.optional-dependencies]
 dev = [

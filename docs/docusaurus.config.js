@@ -36,14 +36,14 @@ const config = {
   ],
 
   // Set the production url of your site here
-  url: 'https://nomad-coe.github.io',
+  url: 'https://fairmat-nfdi.github.io/matid/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/matid',
   deploymentBranch: 'gh-pages',
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'nomad-coe', // Usually your GitHub org/user name.
+  organizationName: 'fairmat-nfdi', // Usually your GitHub org/user name.
   projectName: 'matid', // Usually your repo name.
 
   onBrokenLinks: 'throw',
@@ -95,7 +95,7 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://github.com/nomad-coe/matid',
+            href: 'https://github.com/fairmat-nfdi/matid',
             label: 'GitHub',
             position: 'right',
           },
@@ -130,7 +130,7 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/nomad-coe/matid',
+                href: 'https://github.com/fairmat-nfdi/matid',
               },
               {
                 label: 'FAIRmat',
