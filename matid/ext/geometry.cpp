@@ -230,3 +230,48 @@ void get_displacement_tensor(
     int n_atoms = positions.shape(0);
     cell_list.get_displacement_tensor(displacements, distances, factors, cell_list.indices_py, n_atoms);
 }
+
+SparseDistances get_displacement_list(
+    py::array_t<double> positions,
+    py::array_t<double> cell,
+    py::array_t<bool> pbc,
+    double cutoff
+) {
+    if (cutoff == std::numeric_limits<double>::infinity()) {
+        throw invalid_argument("get_displacement_list requires a finite cutoff.");
+    }
+
+    CellList cell_list = get_cell_list(positions, cell, pbc, cutoff, cutoff);
+
+    int n_atoms = positions.shape(0);
+    vector<int> row;
+    vector<int> col;
+    vector<double> distance;
+    vector<double> displacement;
+    vector<double> factor;
+    cell_list.get_displacement_list(cell_list.indices_py, n_atoms, row, col, distance, displacement, factor);
+
+    // Copy the flat result vectors into numpy arrays.
+    int nnz = row.size();
+    py::array_t<int> row_arr(nnz);
+    py::array_t<int> col_arr(nnz);
+    py::array_t<double> distance_arr(nnz);
+    py::array_t<double> displacement_arr({nnz, 3});
+    py::array_t<double> factor_arr({nnz, 3});
+    auto row_mu = row_arr.mutable_unchecked<1>();
+    auto col_mu = col_arr.mutable_unchecked<1>();
+    auto distance_mu = distance_arr.mutable_unchecked<1>();
+    auto displacement_mu = displacement_arr.mutable_unchecked<2>();
+    auto factor_mu = factor_arr.mutable_unchecked<2>();
+    for (int i = 0; i < nnz; ++i) {
+        row_mu(i) = row[i];
+        col_mu(i) = col[i];
+        distance_mu(i) = distance[i];
+        for (int k = 0; k < 3; ++k) {
+            displacement_mu(i, k) = displacement[i*3 + k];
+            factor_mu(i, k) = factor[i*3 + k];
+        }
+    }
+
+    return SparseDistances{row_arr, col_arr, distance_arr, displacement_arr, factor_arr};
+}

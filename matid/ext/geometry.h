@@ -31,6 +31,14 @@ struct ExtendedSystem {
     py::array_t<double> factors;
 };
 
+struct SparseDistances {
+    py::array_t<int> row;          // shape (nnz,)
+    py::array_t<int> col;          // shape (nnz,)
+    py::array_t<double> distance;  // shape (nnz,)
+    py::array_t<double> displacement; // shape (nnz, 3): pos_row - pos_col (min image)
+    py::array_t<double> factor;       // shape (nnz, 3)
+};
+
 inline vector<double> cross(const vector<double>& a, const vector<double>& b);
 inline double dot(const vector<double>& a, const vector<double>& b);
 inline double norm(const vector<double>& a);
@@ -84,6 +92,18 @@ void get_displacement_tensor(
     double cutoff,
     bool return_factors,
     bool return_distances
+);
+
+/**
+ * Calculates a sparse minimum-image neighbour list (COO format) for all pairs
+ * within the given finite cutoff. Much cheaper than the dense displacement
+ * tensor when only local distances are needed.
+ */
+SparseDistances get_displacement_list(
+    py::array_t<double> positions,
+    py::array_t<double> cell,
+    py::array_t<bool> pbc,
+    double cutoff
 );
 
 #endif
