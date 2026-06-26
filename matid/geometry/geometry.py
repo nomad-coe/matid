@@ -3,7 +3,6 @@ a atomic system.
 """
 
 import math
-from collections import defaultdict
 
 import numpy as np
 from numpy.random import RandomState
@@ -14,6 +13,7 @@ from ase import Atom, Atoms
 import ase.geometry
 
 import spglib
+import networkx as nx
 
 from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
@@ -296,12 +296,6 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         list: A list of clusters, where each cluster is a list of indices for
         the elements belonging to the cluster.
     """
-    # The import is localized here to keep the startup times shorter: importing
-    # sklearn takes quite a while. TODO: It should be possible to get rid of the
-    # sklearn dependency completely with a built-in version of DBSCAN. Much of
-    # the work is already done with calculating the distance matrix anyways.
-    from sklearn.cluster import DBSCAN
-
     # As the distances have been normalized with respect to the covalent radiis,
     # the distance matrix may in some cases have negative values. This simply
     # means that the distance between two atoms is smaller than the sum of
@@ -313,23 +307,15 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
     # from distances larger than a set radial cutoff.
     np.clip(dist_matrix, a_min=0, a_max=1.1 * threshold, out=dist_matrix)
 
-    # Detect clusters
-    db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
-    db.fit(dist_matrix)
-    clusters = db.labels_
-
-    # Make a list of the different clusters. All item with cluster = -1 will
-    # get a separate group.
-    cluster_groups = []
-    group_map = defaultdict(list)
-    for i_atom, i_clust in enumerate(clusters):
-        if i_clust == -1:
-            cluster_groups.append([i_atom])
-        else:
-            group_map[i_clust].append(i_atom)
-    cluster_groups.extend(group_map.values())
-
-    return cluster_groups
+    # The clusters are the connected components of the graph that links any two
+    # atoms whose (radii-subtracted) distance is within the threshold. This is
+    # identical to DBSCAN with min_samples=1 and a precomputed metric, but avoids
+    # the heavy sklearn import (which otherwise dominates the runtime on small
+    # systems) and is faster per call. networkx is already a dependency used
+    # elsewhere in matid.
+    adjacency = dist_matrix <= threshold
+    graph = nx.from_numpy_array(adjacency)
+    return [list(component) for component in nx.connected_components(graph)]
 
 
 def get_covalent_distances(system, mic=True):
@@ -631,7 +617,9 @@ def get_positions_within_basis(
     return indices, cell_pos, factors
 
 
-def get_matches(system, cell_list, positions, numbers, tolerance, return_vacancies=True):
+def get_matches(
+    system, cell_list, positions, numbers, tolerance, return_vacancies=True
+):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.

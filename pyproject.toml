@@ -14,7 +14,6 @@ dependencies = [
     "numpy",
     "ase",
     "spglib>=2.0.0",
-    "scikit-learn",
     "networkx>=2.4",
 ]
 classifiers = [
