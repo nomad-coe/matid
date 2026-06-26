@@ -1154,11 +1154,17 @@ def get_crystallinity(symmetry_analyser):
     return ratio
 
 
-def get_distances(system: Atoms, radii="covalent") -> Distances:
+def get_distances(system: Atoms, radii="covalent", cutoff=float("inf")) -> Distances:
     """Returns complete distance information.
 
     Args:
         system: The system from which distances are calculated from.
+        radii: The atomic radii to use, see get_radii.
+        cutoff: Radial cutoff for the distance calculation. Pairs that are
+            farther apart than this (using the minimum image convention) are
+            reported as infinite distance. Defaults to infinity, which produces
+            the full dense distance matrix. A finite cutoff can dramatically
+            speed up the calculation when only local distances are needed.
     Returns:
         A Distances instance.
     """
@@ -1167,13 +1173,32 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
+    n_atoms = len(atomic_numbers)
+
+    # With a finite cutoff we only compute the local neighbours and store them
+    # sparsely, avoiding the O(n^2) dense matrices entirely.
+    if np.isfinite(cutoff):
+        sparse = matid.ext.get_displacement_list(
+            pos, np.asarray(cell), expand_pbc(pbc), float(cutoff)
+        )
+        return Distances.from_sparse(
+            n_atoms,
+            np.asarray(sparse.row),
+            np.asarray(sparse.col),
+            np.asarray(sparse.distance),
+            np.asarray(sparse.displacement),
+            np.asarray(sparse.factor),
+            radii,
+        )
+
+    # Infinite cutoff: build the full dense distance matrices.
     if pbc.any():
         disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
-            pos, cell, pbc, return_factors=True, return_distances=True
+            pos, cell, pbc, cutoff=cutoff, return_factors=True, return_distances=True
         )
     else:
         disp_tensor_mic, dist_matrix_mic = get_displacement_tensor(
-            pos, return_distances=True
+            pos, cutoff=cutoff, return_distances=True
         )
         disp_factors = np.zeros(disp_tensor_mic.shape)
 

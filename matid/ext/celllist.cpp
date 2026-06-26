@@ -17,6 +17,7 @@ limitations under the License.
 #include <utility>
 #include <tuple>
 #include <map>
+#include <unordered_map>
 #include <utility>
 #include <math.h>
 
@@ -280,6 +281,103 @@ void CellList::get_displacement_tensor(
                 displacements_mu(it.first, i, k) = -displacement[k];
                 factors_mu(i, it.first, k) = factor[k];
                 factors_mu(it.first, i, k) = -factor[k];
+            }
+        }
+    }
+}
+
+void CellList::get_displacement_list(
+    py::array_t<int> original_indices,
+    int n_atoms,
+    vector<int>& row,
+    vector<int>& col,
+    vector<double>& distance,
+    vector<double>& displacement,
+    vector<double>& factor
+)
+{
+    auto original_indices_u = original_indices.unchecked<1>();
+
+    // This mirrors get_displacement_tensor exactly, but instead of filling a
+    // dense [n_atoms, n_atoms] buffer it appends the found minimum-image
+    // neighbours into flat COO arrays. Both pair directions (i, j) and (j, i)
+    // are emitted so that per-row and per-column queries both work. The
+    // diagonal is intentionally omitted (consumers treat missing entries as
+    // infinite distance, and the diagonal as zero distance / displacement).
+    for (int i = 0; i < n_atoms; ++i) {
+
+        // Find bin for the given position
+        double x = this->positions[i][0];
+        double y = this->positions[i][1];
+        double z = this->positions[i][2];
+        int i0 = (x - this->xmin)/this->dx;
+        int j0 = (y - this->ymin)/this->dy;
+        int k0 = (z - this->zmin)/this->dz;
+
+        // Get the bin ranges to check for each dimension.
+        int istart = max(i0-1, 0);
+        int iend = min(i0+1, this->nx-1);
+        int jstart = max(j0-1, 0);
+        int jend = min(j0+1, this->ny-1);
+        int kstart = max(k0-1, 0);
+        int kend = min(k0+1, this->nz-1);
+
+        // Loop over neighbouring bins
+        unordered_map<int, tuple<double, vector<double>, vector<double>>> min_map;
+        for (int i_bin = istart; i_bin <= iend; i_bin++) {
+            for (int j_bin = jstart; j_bin <= jend; j_bin++) {
+                for (int k_bin = kstart; k_bin <= kend; k_bin++) {
+                    vector<int> binIndices = this->bins[i_bin][j_bin][k_bin];
+                    for (auto &idx : binIndices) {
+                        int j = original_indices_u(idx);
+
+                        // Unnecessary computation is skipped
+                        if (j >= i) {
+                            continue;
+                        }
+                        double ix = this->positions[idx][0];
+                        double iy = this->positions[idx][1];
+                        double iz = this->positions[idx][2];
+                        double deltax = x - ix;
+                        double deltay = y - iy;
+                        double deltaz = z - iz;
+                        double distance_squared = deltax*deltax + deltay*deltay + deltaz*deltaz;
+
+                        // If distance is smaller than cutoff, and the found
+                        // distance is smallest for this index, it is saved
+                        if (distance_squared <= this->cutoffSquared) {
+                            double dist = sqrt(distance_squared);
+                            if (min_map.find(j) == min_map.end() || dist < get<0>(min_map[j])) {
+                                min_map[j] = tuple<double, vector<double>, vector<double>>{dist, vector<double>{deltax, deltay, deltaz}, this->factors[idx]};
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (auto& it: min_map) {
+            int j = it.first;
+            double dist = get<0>(it.second);
+            vector<double> disp = get<1>(it.second);
+            vector<double> fac = get<2>(it.second);
+
+            // Direction (i, j): displacement = pos_i - pos_j, factor = fac
+            row.push_back(i);
+            col.push_back(j);
+            distance.push_back(dist);
+            for (int k=0; k < 3; ++k) {
+                displacement.push_back(disp[k]);
+                factor.push_back(fac[k]);
+            }
+
+            // Direction (j, i): antisymmetric displacement and factor
+            row.push_back(j);
+            col.push_back(i);
+            distance.push_back(dist);
+            for (int k=0; k < 3; ++k) {
+                displacement.push_back(-disp[k]);
+                factor.push_back(-fac[k]);
             }
         }
     }
