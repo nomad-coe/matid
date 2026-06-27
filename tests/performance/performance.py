@@ -6,7 +6,6 @@ import psutil
 import resource
 import click
 import numpy as np
-from typing import Tuple
 from ase import Atoms
 from ase.build import bulk
 import matplotlib.pyplot as plt
@@ -56,9 +55,9 @@ def get_ordered_system():
     return ordered
 
 
-def run_single(atoms) -> Tuple[int, int]:
-    """Run a single classification."""
-    SBC().get_clusters(atoms)
+def run_single(atoms):
+    """Run a single classification, returning the found clusters."""
+    return SBC().get_clusters(atoms)
 
 
 def run_single_cpu(atoms) -> int:
@@ -74,6 +73,28 @@ def run_single_memory(atoms) -> int:
     """Run a single classification."""
     run_single(atoms)
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
+
+# Default system sizes for the quick `bench` command. The ordered request of
+# 1500 rounds down to 1372 atoms (7^3 FCC unit cells), matching the size used
+# while profiling the clustering hot spots.
+DEFAULT_BENCH_SIZES = {"ordered": 1500, "unordered": 300}
+
+
+def time_clusters(atoms, repeats):
+    """Time SBC().get_clusters() over `repeats` runs.
+
+    Returns the list of elapsed wall-clock seconds (one per repeat) and the
+    number of clusters found (constant across runs, kept as a sanity check).
+    """
+    times = []
+    n_clusters = 0
+    for _ in range(repeats):
+        start = time.perf_counter()
+        clusters = run_single(atoms)
+        times.append(time.perf_counter() - start)
+        n_clusters = len(clusters)
+    return times, n_clusters
 
 
 def generate_unordered(n_atoms):
@@ -186,6 +207,49 @@ def benchmark_memory_single(system, s):
     os.makedirs(get_dir(), exist_ok=True)
     with open(path, "w") as fout:
         json.dump(result, fout)
+
+
+@cli.command()
+@click.option(
+    "--system",
+    default="both",
+    help="System type: 'ordered', 'unordered', or 'both' (default).",
+)
+@click.option(
+    "-s",
+    "--size",
+    type=int,
+    default=None,
+    help="Requested system size. Defaults to 1500 (ordered) / 300 (unordered).",
+)
+@click.option(
+    "-r", "--repeats", type=int, default=5, help="Number of timed repeats (default 5)."
+)
+def bench(system, size, repeats):
+    """Quick in-process CPU benchmark for iterative optimization.
+
+    Times SBC().get_clusters() over several repeats and prints the min and
+    median wall-clock seconds for each system. Unlike ``benchmark-cpu-single``,
+    it neither reads nor writes ``results.json`` and never skips, so it can be
+    run repeatedly to compare a working-tree change against a baseline: run it
+    once before a change and once after. A genuine speed-up shows up as a clear
+    drop in the ``min`` column (the value least affected by background noise).
+
+    Examples:
+
+        python performance.py bench
+        python performance.py bench --system ordered -s 3000 -r 7
+    """
+    systems = ["ordered", "unordered"] if system == "both" else [system]
+    for name in systems:
+        requested = size if size is not None else DEFAULT_BENCH_SIZES[name]
+        atoms = globals()[f"generate_{name}"](requested)
+        times, n_clusters = time_clusters(atoms, repeats)
+        print(
+            f"{name:10s} requested={requested:5d} n_atoms={len(atoms):5d} "
+            f"clusters={n_clusters:3d} min={np.min(times):.4f}s "
+            f"median={np.median(times):.4f}s (repeats={repeats})"
+        )
 
 
 @cli.command()
