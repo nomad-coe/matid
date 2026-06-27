@@ -149,16 +149,20 @@ class Distances:
             return self._dist_matrix_radii_mic[np.ix_(indices, indices)]
         k = len(indices)
         out = np.full((k, k), np.inf)
-        local = {int(g): l for l, g in enumerate(indices)}
+        # Map global atom index -> local position within ``indices`` (-1 when the
+        # atom is not part of this submatrix). This lets each row filter its
+        # neighbours with vectorized numpy indexing instead of a per-entry dict
+        # lookup.
+        g2l = np.full(self._n, -1, dtype=np.intp)
+        g2l[indices] = np.arange(k)
         for li, gi in enumerate(indices):
             s = self._row_slice(gi)
             cols = self._col[s]
-            dists = self._dist[s]
-            radii_gi = self._radii[gi]
-            for c, d in zip(cols, dists):
-                lj = local.get(int(c))
-                if lj is not None:
-                    out[li, lj] = d - (radii_gi + self._radii[c])
+            lj = g2l[cols]
+            sel = lj >= 0
+            out[li, lj[sel]] = self._dist[s][sel] - (
+                self._radii[gi] + self._radii[cols[sel]]
+            )
         di = np.arange(k)
         out[di, di] = -2.0 * self._radii[indices]
         return out

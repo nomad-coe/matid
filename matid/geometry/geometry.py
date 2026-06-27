@@ -582,7 +582,7 @@ def get_positions_within_basis(
     # If the new cell is overflowing beyound the boundaries of the original
     # system, we have to also check the periodic copies.
     indices = []
-    a_prec, b_prec, c_prec = tolerance / np.linalg.norm(basis, axis=1)
+    precs = tolerance / np.linalg.norm(basis, axis=1)
     orig_basis = system.get_cell()
     cell_pos = []
     factors = []
@@ -590,29 +590,30 @@ def get_positions_within_basis(
         vec_new_cart = cart_pos + np.dot(i_dir, orig_basis)
         vec_new_rel = change_basis(vec_new_cart - origin, basis)
 
-        # If no positions are defined, find the atoms within the cell
-        for i_pos, pos in enumerate(vec_new_rel):
-            if mask[0]:
-                x = 0 - a_prec <= pos[0] <= 1 + a_prec
-            else:
-                x = True
-            if mask[1]:
-                y = 0 - b_prec <= pos[1] <= 1 + b_prec
-            else:
-                y = True
-            if mask[2]:
-                z = 0 - c_prec <= pos[2] <= 1 + c_prec
-            else:
-                z = True
+        # Find the atoms within the cell with a vectorized boundary check over
+        # all positions at once, restricted to the masked axes.
+        keep = np.ones(len(vec_new_rel), dtype=bool)
+        for axis in range(3):
+            if mask[axis]:
+                col = vec_new_rel[:, axis]
+                keep &= (col >= -precs[axis]) & (col <= 1 + precs[axis])
 
-            if x and y and z:
-                indices.append(i_pos)
-                cell_pos.append(pos)
-                factors.append(i_dir)
+        # np.nonzero keeps ascending index order, matching the original
+        # per-atom loop.
+        found = np.nonzero(keep)[0]
+        if found.size:
+            indices.append(found)
+            cell_pos.append(vec_new_rel[found])
+            factors.append(np.tile(i_dir, (found.size, 1)))
 
-    cell_pos = np.array(cell_pos)
-    indices = np.array(indices)
-    factors = np.array(factors)
+    if indices:
+        indices = np.concatenate(indices)
+        cell_pos = np.concatenate(cell_pos)
+        factors = np.concatenate(factors)
+    else:
+        indices = np.array([])
+        cell_pos = np.array([])
+        factors = np.array([])
 
     return indices, cell_pos, factors
 
