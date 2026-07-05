@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'matid'
-version = '2.1.6'
+version = '2.2.0'
 description = 'MatID is a Python package for identifying and analyzing atomistic systems based on their structure.'
 readme = "README.md"
 authors = [{ name = "Lauri Himanen" }]
@@ -14,7 +14,6 @@ dependencies = [
     "numpy",
     "ase",
     "spglib>=2.0.0",
-    "scikit-learn",
     "networkx>=2.4",
 ]
 classifiers = [

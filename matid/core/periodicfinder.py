@@ -95,9 +95,7 @@ class PeriodicFinder:
         if distances is None:
             distances = matid.geometry.get_distances(system)
 
-        self.disp_tensor_mic = distances.disp_tensor_mic
-        self.disp_factors = distances.disp_factors
-        self.dist_matrix_radii_mic = distances.dist_matrix_radii_mic
+        self.distances = distances
 
         # Create new cell list that is used for performing the matching. We
         # cannot use the cell list that is created during the distance matrix
@@ -174,13 +172,11 @@ class PeriodicFinder:
             np.ndarray: Factors that reveal in which periodic copy the
                 neighbours are.
         """
-        # Calculate a displacement tensor that takes into account the
-        # periodicity of the system
-        disp_tensor = self.disp_tensor_mic
-
-        # If the search radius exceeds beyond the periodic boundaries, extend the system
-        # Get the vectors that span from the seed to all other atoms
-        seed_spans = disp_tensor[:, seed_index]
+        # Get the vectors that span from the seed to all other atoms, taking
+        # into account the periodicity of the system. Atoms beyond the distance
+        # cutoff are reported as infinite spans, which fail the distance mask
+        # below just as a too-large finite span would.
+        seed_spans = self.distances.get_displacement_column(seed_index)
         atomic_numbers = system.get_atomic_numbers()
 
         # Find indices of atoms that are identical to seed atom
@@ -196,7 +192,9 @@ class PeriodicFinder:
         combined_mask = np.array(search_mask)
         combined_mask[seed_index] = False  # Ignore self
         bases = seed_spans[combined_mask]
-        neighbour_factors = self.disp_factors[seed_index, distance_mask, :]
+        neighbour_factors = self.distances.get_factor_column(seed_index)[
+            distance_mask, :
+        ]
 
         return bases, distance_mask, neighbour_factors, search_mask
 
@@ -259,6 +257,7 @@ class PeriodicFinder:
                 add_pos,
                 neighbour_num,
                 self.pos_tol,
+                return_vacancies=False,
             )
             sub_indices, _, _, sub_factors = matid.geometry.get_matches(
                 system,
@@ -266,6 +265,7 @@ class PeriodicFinder:
                 sub_pos,
                 neighbour_num,
                 self.pos_tol,
+                return_vacancies=False,
             )
 
             n_metric = 0

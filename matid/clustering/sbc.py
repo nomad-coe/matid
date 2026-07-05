@@ -113,8 +113,15 @@ class SBC:
         atomic_numbers = system.get_atomic_numbers()
         radii = matid.geometry.get_radii(radii, atomic_numbers)
 
-        # Calculate the distances here once if they have not been provided.
-        distances = matid.geometry.get_distances(system_copy, radii)
+        # Calculate the distances here once if they have not been provided. A
+        # finite radial cutoff is used: the clustering only ever consults local
+        # distances (spans within max_cell_size, and the smaller merge_radius /
+        # bond_threshold thresholds). Pairs beyond the cutoff are reported as
+        # infinite, which fail those same thresholds, so the result is identical
+        # to using an infinite cutoff while being dramatically faster.
+        max_radii = radii.max()
+        cutoff = max(max_cell_size, merge_radius, bond_threshold) + 2 * max_radii
+        distances = matid.geometry.get_distances(system_copy, radii, cutoff=cutoff)
 
         # Iteratively search for new clusters until whole system is covered
         periodic_finder = PeriodicFinder(angle_tol=angle_tol)
@@ -290,9 +297,7 @@ class SBC:
         for i, i_clusters in overlap_map.items():
             if len(i_clusters) > 1:
                 surrounding_indices = set(
-                    np.argwhere(distances.dist_matrix_radii_mic[i, :] < merge_radius)[
-                        :, 0
-                    ]
+                    np.where(distances.get_radii_distance_row(i) < merge_radius)[0]
                 )
                 max_near = 0
                 max_cluster = i_clusters[0]

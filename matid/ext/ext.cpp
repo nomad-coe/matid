@@ -38,6 +38,14 @@ PYBIND11_MODULE(ext, m) {
         .def_readonly("factors", &ExtendedSystem::factors);
     m.def("get_cell_list", &get_cell_list, "Get cell list for system.");
     m.def("get_displacement_tensor", &get_displacement_tensor, "Get displacement vectors respecting minimum image convention.");
+    m.def("get_displacement_list", &get_displacement_list, "Get a sparse minimum-image neighbour list within a finite cutoff.");
+    py::class_<SparseDistances>(m, "SparseDistances", py::module_local())
+        .def(py::init<>())
+        .def_readonly("row", &SparseDistances::row)
+        .def_readonly("col", &SparseDistances::col)
+        .def_readonly("distance", &SparseDistances::distance)
+        .def_readonly("displacement", &SparseDistances::displacement)
+        .def_readonly("factor", &SparseDistances::factor);
 
     // CellList
     py::class_<CellList>(m, "CellList", py::module_local())

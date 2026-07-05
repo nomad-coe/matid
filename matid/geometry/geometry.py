@@ -3,7 +3,6 @@ a atomic system.
 """
 
 import math
-from collections import defaultdict
 
 import numpy as np
 from numpy.random import RandomState
@@ -14,6 +13,7 @@ from ase import Atom, Atoms
 import ase.geometry
 
 import spglib
+import networkx as nx
 
 from matid.data.element_data import get_covalent_radii
 from matid.core.linkedunits import Substitution
@@ -296,12 +296,6 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
         list: A list of clusters, where each cluster is a list of indices for
         the elements belonging to the cluster.
     """
-    # The import is localized here to keep the startup times shorter: importing
-    # sklearn takes quite a while. TODO: It should be possible to get rid of the
-    # sklearn dependency completely with a built-in version of DBSCAN. Much of
-    # the work is already done with calculating the distance matrix anyways.
-    from sklearn.cluster import DBSCAN
-
     # As the distances have been normalized with respect to the covalent radiis,
     # the distance matrix may in some cases have negative values. This simply
     # means that the distance between two atoms is smaller than the sum of
@@ -313,23 +307,15 @@ def get_clusters(dist_matrix, threshold, min_samples=1):
     # from distances larger than a set radial cutoff.
     np.clip(dist_matrix, a_min=0, a_max=1.1 * threshold, out=dist_matrix)
 
-    # Detect clusters
-    db = DBSCAN(eps=threshold, min_samples=min_samples, metric="precomputed", n_jobs=1)
-    db.fit(dist_matrix)
-    clusters = db.labels_
-
-    # Make a list of the different clusters. All item with cluster = -1 will
-    # get a separate group.
-    cluster_groups = []
-    group_map = defaultdict(list)
-    for i_atom, i_clust in enumerate(clusters):
-        if i_clust == -1:
-            cluster_groups.append([i_atom])
-        else:
-            group_map[i_clust].append(i_atom)
-    cluster_groups.extend(group_map.values())
-
-    return cluster_groups
+    # The clusters are the connected components of the graph that links any two
+    # atoms whose (radii-subtracted) distance is within the threshold. This is
+    # identical to DBSCAN with min_samples=1 and a precomputed metric, but avoids
+    # the heavy sklearn import (which otherwise dominates the runtime on small
+    # systems) and is faster per call. networkx is already a dependency used
+    # elsewhere in matid.
+    adjacency = dist_matrix <= threshold
+    graph = nx.from_numpy_array(adjacency)
+    return [list(component) for component in nx.connected_components(graph)]
 
 
 def get_covalent_distances(system, mic=True):
@@ -596,7 +582,7 @@ def get_positions_within_basis(
     # If the new cell is overflowing beyound the boundaries of the original
     # system, we have to also check the periodic copies.
     indices = []
-    a_prec, b_prec, c_prec = tolerance / np.linalg.norm(basis, axis=1)
+    precs = tolerance / np.linalg.norm(basis, axis=1)
     orig_basis = system.get_cell()
     cell_pos = []
     factors = []
@@ -604,34 +590,37 @@ def get_positions_within_basis(
         vec_new_cart = cart_pos + np.dot(i_dir, orig_basis)
         vec_new_rel = change_basis(vec_new_cart - origin, basis)
 
-        # If no positions are defined, find the atoms within the cell
-        for i_pos, pos in enumerate(vec_new_rel):
-            if mask[0]:
-                x = 0 - a_prec <= pos[0] <= 1 + a_prec
-            else:
-                x = True
-            if mask[1]:
-                y = 0 - b_prec <= pos[1] <= 1 + b_prec
-            else:
-                y = True
-            if mask[2]:
-                z = 0 - c_prec <= pos[2] <= 1 + c_prec
-            else:
-                z = True
+        # Find the atoms within the cell with a vectorized boundary check over
+        # all positions at once, restricted to the masked axes.
+        keep = np.ones(len(vec_new_rel), dtype=bool)
+        for axis in range(3):
+            if mask[axis]:
+                col = vec_new_rel[:, axis]
+                keep &= (col >= -precs[axis]) & (col <= 1 + precs[axis])
 
-            if x and y and z:
-                indices.append(i_pos)
-                cell_pos.append(pos)
-                factors.append(i_dir)
+        # np.nonzero keeps ascending index order, matching the original
+        # per-atom loop.
+        found = np.nonzero(keep)[0]
+        if found.size:
+            indices.append(found)
+            cell_pos.append(vec_new_rel[found])
+            factors.append(np.tile(i_dir, (found.size, 1)))
 
-    cell_pos = np.array(cell_pos)
-    indices = np.array(indices)
-    factors = np.array(factors)
+    if indices:
+        indices = np.concatenate(indices)
+        cell_pos = np.concatenate(cell_pos)
+        factors = np.concatenate(factors)
+    else:
+        indices = np.array([])
+        cell_pos = np.array([])
+        factors = np.array([])
 
     return indices, cell_pos, factors
 
 
-def get_matches(system, cell_list, positions, numbers, tolerance):
+def get_matches(
+    system, cell_list, positions, numbers, tolerance, return_vacancies=True
+):
     """Given a system and a list of cartesian positions and atomic numbers,
     returns a list of indices for the atoms corresponding to the given
     positions with some tolerance.
@@ -642,6 +631,10 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
             of the system.
         positions(np.ndarray): Positions to match in the system.
         tolerance(float): Maximum allowed distance for matching.
+        return_vacancies(bool): Whether to build and return the list of vacancy
+            ase.Atom objects. Constructing these is comparatively expensive, so
+            callers that do not consume the vacancies can set this to False to
+            skip the work.
 
     Returns:
         np.ndarray: indices of matched atoms
@@ -657,6 +650,13 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
     copy_indices = np.zeros((len(positions), 3))
     vacancies = []
     cell = system.get_cell()
+
+    # Scaled positions (floored) are only needed for the copy index of the
+    # returned vacancies. Computing them once for all positions avoids a
+    # per-vacancy linear solve, which dominates runtime for disordered systems.
+    # When the caller does not consume the vacancies, this is skipped entirely.
+    if return_vacancies:
+        floored_factors = np.floor(to_scaled(cell, positions, wrap=False))
 
     # The already pre-computed cell-list is used in finding neighbours.
     for i, (position, atomic_number) in enumerate(zip(positions, numbers)):
@@ -691,9 +691,13 @@ def get_matches(system, cell_list, positions, numbers, tolerance):
         matches.append(match)
         substitutions.append(substitution)
         if match is None and substitution is None:
-            vacancies.append(Atom(atomic_number, position=position))
-            copy_index = np.floor(to_scaled(cell, position, wrap=False)[0])
-        copy_indices[i] = copy_index
+            if return_vacancies:
+                vacancies.append(Atom(atomic_number, position=position))
+                copy_index = floored_factors[i]
+        # When vacancies are not requested, the vacancy copy index is left at
+        # its initialized zero value (it is never consumed by such callers).
+        if copy_index is not None:
+            copy_indices[i] = copy_index
 
     return matches, substitutions, vacancies, copy_indices
 
@@ -1151,11 +1155,17 @@ def get_crystallinity(symmetry_analyser):
     return ratio
 
 
-def get_distances(system: Atoms, radii="covalent") -> Distances:
+def get_distances(system: Atoms, radii="covalent", cutoff=float("inf")) -> Distances:
     """Returns complete distance information.
 
     Args:
         system: The system from which distances are calculated from.
+        radii: The atomic radii to use, see get_radii.
+        cutoff: Radial cutoff for the distance calculation. Pairs that are
+            farther apart than this (using the minimum image convention) are
+            reported as infinite distance. Defaults to infinity, which produces
+            the full dense distance matrix. A finite cutoff can dramatically
+            speed up the calculation when only local distances are needed.
     Returns:
         A Distances instance.
     """
@@ -1164,13 +1174,32 @@ def get_distances(system: Atoms, radii="covalent") -> Distances:
     pbc = system.get_pbc()
     atomic_numbers = system.get_atomic_numbers()
     radii = get_radii(radii, atomic_numbers)
+    n_atoms = len(atomic_numbers)
+
+    # With a finite cutoff we only compute the local neighbours and store them
+    # sparsely, avoiding the O(n^2) dense matrices entirely.
+    if np.isfinite(cutoff):
+        sparse = matid.ext.get_displacement_list(
+            pos, np.asarray(cell), expand_pbc(pbc), float(cutoff)
+        )
+        return Distances.from_sparse(
+            n_atoms,
+            np.asarray(sparse.row),
+            np.asarray(sparse.col),
+            np.asarray(sparse.distance),
+            np.asarray(sparse.displacement),
+            np.asarray(sparse.factor),
+            radii,
+        )
+
+    # Infinite cutoff: build the full dense distance matrices.
     if pbc.any():
         disp_tensor_mic, disp_factors, dist_matrix_mic = get_displacement_tensor(
-            pos, cell, pbc, return_factors=True, return_distances=True
+            pos, cell, pbc, cutoff=cutoff, return_factors=True, return_distances=True
         )
     else:
         disp_tensor_mic, dist_matrix_mic = get_displacement_tensor(
-            pos, return_distances=True
+            pos, cutoff=cutoff, return_distances=True
         )
         disp_factors = np.zeros(disp_tensor_mic.shape)
 
